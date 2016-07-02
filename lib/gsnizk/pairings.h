@@ -5,7 +5,7 @@
 
 namespace pairings {
 
-void initialize_pairings();
+void initialize_pairings(int len, char *rndData);
 void terminate_pairings();
 
 struct SharedData {
@@ -73,7 +73,6 @@ public:
     int getDataLen() const;
     void getData(char *data) const;
 public:
-    static G1 getGen();
     static G1 getRand();
     static G1 getValue(const char *data, int len);
 private:
@@ -103,7 +102,6 @@ public:
     int getDataLen() const;
     void getData(char *data) const;
 public:
-    static G2 getGen();
     static G2 getRand();
     static G2 getValue(const char *data, int len);
 private:
@@ -131,7 +129,6 @@ public:
     int getDataLen() const;
     void getData(char *data) const;
 public:
-    static GT getGen();
     static GT getRand();
     static GT getValue(const char *data, int len);
     static GT pairing(const G1 a, const G2 b);

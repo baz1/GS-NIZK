@@ -1,7 +1,5 @@
 #include "pairings.h"
 
-#include <cstring>
-
 #if defined(USE_MIRACL)
 /* -------------------- MIRACL build -------------------- */
 
@@ -16,15 +14,22 @@
 
 #include "pairing_3.h"
 
+#include <cstring>
+#include <ctime>
+
 namespace pairings {
 
 static PFC *pfc;
 
-void initialize_pairings() {
-    pfc = new PFC(AES_SECURITY);
+void initialize_pairings(int len, char *rndData) {
+    csprng *rnd = new csprng;
+    strong_init(rnd, len, rndData, (unsigned int) clock());
+    pfc = new PFC(AES_SECURITY, rnd);
 }
 
 void terminate_pairings() {
+    strong_kill(pfc->RNG);
+    delete pfc->RNG;
     delete pfc;
 }
 
@@ -142,8 +147,7 @@ Fp Fp::getUnit() {
 }
 
 Fp Fp::getRand() {
-    // TODO
-    return Fp();
+    return Fp(reinterpret_cast<void*>(new ::Big(strong_rand(pfc->RNG, *pfc->ord))));
 }
 
 Fp Fp::getValue(const char *data, int len) {
