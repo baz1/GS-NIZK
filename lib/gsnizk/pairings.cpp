@@ -21,6 +21,19 @@ namespace pairings {
 
 static PFC *pfc;
 
+template <typename T> inline const T &min(const T &a, const T &b) { return (a < b) ? a : b; }
+template <typename T> inline const T &max(const T &a, const T &b) { return (a < b) ? b : a; }
+
+// Note: The following is used more for an indication and hint for the readers
+// rather than an efficiency improvement.
+#ifdef __GNUC__
+#define likely(x)       __builtin_expect(!!(x), 1)
+#define unlikely(x)     __builtin_expect(!!(x), 0)
+#else
+#define likely(x)       (x)
+#define unlikely(x)     (x)
+#endif /* __GNUC__ */
+
 void initialize_pairings(int len, char *rndData) {
     csprng *rnd = new csprng;
     strong_init(rnd, len, rndData, (unsigned int) clock());
@@ -258,9 +271,68 @@ G1 &G1::operator*=(const Fp other) {
 G1 operator*(const Fp &m, const G1 &g) {
     if (!m.d) return m;
     if (g.isNull()) return G1();
+    // Note: Since neither this group element nor the scalar are null,
+    // the result won't be null either.
     const ::G1 &_g = *reinterpret_cast< ::G1* >(g.d->p);
     const ::Big &_m = *reinterpret_cast< ::Big* >(m.d->p);
     return G1(reinterpret_cast<void*>(new ::G1(pfc->mult(_g, _m))));
+}
+
+int G1::getDataLen(bool compressed) const {
+    if (!d) return 0;
+    const ::G1 &_this = *reinterpret_cast< ::G1* >(d->p);
+    if (compressed) {
+        ::Big x;
+        _this.g.get(x);
+        return x.len() * (MIRACL / 8) + 1;
+    } else {
+        return pfc->mod->len() * (2 * (MIRACL / 8));
+    }
+}
+
+void G1::getData(char *data, bool compressed) const {
+    if (!d) return;
+    const ::G1 &_this = *reinterpret_cast< ::G1* >(d->p);
+    if (compressed) {
+        ::Big x;
+        int lsb = _this.g.get(x);
+        *data = (char) lsb;
+        to_binary(x, x.len() * (MIRACL / 8), data + 1, TRUE);
+    } else {
+        int len = pfc->mod->len() * (MIRACL / 8);
+        ::Big x, y;
+        _this.g.get(x, y);
+        to_binary(x, len, data, TRUE);
+        to_binary(y, len, data + len, TRUE);
+    }
+}
+
+G1 G1::getRand() {
+    ::G1 *el = new ::G1();
+    pfc->random(el);
+    // Following is very unlikely, but we still want to handle it
+    if (unlikely(el->g.iszero())) {
+        delete el;
+        return G1();
+    }
+    return G1(reinterpret_cast<void*>(el));
+}
+
+G1 G1::getValue(const char *data, int len, bool compressed) {
+    if (!len) return G1();
+    if (compressed) {
+        int lsb = (int) *(data++);
+        ::G1 *el = new ::G1();
+        el.g.set(from_binary(len - 1, data), 1 - lsb);
+        return G1(reinterpret_cast<void*>(el));
+    } else {
+        if (len & 1)
+            throw "pairings::G1::getValue: Unexpected data length";
+        ::G1 *el = new ::G1();
+        len >>= 1;
+        el.g.set(from_binary(len, data), from_binary(len, data + len));
+        return G1(reinterpret_cast<void*>(el));
+    }
 }
 
 void G1::deref() {

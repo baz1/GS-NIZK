@@ -72,12 +72,12 @@ public:
     G1 &operator*=(const Fp other);
     G1 operator*(const Fp other) const;
     friend G1 operator*(const Fp &m, const G1 &g);
-    int getDataLen() const;
-    void getData(char *data) const;
+    int getDataLen(bool compressed = false) const;
+    void getData(char *data, bool compressed = false) const;
     inline bool isNull() const;
 public:
     static G1 getRand();
-    static G1 getValue(const char *data, int len);
+    static G1 getValue(const char *data, int len, bool compressed = false);
 private:
     inline explicit G1(void *v);
     inline explicit G1(SharedData *d);
