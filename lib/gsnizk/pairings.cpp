@@ -147,6 +147,11 @@ void Fp::getData(char *data) const {
     to_binary(_this, _this.len() * (MIRACL / 8), data, TRUE);
 }
 
+bool Fp::isNull() const {
+    const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
+    return _this.iszero();
+}
+
 Fp Fp::getUnit() {
     return Fp(one);
 }
@@ -166,6 +171,96 @@ void Fp::deref() {
         delete reinterpret_cast< ::Big* >(d->p);
         delete d;
     }
+}
+
+G1 G1::operator-() const {
+    if (!d) return G1();
+    const ::G1 &_this = *reinterpret_cast< ::G1* >(d->p);
+    return G1(reinterpret_cast<void*>(new ::G1(-_this)));
+}
+
+G1 G1::operator+(const G1 other) const {
+    if (!d) return other;
+    if (!other.d) return *this;
+    const ::G1 &_this = *reinterpret_cast< ::G1* >(d->p);
+    const ::G1 &_other = *reinterpret_cast< ::G1* >(other.d->p);
+    return G1(reinterpret_cast<void*>(new ::G1(_this + _other)));
+}
+
+G1 G1::operator-(const G1 other) const {
+    if (!other.d) return *this;
+    const ::G1 &_other = *reinterpret_cast< ::G1* >(other.d->p);
+    if (!d) return G1(reinterpret_cast<void*>(new ::G1(-_other)));
+    const ::G1 &_this = *reinterpret_cast< ::G1* >(d->p);
+    return G1(reinterpret_cast<void*>(new ::G1(_this + (-_other))));
+}
+
+G1 &G1::operator+=(const G1 other) {
+    if (!other.d) return *this;
+    const ::G1 &_other = *reinterpret_cast< ::G1* >(other.d->p);
+    if (!d) {
+        ++(d = other.d)->c;
+        return *this;
+    }
+    const ::G1 &_this = *reinterpret_cast< ::G1* >(d->p);
+    void *result = reinterpret_cast<void*>(new ::G1(_this + _other));
+    if (d->c) {
+        --d->c;
+        d = new SharedData(result);
+    } else {
+        delete reinterpret_cast< ::G1* >(d->p);
+        d->p = result;
+    }
+    return *this;
+}
+
+G1 &G1::operator-=(const G1 other) {
+    if (!other.d) return *this;
+    const ::G1 &_other = *reinterpret_cast< ::G1* >(other.d->p);
+    if (!d) {
+        d = new SharedData(reinterpret_cast<void*>(new ::G1(-_other)));
+        return *this;
+    }
+    const ::G1 &_this = *reinterpret_cast< ::G1* >(d->p);
+    void *result = reinterpret_cast<void*>(new ::G1(_this + (-_other)));
+    if (d->c) {
+        --d->c;
+        d = new SharedData(result);
+    } else {
+        delete reinterpret_cast< ::G1* >(d->p);
+        d->p = result;
+    }
+    return *this;
+}
+
+G1 &G1::operator*=(const Fp other) {
+    if (!d) return *this;
+    if (other.isNull()) {
+        deref();
+        d = 0;
+        return *this;
+    }
+    // Note: Since neither this group element nor the scalar are null,
+    // the result won't be null either.
+    const ::G1 &_this = *reinterpret_cast< ::G1* >(d->p);
+    const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
+    void *result = reinterpret_cast<void*>(new ::G1(pfc->mult(_this, _other)));
+    if (d->c) {
+        --d->c;
+        d = new SharedData(result);
+    } else {
+        delete reinterpret_cast< ::G1* >(d->p);
+        d->p = result;
+    }
+    return *this;
+}
+
+G1 operator*(const Fp &m, const G1 &g) {
+    if (!m.d) return m;
+    if (g.isNull()) return G1();
+    const ::G1 &_g = *reinterpret_cast< ::G1* >(g.d->p);
+    const ::Big &_m = *reinterpret_cast< ::Big* >(m.d->p);
+    return G1(reinterpret_cast<void*>(new ::G1(pfc->mult(_g, _m))));
 }
 
 void G1::deref() {

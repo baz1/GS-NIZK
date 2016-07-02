@@ -43,6 +43,7 @@ public:
     Fp &operator/=(const Fp other);
     int getDataLen() const;
     void getData(char *data) const;
+    bool isNull() const;
 public:
     static Fp getUnit();
     static Fp getRand();
@@ -61,7 +62,6 @@ class G1 {
 public:
     inline G1();
     inline G1(const G1 &other);
-    explicit G1(const Fp v);
     inline ~G1();
     inline G1 &operator=(const G1 other);
     G1 operator-() const;
@@ -74,6 +74,7 @@ public:
     friend G1 operator*(const Fp &m, const G1 &g);
     int getDataLen() const;
     void getData(char *data) const;
+    inline bool isNull() const;
 public:
     static G1 getRand();
     static G1 getValue(const char *data, int len);
@@ -90,7 +91,6 @@ class G2 {
 public:
     inline G2();
     inline G2(const G2 &other);
-    explicit G2(const Fp v);
     inline ~G2();
     inline G2 &operator=(const G2 other);
     G2 operator-() const;
@@ -103,6 +103,7 @@ public:
     friend G1 operator*(const Fp &m, const G1 &g);
     int getDataLen() const;
     void getData(char *data) const;
+    inline bool isNull() const;
 public:
     static G2 getRand();
     static G2 getValue(const char *data, int len);
@@ -118,7 +119,6 @@ class GT {
 public:
     inline GT();
     inline GT(const GT &other);
-    explicit GT(const Fp v);
     inline ~GT();
     inline GT &operator=(const GT other);
     GT operator*(const GT other) const;
@@ -130,6 +130,7 @@ public:
     friend G1 operator^(const Fp &m, const G1 &g);
     int getDataLen() const;
     void getData(char *data) const;
+    bool isUnity() const;
 public:
     static GT getRand();
     static GT getValue(const char *data, int len);
@@ -177,6 +178,8 @@ inline G1 &G1::operator=(const G1 other) {
     return *this;
 }
 
+inline bool G1::isNull() const { return !d; }
+
 inline G1::G1(void *v) : d(new SharedData(v)) {}
 
 inline G1::G1(SharedData *d) : d(d) { ++d->c; }
@@ -194,6 +197,8 @@ inline G2 &G2::operator=(const G2 other) {
     if ((d = other.d)) ++d->c;
     return *this;
 }
+
+inline bool G2::isNull() const { return !d; }
 
 inline G2::G2(void *v) : d(new SharedData(v)) {}
 
