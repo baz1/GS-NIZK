@@ -21,6 +21,8 @@ namespace pairings {
 
 static PFC *pfc;
 
+SharedData *Fp::zero = 0, *Fp::one = 0;
+
 template <typename T> inline const T &min(const T &a, const T &b) { return (a < b) ? a : b; }
 template <typename T> inline const T &max(const T &a, const T &b) { return (a < b) ? b : a; }
 
@@ -174,7 +176,8 @@ Fp Fp::getRand() {
 }
 
 Fp Fp::getValue(const char *data, int len) {
-    return Fp(reinterpret_cast<void*>(new ::Big(from_binary(len, data))));
+    // Note: Sorry about the following const_cast, const keyword simply missing in from_binary
+    return Fp(reinterpret_cast<void*>(new ::Big(from_binary(len, const_cast<char*>(data)))));
 }
 
 void Fp::deref() {
@@ -269,8 +272,8 @@ G1 &G1::operator*=(const Fp other) {
 }
 
 G1 operator*(const Fp &m, const G1 &g) {
-    if (!m.d) return m;
-    if (g.isNull()) return G1();
+    if (!g.d) return g;
+    if (m.isNull()) return G1();
     // Note: Since neither this group element nor the scalar are null,
     // the result won't be null either.
     const ::G1 &_g = *reinterpret_cast< ::G1* >(g.d->p);
@@ -309,7 +312,7 @@ void G1::getData(char *data, bool compressed) const {
 
 G1 G1::getRand() {
     ::G1 *el = new ::G1();
-    pfc->random(el);
+    pfc->random(*el);
     // Following is very unlikely, but we still want to handle it
     if (unlikely(el->g.iszero())) {
         delete el;
@@ -320,17 +323,18 @@ G1 G1::getRand() {
 
 G1 G1::getValue(const char *data, int len, bool compressed) {
     if (!len) return G1();
+    // Note: Sorry about the following const_cast-s, const keyword simply missing in from_binary
     if (compressed) {
         int lsb = (int) *(data++);
         ::G1 *el = new ::G1();
-        el.g.set(from_binary(len - 1, data), 1 - lsb);
+        el->g.set(from_binary(len - 1, const_cast<char*>(data)), 1 - lsb);
         return G1(reinterpret_cast<void*>(el));
     } else {
         if (len & 1)
             throw "pairings::G1::getValue: Unexpected data length";
         ::G1 *el = new ::G1();
         len >>= 1;
-        el.g.set(from_binary(len, data), from_binary(len, data + len));
+        el->g.set(from_binary(len, const_cast<char*>(data)), from_binary(len, const_cast<char*>(data + len)));
         return G1(reinterpret_cast<void*>(el));
     }
 }

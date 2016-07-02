@@ -25,6 +25,9 @@ class Fp {
     friend class GT;
     friend void initialize_pairings(int, char*);
     friend void terminate_pairings();
+    friend G1 operator*(const Fp &m, const G1 &g);
+    friend G2 operator*(const Fp &m, const G2 &g);
+    friend GT operator^(const Fp &m, const GT &g);
 public:
     inline Fp();
     Fp(int i);
@@ -52,7 +55,7 @@ private:
     inline explicit Fp(void *v);
     inline explicit Fp(SharedData *d);
     void deref();
-    static SharedData *zero = 0, *one = 0;
+    static SharedData *zero, *one;
 private:
     SharedData *d;
 };
@@ -100,7 +103,7 @@ public:
     G2 &operator-=(const G2 other);
     G1 &operator*=(const Fp other);
     G1 operator*(const Fp other) const;
-    friend G1 operator*(const Fp &m, const G1 &g);
+    friend G2 operator*(const Fp &m, const G2 &g);
     int getDataLen() const;
     void getData(char *data) const;
     inline bool isNull() const;
@@ -125,9 +128,9 @@ public:
     GT operator/(const GT other) const;
     GT &operator*=(const GT other);
     GT &operator/=(const GT other);
-    G1 &operator^=(const Fp other);
-    G1 operator^(const Fp other) const;
-    friend G1 operator^(const Fp &m, const G1 &g);
+    GT &operator^=(const Fp other);
+    GT operator^(const Fp other) const;
+    friend GT operator^(const Fp &m, const GT &g);
     int getDataLen() const;
     void getData(char *data) const;
     bool isUnity() const;
