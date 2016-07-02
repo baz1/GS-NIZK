@@ -3,7 +3,7 @@
 
 #include <vector>
 
-namespace pairing {
+namespace pairings {
 
 void initialize_pairings();
 void terminate_pairings();
@@ -24,7 +24,7 @@ class Fp {
     friend class G2;
     friend class GT;
 public:
-    inline Fp();
+    Fp();
     Fp(int i);
     explicit Fp(unsigned long i);
     inline Fp(const Fp &other);
@@ -39,14 +39,17 @@ public:
     Fp operator/(const Fp other) const;
     Fp &operator*=(const Fp other);
     Fp &operator/=(const Fp other);
-    int getData(char *&data) const;
+    int getDataLen() const;
+    void getData(char *data) const;
 public:
     static Fp getUnit();
     static Fp getRand();
     static Fp getValue(const char *data, int len);
 private:
     inline explicit Fp(void *v);
+    inline explicit Fp(SharedData *d);
     void deref();
+    static SharedData *zero = 0, *one = 0;
 private:
     SharedData *d;
 };
@@ -67,12 +70,15 @@ public:
     G1 &operator*=(const Fp other);
     G1 operator*(const Fp other) const;
     friend G1 operator*(const Fp &m, const G1 &g);
-    int getData(char *&data) const;
+    int getDataLen() const;
+    void getData(char *data) const;
 public:
     static G1 getGen();
     static G1 getRand();
     static G1 getValue(const char *data, int len);
 private:
+    inline explicit G1(void *v);
+    inline explicit G1(SharedData *d);
     void deref();
 private:
     SharedData *d;
@@ -94,12 +100,15 @@ public:
     G1 &operator*=(const Fp other);
     G1 operator*(const Fp other) const;
     friend G1 operator*(const Fp &m, const G1 &g);
-    int getData(char *&data) const;
+    int getDataLen() const;
+    void getData(char *data) const;
 public:
     static G2 getGen();
     static G2 getRand();
     static G2 getValue(const char *data, int len);
 private:
+    inline explicit G2(void *v);
+    inline explicit G2(SharedData *d);
     void deref();
 private:
     SharedData *d;
@@ -119,7 +128,8 @@ public:
     G1 &operator^=(const Fp other);
     G1 operator^(const Fp other) const;
     friend G1 operator^(const Fp &m, const G1 &g);
-    int getData(char *&data) const;
+    int getDataLen() const;
+    void getData(char *data) const;
 public:
     static GT getGen();
     static GT getRand();
@@ -127,6 +137,8 @@ public:
     static GT pairing(const G1 a, const G2 b);
     static GT pairing(const std::vector< std::pair<G1,G2> > p);
 private:
+    inline explicit GT(void *v);
+    inline explicit GT(SharedData *d);
     void deref();
 private:
     SharedData *d;
@@ -136,21 +148,23 @@ private:
 
 inline SharedData::SharedData(void *p) : c(0), p(p) {}
 
-inline Fp::Fp() : d(0) {}
-
 inline Fp::Fp(const Fp &other) {
-    if ((d = other.d)) ++d->c;
+    d = other.d;
+    ++d->c;
 }
 
-inline Fp::~Fp() { if (d) deref(); }
+inline Fp::~Fp() { deref(); }
 
 inline Fp &Fp::operator=(const Fp other) {
-    if (d) deref();
-    if ((d = other.d)) ++d->c;
+    deref();
+    d = other.d;
+    ++d->c;
     return *this;
 }
 
 inline Fp::Fp(void *v) : d(new SharedData(v)) {}
+
+inline Fp::Fp(SharedData *d) : d(d) { ++d->c; }
 
 inline G1::G1() : d(0) {}
 
@@ -166,6 +180,10 @@ inline G1 &G1::operator=(const G1 other) {
     return *this;
 }
 
+inline G1::G1(void *v) : d(new SharedData(v)) {}
+
+inline G1::G1(SharedData *d) : d(d) { ++d->c; }
+
 inline G2::G2() : d(0) {}
 
 inline G2::G2(const G2 &other) {
@@ -179,6 +197,10 @@ inline G2 &G2::operator=(const G2 other) {
     if ((d = other.d)) ++d->c;
     return *this;
 }
+
+inline G2::G2(void *v) : d(new SharedData(v)) {}
+
+inline G2::G2(SharedData *d) : d(d) { ++d->c; }
 
 inline GT::GT() : d(0) {}
 
@@ -194,6 +216,10 @@ inline GT &GT::operator=(const GT other) {
     return *this;
 }
 
-}
+inline GT::GT(void *v) : d(new SharedData(v)) {}
+
+inline GT::GT(SharedData *d) : d(d) { ++d->c; }
+
+} /* End of namespace pairings */
 
 #endif // PAIRINGS_H

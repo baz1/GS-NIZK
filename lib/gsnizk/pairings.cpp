@@ -1,5 +1,7 @@
 #include "pairings.h"
 
+#include <cstring>
+
 #if defined(USE_MIRACL)
 /* -------------------- MIRACL build -------------------- */
 
@@ -10,9 +12,11 @@
 //#define AES_SECURITY 192
 #endif /* Not AES_SECURITY */
 
+#define BUFFER_SIZE 128
+
 #include "pairing_3.h"
 
-namespace pairing {
+namespace pairings {
 
 static PFC *pfc;
 
@@ -22,6 +26,13 @@ void initialize_pairings() {
 
 void terminate_pairings() {
     delete pfc;
+}
+
+Fp::Fp() {
+    if (!zero)
+        zero = new SharedData(reinterpret_cast<void*>(new ::Big()));
+    d = zero;
+    ++d->c;
 }
 
 Fp::Fp(int i) : d(new SharedData(reinterpret_cast<void*>(new ::Big(i)))) {}
@@ -114,6 +125,31 @@ Fp &Fp::operator/=(const Fp other) {
     return *this;
 }
 
+int Fp::getDataLen() const {
+    const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
+    return _this.len() * (MIRACL / 8);
+}
+
+void Fp::getData(char *data) const {
+    const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
+    to_binary(_this, _this.len() * (MIRACL / 8), data, TRUE);
+}
+
+Fp Fp::getUnit() {
+    if (!one)
+        one = new SharedData(reinterpret_cast<void*>(new ::Big(1)));
+    return Fp(one);
+}
+
+Fp Fp::getRand() {
+    // TODO
+    return Fp();
+}
+
+Fp Fp::getValue(const char *data, int len) {
+    return Fp(reinterpret_cast<void*>(new ::Big(from_binary(len, data))));
+}
+
 void Fp::deref() {
     if (d->c) {
         --d->c;
@@ -152,7 +188,7 @@ void GT::deref() {
 
 // TODO
 
-} /* End of namespace pairing */
+} /* End of namespace pairings */
 
 #elif defined(USE_PBC)
 /* -------------------- PBC build -------------------- */
