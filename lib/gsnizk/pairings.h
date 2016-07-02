@@ -44,6 +44,7 @@ public:
     Fp operator/(const Fp other) const;
     Fp &operator*=(const Fp other);
     Fp &operator/=(const Fp other);
+    bool operator==(const Fp other) const;
     int getDataLen() const;
     void getData(char *data) const;
     bool isNull() const;
@@ -75,6 +76,7 @@ public:
     G1 &operator*=(const Fp other);
     G1 operator*(const Fp other) const;
     friend G1 operator*(const Fp &m, const G1 &g);
+    bool operator==(const G1 other) const;
     int getDataLen(bool compressed = false) const;
     void getData(char *data, bool compressed = false) const;
     inline bool isNull() const;
@@ -104,6 +106,7 @@ public:
     G1 &operator*=(const Fp other);
     G1 operator*(const Fp other) const;
     friend G2 operator*(const Fp &m, const G2 &g);
+    bool operator==(const G2 other) const;
     int getDataLen() const;
     void getData(char *data) const;
     inline bool isNull() const;
@@ -131,6 +134,7 @@ public:
     GT &operator^=(const Fp other);
     GT operator^(const Fp other) const;
     friend GT operator^(const Fp &m, const GT &g);
+    bool operator==(const GT other) const;
     int getDataLen() const;
     void getData(char *data) const;
     bool isUnity() const;

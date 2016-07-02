@@ -152,6 +152,12 @@ Fp &Fp::operator/=(const Fp other) {
     return *this;
 }
 
+bool Fp::operator==(const Fp other) const {
+    const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
+    const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
+    return _this == _other;
+}
+
 int Fp::getDataLen() const {
     const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
     return _this.len() * (MIRACL / 8);
@@ -271,6 +277,16 @@ G1 &G1::operator*=(const Fp other) {
     return *this;
 }
 
+G1 G1::operator*(const Fp other) const {
+    if (!d) return *this;
+    if (other.isNull()) return G1();
+    // Note: Since neither this group element nor the scalar are null,
+    // the result won't be null either.
+    const ::G1 &_this = *reinterpret_cast< ::G1* >(d->p);
+    const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
+    return G1(reinterpret_cast<void*>(new ::G1(pfc->mult(_this, _other))));
+}
+
 G1 operator*(const Fp &m, const G1 &g) {
     if (!g.d) return g;
     if (m.isNull()) return G1();
@@ -279,6 +295,14 @@ G1 operator*(const Fp &m, const G1 &g) {
     const ::G1 &_g = *reinterpret_cast< ::G1* >(g.d->p);
     const ::Big &_m = *reinterpret_cast< ::Big* >(m.d->p);
     return G1(reinterpret_cast<void*>(new ::G1(pfc->mult(_g, _m))));
+}
+
+bool G1::operator==(const G1 other) const {
+    if (!d) return !other.d;
+    if (!other.d) return false;
+    const ::G1 &_this = *reinterpret_cast< ::G1* >(d->p);
+    const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
+    return (_this == _other);
 }
 
 int G1::getDataLen(bool compressed) const {
