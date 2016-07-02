@@ -23,8 +23,10 @@ class Fp {
     friend class G1;
     friend class G2;
     friend class GT;
+    friend void initialize_pairings(int, char*);
+    friend void terminate_pairings();
 public:
-    Fp();
+    inline Fp();
     Fp(int i);
     explicit Fp(unsigned long i);
     inline Fp(const Fp &other);
@@ -145,17 +147,15 @@ private:
 
 inline SharedData::SharedData(void *p) : c(0), p(p) {}
 
-inline Fp::Fp(const Fp &other) {
-    d = other.d;
-    ++d->c;
-}
+inline Fp::Fp() { ++(d = zero)->c; }
+
+inline Fp::Fp(const Fp &other) { ++(d = other.d)->c; }
 
 inline Fp::~Fp() { deref(); }
 
 inline Fp &Fp::operator=(const Fp other) {
     deref();
-    d = other.d;
-    ++d->c;
+    ++(d = other.d)->c;
     return *this;
 }
 

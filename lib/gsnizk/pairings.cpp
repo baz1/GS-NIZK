@@ -25,19 +25,26 @@ void initialize_pairings(int len, char *rndData) {
     csprng *rnd = new csprng;
     strong_init(rnd, len, rndData, (unsigned int) clock());
     pfc = new PFC(AES_SECURITY, rnd);
+    Fp::zero = new SharedData(reinterpret_cast<void*>(new ::Big()));
+    Fp::one = new SharedData(reinterpret_cast<void*>(new ::Big(1)));
 }
 
 void terminate_pairings() {
+    if (Fp::zero->c) {
+        --Fp::zero->c;
+    } else {
+        delete reinterpret_cast< ::Big* >(Fp::zero->p);
+        delete Fp::zero;
+    }
+    if (Fp::one->c) {
+        --Fp::one->c;
+    } else {
+        delete reinterpret_cast< ::Big* >(Fp::one->p);
+        delete Fp::zero;
+    }
     strong_kill(pfc->RNG);
     delete pfc->RNG;
     delete pfc;
-}
-
-Fp::Fp() {
-    if (!zero)
-        zero = new SharedData(reinterpret_cast<void*>(new ::Big()));
-    d = zero;
-    ++d->c;
 }
 
 Fp::Fp(int i) : d(new SharedData(reinterpret_cast<void*>(new ::Big(i)))) {}
@@ -141,8 +148,6 @@ void Fp::getData(char *data) const {
 }
 
 Fp Fp::getUnit() {
-    if (!one)
-        one = new SharedData(reinterpret_cast<void*>(new ::Big(1)));
     return Fp(one);
 }
 
