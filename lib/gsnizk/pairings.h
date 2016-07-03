@@ -45,6 +45,7 @@ public:
     Fp &operator*=(const Fp other);
     Fp &operator/=(const Fp other);
     bool operator==(const Fp other) const;
+    inline bool operator!=(const Fp other) const;
     int getDataLen() const;
     void getData(char *data) const;
     bool isNull() const;
@@ -77,6 +78,7 @@ public:
     G1 operator*(const Fp other) const;
     friend G1 operator*(const Fp &m, const G1 &g);
     bool operator==(const G1 other) const;
+    inline bool operator!=(const G1 other) const;
     int getDataLen(bool compressed = false) const;
     void getData(char *data, bool compressed = false) const;
     inline bool isNull() const;
@@ -107,6 +109,7 @@ public:
     G1 operator*(const Fp other) const;
     friend G2 operator*(const Fp &m, const G2 &g);
     bool operator==(const G2 other) const;
+    inline bool operator!=(const G2 other) const;
     int getDataLen() const;
     void getData(char *data) const;
     inline bool isNull() const;
@@ -135,6 +138,7 @@ public:
     GT operator^(const Fp other) const;
     friend GT operator^(const Fp &m, const GT &g);
     bool operator==(const GT other) const;
+    inline bool operator!=(const GT other) const;
     int getDataLen() const;
     void getData(char *data) const;
     bool isUnity() const;
@@ -167,6 +171,10 @@ inline Fp &Fp::operator=(const Fp other) {
     return *this;
 }
 
+inline bool Fp::operator!=(const Fp other) const {
+    return !(*this == other);
+}
+
 inline Fp::Fp(void *v) : d(new SharedData(v)) {}
 
 inline Fp::Fp(SharedData *d) : d(d) { ++d->c; }
@@ -183,6 +191,10 @@ inline G1 &G1::operator=(const G1 other) {
     if (d) deref();
     if ((d = other.d)) ++d->c;
     return *this;
+}
+
+inline bool G1::operator!=(const G1 other) const {
+    return !(*this == other);
 }
 
 inline bool G1::isNull() const { return !d; }
@@ -205,6 +217,10 @@ inline G2 &G2::operator=(const G2 other) {
     return *this;
 }
 
+inline bool G2::operator!=(const G2 other) const {
+    return !(*this == other);
+}
+
 inline bool G2::isNull() const { return !d; }
 
 inline G2::G2(void *v) : d(new SharedData(v)) {}
@@ -223,6 +239,10 @@ inline GT &GT::operator=(const GT other) {
     if (d) deref();
     if ((d = other.d)) ++d->c;
     return *this;
+}
+
+inline bool GT::operator!=(const GT other) const {
+    return !(*this == other);
 }
 
 inline GT::GT(void *v) : d(new SharedData(v)) {}

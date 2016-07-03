@@ -62,7 +62,8 @@ void terminate_pairings() {
     delete pfc;
 }
 
-Fp::Fp(int i) : d(new SharedData(reinterpret_cast<void*>(new ::Big(i)))) {}
+Fp::Fp(int i) : d(new SharedData(reinterpret_cast<void*>(i >= 0 ? (new ::Big(i)) :
+        (new ::Big(*pfc->ord + Big(i)))))) {}
 
 Fp::Fp(unsigned long i) : d(new SharedData(reinterpret_cast<void*>(new ::Big(i)))) {}
 
@@ -206,7 +207,12 @@ G1 G1::operator+(const G1 other) const {
     if (!other.d) return *this;
     const ::G1 &_this = *reinterpret_cast< ::G1* >(d->p);
     const ::G1 &_other = *reinterpret_cast< ::G1* >(other.d->p);
-    return G1(reinterpret_cast<void*>(new ::G1(_this + _other)));
+    ::G1 *result = new ::G1(_this + _other);
+    if (result->g.iszero()) {
+        delete result;
+        return G1();
+    }
+    return G1(reinterpret_cast<void*>(result));
 }
 
 G1 G1::operator-(const G1 other) const {
@@ -214,7 +220,12 @@ G1 G1::operator-(const G1 other) const {
     const ::G1 &_other = *reinterpret_cast< ::G1* >(other.d->p);
     if (!d) return G1(reinterpret_cast<void*>(new ::G1(-_other)));
     const ::G1 &_this = *reinterpret_cast< ::G1* >(d->p);
-    return G1(reinterpret_cast<void*>(new ::G1(_this + (-_other))));
+    ::G1 *result = new ::G1(_this + (-_other));
+    if (result->g.iszero()) {
+        delete result;
+        return G1();
+    }
+    return G1(reinterpret_cast<void*>(result));
 }
 
 G1 &G1::operator+=(const G1 other) {
@@ -225,13 +236,19 @@ G1 &G1::operator+=(const G1 other) {
         return *this;
     }
     const ::G1 &_this = *reinterpret_cast< ::G1* >(d->p);
-    void *result = reinterpret_cast<void*>(new ::G1(_this + _other));
+    ::G1 *result = new ::G1(_this + _other);
+    if (result->g.iszero()) {
+        delete result;
+        deref();
+        d = 0;
+        return *this;
+    }
     if (d->c) {
         --d->c;
-        d = new SharedData(result);
+        d = new SharedData(reinterpret_cast<void*>(result));
     } else {
         delete reinterpret_cast< ::G1* >(d->p);
-        d->p = result;
+        d->p = reinterpret_cast<void*>(result);
     }
     return *this;
 }
@@ -244,13 +261,19 @@ G1 &G1::operator-=(const G1 other) {
         return *this;
     }
     const ::G1 &_this = *reinterpret_cast< ::G1* >(d->p);
-    void *result = reinterpret_cast<void*>(new ::G1(_this + (-_other)));
+    ::G1 *result = new ::G1(_this + (-_other));
+    if (result->g.iszero()) {
+        delete result;
+        deref();
+        d = 0;
+        return *this;
+    }
     if (d->c) {
         --d->c;
-        d = new SharedData(result);
+        d = new SharedData(reinterpret_cast<void*>(result));
     } else {
         delete reinterpret_cast< ::G1* >(d->p);
-        d->p = result;
+        d->p = reinterpret_cast<void*>(result);
     }
     return *this;
 }
@@ -301,7 +324,7 @@ bool G1::operator==(const G1 other) const {
     if (!d) return !other.d;
     if (!other.d) return false;
     const ::G1 &_this = *reinterpret_cast< ::G1* >(d->p);
-    const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
+    const ::G1 &_other = *reinterpret_cast< ::G1* >(other.d->p);
     return (_this == _other);
 }
 
@@ -351,7 +374,7 @@ G1 G1::getValue(const char *data, int len, bool compressed) {
     if (compressed) {
         int lsb = (int) *(data++);
         ::G1 *el = new ::G1();
-        el->g.set(from_binary(len - 1, const_cast<char*>(data)), 1 - lsb);
+        el->g.set(from_binary(len - 1, const_cast<char*>(data)), lsb);
         return G1(reinterpret_cast<void*>(el));
     } else {
         if (len & 1)
