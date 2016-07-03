@@ -11,7 +11,6 @@ if [ ! -f "miracl/miracl.h" ]; then
 fi
 if [ ! -f miracl/miracl.a ]; then
     cp "install_files/linux64_cpp.sh" miracl/
-    cp "install_files/bn_pair.cpp" miracl/
     cd miracl/
     echo "Compiling the MIRACL library..."
     bash linux64_cpp.sh
