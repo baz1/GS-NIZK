@@ -31,7 +31,8 @@ config_lib {
 CONFIG += c++11
 
 SOURCES += gsnizk.cpp \
-    pairings.cpp
+    pairings.cpp \
+    test.cpp
 
 HEADERS += gsnizk.h \
     pairings.h

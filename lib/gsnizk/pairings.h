@@ -105,17 +105,17 @@ public:
     G2 operator-(const G2 other) const;
     G2 &operator+=(const G2 other);
     G2 &operator-=(const G2 other);
-    G1 &operator*=(const Fp other);
-    G1 operator*(const Fp other) const;
+    G2 &operator*=(const Fp other);
+    G2 operator*(const Fp other) const;
     friend G2 operator*(const Fp &m, const G2 &g);
     bool operator==(const G2 other) const;
     inline bool operator!=(const G2 other) const;
-    int getDataLen() const;
-    void getData(char *data) const;
+    int getDataLen(bool compressed = false) const;
+    void getData(char *data, bool compressed = false) const;
     inline bool isNull() const;
 public:
     static G2 getRand();
-    static G2 getValue(const char *data, int len);
+    static G2 getValue(const char *data, int len, bool compressed = false);
 private:
     inline explicit G2(void *v);
     inline explicit G2(SharedData *d);

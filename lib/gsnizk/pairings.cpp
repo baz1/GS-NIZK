@@ -36,6 +36,8 @@ template <typename T> inline const T &max(const T &a, const T &b) { return (a < 
 #define unlikely(x)     (x)
 #endif /* __GNUC__ */
 
+#define MIRACL_BYTES (MIRACL / 8)
+
 void initialize_pairings(int len, char *rndData) {
     csprng *rnd = new csprng;
     strong_init(rnd, len, rndData, (unsigned int) clock());
@@ -161,12 +163,12 @@ bool Fp::operator==(const Fp other) const {
 
 int Fp::getDataLen() const {
     const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
-    return _this.len() * (MIRACL / 8);
+    return _this.len() * MIRACL_BYTES;
 }
 
 void Fp::getData(char *data) const {
     const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
-    to_binary(_this, _this.len() * (MIRACL / 8), data, TRUE);
+    to_binary(_this, _this.len() * MIRACL_BYTES, data, TRUE);
 }
 
 bool Fp::isNull() const {
@@ -330,26 +332,23 @@ bool G1::operator==(const G1 other) const {
 
 int G1::getDataLen(bool compressed) const {
     if (!d) return 0;
-    const ::G1 &_this = *reinterpret_cast< ::G1* >(d->p);
     if (compressed) {
-        ::Big x;
-        _this.g.get(x);
-        return x.len() * (MIRACL / 8) + 1;
+        return pfc->mod->len() * MIRACL_BYTES + 1;
     } else {
-        return pfc->mod->len() * (2 * (MIRACL / 8));
+        return pfc->mod->len() * 2 * MIRACL_BYTES;
     }
 }
 
 void G1::getData(char *data, bool compressed) const {
     if (!d) return;
     const ::G1 &_this = *reinterpret_cast< ::G1* >(d->p);
+    int len = pfc->mod->len() * MIRACL_BYTES;
     if (compressed) {
         ::Big x;
         int lsb = _this.g.get(x);
         *data = (char) lsb;
-        to_binary(x, x.len() * (MIRACL / 8), data + 1, TRUE);
+        to_binary(x, len, data + 1, TRUE);
     } else {
-        int len = pfc->mod->len() * (MIRACL / 8);
         ::Big x, y;
         _this.g.get(x, y);
         to_binary(x, len, data, TRUE);
@@ -370,20 +369,18 @@ G1 G1::getRand() {
 
 G1 G1::getValue(const char *data, int len, bool compressed) {
     if (!len) return G1();
+    ::G1 *el = new ::G1();
     // Note: Sorry about the following const_cast-s, const keyword simply missing in from_binary
     if (compressed) {
         int lsb = (int) *(data++);
-        ::G1 *el = new ::G1();
         el->g.set(from_binary(len - 1, const_cast<char*>(data)), lsb);
-        return G1(reinterpret_cast<void*>(el));
     } else {
         if (len & 1)
             throw "pairings::G1::getValue: Unexpected data length";
-        ::G1 *el = new ::G1();
         len >>= 1;
         el->g.set(from_binary(len, const_cast<char*>(data)), from_binary(len, const_cast<char*>(data + len)));
-        return G1(reinterpret_cast<void*>(el));
     }
+    return G1(reinterpret_cast<void*>(el));
 }
 
 void G1::deref() {
@@ -395,8 +392,239 @@ void G1::deref() {
     }
 }
 
+G2 G2::operator-() const {
+    if (!d) return G2();
+    const ::G2 &_this = *reinterpret_cast< ::G2* >(d->p);
+    return G2(reinterpret_cast<void*>(new ::G2(-_this)));
+}
+
+/* Replacement for faulty "G2 operator+(const G2& x,const G2& y)" */
+::G2 *addG2(const ::G2 &a, const ::G2 &b) {
+    ::G2 *result;
+    if (b.g.type() == MR_EPOINT_GENERAL) {
+        if ((a.g.type() != MR_EPOINT_GENERAL) || (&a == &b)) {
+            result = new ::G2(b);
+            result->g += a.g;
+            return result;
+        }
+        b.g.norm();
+    }
+    result = new ::G2(a);
+    result->g += b.g;
+    return result;
+}
+
+G2 G2::operator+(const G2 other) const {
+    if (!d) return other;
+    if (!other.d) return *this;
+    const ::G2 &_this = *reinterpret_cast< ::G2* >(d->p);
+    const ::G2 &_other = *reinterpret_cast< ::G2* >(other.d->p);
+    ::G2 *result = addG2(_this, _other);
+    if (result->g.iszero()) {
+        delete result;
+        return G2();
+    }
+    return G2(reinterpret_cast<void*>(result));
+}
+
+G2 G2::operator-(const G2 other) const {
+    if (!other.d) return *this;
+    const ::G2 &_other = *reinterpret_cast< ::G2* >(other.d->p);
+    if (!d) return G2(reinterpret_cast<void*>(new ::G2(-_other)));
+    const ::G2 &_this = *reinterpret_cast< ::G2* >(d->p);
+    ::G2 m_other = -_other;
+    ::G2 *result = addG2(_this, m_other);
+    if (result->g.iszero()) {
+        delete result;
+        return G2();
+    }
+    return G2(reinterpret_cast<void*>(result));
+}
+
+G2 &G2::operator+=(const G2 other) {
+    if (!other.d) return *this;
+    const ::G2 &_other = *reinterpret_cast< ::G2* >(other.d->p);
+    if (!d) {
+        ++(d = other.d)->c;
+        return *this;
+    }
+    const ::G2 &_this = *reinterpret_cast< ::G2* >(d->p);
+    ::G2 *result = addG2(_this, _other);
+    if (result->g.iszero()) {
+        delete result;
+        deref();
+        d = 0;
+        return *this;
+    }
+    if (d->c) {
+        --d->c;
+        d = new SharedData(reinterpret_cast<void*>(result));
+    } else {
+        delete reinterpret_cast< ::G2* >(d->p);
+        d->p = reinterpret_cast<void*>(result);
+    }
+    return *this;
+}
+
+G2 &G2::operator-=(const G2 other) {
+    if (!other.d) return *this;
+    const ::G2 &_other = *reinterpret_cast< ::G2* >(other.d->p);
+    if (!d) {
+        d = new SharedData(reinterpret_cast<void*>(new ::G2(-_other)));
+        return *this;
+    }
+    const ::G2 &_this = *reinterpret_cast< ::G2* >(d->p);
+    ::G2 m_other = -_other;
+    ::G2 *result = addG2(_this, m_other);
+    if (result->g.iszero()) {
+        delete result;
+        deref();
+        d = 0;
+        return *this;
+    }
+    if (d->c) {
+        --d->c;
+        d = new SharedData(reinterpret_cast<void*>(result));
+    } else {
+        delete reinterpret_cast< ::G2* >(d->p);
+        d->p = reinterpret_cast<void*>(result);
+    }
+    return *this;
+}
+
+G2 &G2::operator*=(const Fp other) {
+    if (!d) return *this;
+    if (other.isNull()) {
+        deref();
+        d = 0;
+        return *this;
+    }
+    // Note: Since neither this group element nor the scalar are null,
+    // the result won't be null either.
+    const ::G2 &_this = *reinterpret_cast< ::G2* >(d->p);
+    const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
+    void *result = reinterpret_cast<void*>(new ::G2(pfc->mult(_this, _other)));
+    if (d->c) {
+        --d->c;
+        d = new SharedData(result);
+    } else {
+        delete reinterpret_cast< ::G2* >(d->p);
+        d->p = result;
+    }
+    return *this;
+}
+
+G2 G2::operator*(const Fp other) const {
+    if (!d) return *this;
+    if (other.isNull()) return G2();
+    // Note: Since neither this group element nor the scalar are null,
+    // the result won't be null either.
+    const ::G2 &_this = *reinterpret_cast< ::G2* >(d->p);
+    const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
+    return G2(reinterpret_cast<void*>(new ::G2(pfc->mult(_this, _other))));
+}
+
+G2 operator*(const Fp &m, const G2 &g) {
+    if (!g.d) return g;
+    if (m.isNull()) return G2();
+    // Note: Since neither this group element nor the scalar are null,
+    // the result won't be null either.
+    const ::G2 &_g = *reinterpret_cast< ::G2* >(g.d->p);
+    const ::Big &_m = *reinterpret_cast< ::Big* >(m.d->p);
+    return G2(reinterpret_cast<void*>(new ::G2(pfc->mult(_g, _m))));
+}
+
+bool G2::operator==(const G2 other) const {
+    if (!d) return !other.d;
+    if (!other.d) return false;
+    const ::G2 &_this = *reinterpret_cast< ::G2* >(d->p);
+    const ::G2 &_other = *reinterpret_cast< ::G2* >(other.d->p);
+    // Note: Sorry about the following const_cast-s, const keyword simply missing in ::G2::operator==
+    return (const_cast< ::G2&>(_this) == const_cast< ::G2&>(_other));
+}
+
+int G2::getDataLen(bool compressed) const {
+    if (!d) return 0;
+    if (compressed) {
+        return pfc->mod->len() * (2 * MIRACL_BYTES) + 1;
+    } else {
+        return pfc->mod->len() * (4 * MIRACL_BYTES);
+    }
+}
+
+void G2::getData(char *data, bool compressed) const {
+    if (!d) return;
+    const ::G2 &_this = *reinterpret_cast< ::G2* >(d->p);
+    int len = pfc->mod->len() * MIRACL_BYTES;
+    ::ZZn2 x, y;
+    _this.g.get(x, y);
+    if (compressed) {
+        ::Big b1, b2;
+        y.get(b1);
+        *data = (char) (b1.get(1) & 1);
+        x.get(b1, b2);
+        to_binary(b1, len, ++data, TRUE);
+        to_binary(b2, len, data + len, TRUE);
+    } else {
+        ::Big b1, b2, b3, b4;
+        x.get(b1, b2);
+        y.get(b3, b4);
+        to_binary(b1, len, data, TRUE);
+        to_binary(b2, len, data += len, TRUE);
+        to_binary(b3, len, data += len, TRUE);
+        to_binary(b4, len, data + len, TRUE);
+    }
+}
+
+G2 G2::getRand() {
+    ::G2 *el = new ::G2();
+    pfc->random(*el);
+    // Following is very unlikely, but we still want to handle it
+    if (unlikely(el->g.iszero())) {
+        delete el;
+        return G2();
+    }
+    return G2(reinterpret_cast<void*>(el));
+}
+
+G2 G2::getValue(const char *data, int len, bool compressed) {
+    if (!len) return G2();
+    ::G2 *el = new ::G2();
+    // Note: Sorry about the following const_cast-s, const keyword simply missing in from_binary
+    if (compressed) {
+        int lsb = (int) *(data++);
+        if ((--len) & 1)
+            throw "pairings::G2::getValue: Unexpected data length";
+        len >>= 1;
+        ::Big b1, b2;
+        b1 = from_binary(len, const_cast<char*>(data));
+        b2 = from_binary(len, const_cast<char*>(data + len));
+        ZZn2 x, y;
+        x.set(b1, b2);
+        el->g.set(x);
+        el->g.get(x, y);
+        y.get(b1);
+        if ((b1.get(1) & 1) != lsb)
+            *el = -(*el);
+    } else {
+        if (len & 3)
+            throw "pairings::G2::getValue: Unexpected data length";
+        len >>= 2;
+        ::Big b1, b2, b3, b4;
+        b1 = from_binary(len, const_cast<char*>(data));
+        b2 = from_binary(len, const_cast<char*>(data += len));
+        b3 = from_binary(len, const_cast<char*>(data += len));
+        b4 = from_binary(len, const_cast<char*>(data + len));
+        ZZn2 x, y;
+        x.set(b1, b2);
+        y.set(b3, b4);
+        el->g.set(x, y);
+    }
+    return G2(reinterpret_cast<void*>(el));
+}
+
 void G2::deref() {
-    if (!d->c) {
+    if (d->c) {
         --d->c;
     } else {
         delete reinterpret_cast< ::G2* >(d->p);
@@ -405,7 +633,7 @@ void G2::deref() {
 }
 
 void GT::deref() {
-    if (!d->c) {
+    if (d->c) {
         --d->c;
     } else {
         delete reinterpret_cast< ::GT* >(d->p);
