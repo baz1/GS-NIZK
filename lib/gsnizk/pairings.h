@@ -139,7 +139,6 @@ public:
     GT &operator/=(const GT other);
     GT &operator^=(const Fp other);
     GT operator^(const Fp other) const;
-    friend GT operator^(const Fp &m, const GT &g);
     bool operator==(const GT other) const;
     inline bool operator!=(const GT other) const;
     int getDataLen() const;

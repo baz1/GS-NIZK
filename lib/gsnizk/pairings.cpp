@@ -759,16 +759,6 @@ GT GT::operator^(const Fp other) const {
     return GT(reinterpret_cast<void*>(new ::GT(pfc->power(_this, _other))));
 }
 
-GT operator^(const Fp &m, const GT &g) {
-    if (!g.d) return g;
-    if (m.isNull()) return GT();
-    // Note: Since neither this group element nor the scalar are null,
-    // the result won't be null either.
-    const ::GT &_g = *reinterpret_cast< ::GT* >(g.d->p);
-    const ::Big &_m = *reinterpret_cast< ::Big* >(m.d->p);
-    return GT(reinterpret_cast<void*>(new ::GT(pfc->power(_g, _m))));
-}
-
 bool GT::operator==(const GT other) const {
     if (!d) return !other.d;
     if (!other.d) return false;
