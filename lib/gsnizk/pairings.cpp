@@ -38,15 +38,23 @@ template <typename T> inline const T &max(const T &a, const T &b) { return (a < 
 
 #define MIRACL_BYTES (MIRACL / 8)
 
+static ::GT *rndSeed = 0;
+
 void initialize_pairings(int len, char *rndData) {
     csprng *rnd = new csprng;
     strong_init(rnd, len, rndData, (unsigned int) clock());
     pfc = new PFC(AES_SECURITY, rnd);
     Fp::zero = new SharedData(reinterpret_cast<void*>(new ::Big()));
     Fp::one = new SharedData(reinterpret_cast<void*>(new ::Big(1)));
+    ::G1 g1;
+    ::G2 g2;
+    pfc->random(g1);
+    pfc->random(g2);
+    rndSeed = new ::GT(pfc->pairing(g2, g1));
 }
 
 void terminate_pairings() {
+    delete rndSeed;
     if (Fp::zero->c) {
         --Fp::zero->c;
     } else {
@@ -631,6 +639,260 @@ void G2::deref() {
         delete reinterpret_cast< ::G2* >(d->p);
         delete d;
     }
+}
+
+GT GT::operator*(const GT other) const {
+    if (!d) return other;
+    if (!other.d) return *this;
+    const ::GT &_this = *reinterpret_cast< ::GT* >(d->p);
+    const ::GT &_other = *reinterpret_cast< ::GT* >(other.d->p);
+    ::GT *result = new ::GT(_this * _other);
+    if (result->g.isunity()) {
+        delete result;
+        return GT();
+    }
+    return GT(reinterpret_cast<void*>(result));
+}
+
+GT GT::operator/(const GT other) const {
+    if (!other.d) return *this;
+    const ::GT &_other = *reinterpret_cast< ::GT* >(other.d->p);
+    ::GT *result;
+    if (!d) {
+        result = new ::GT();
+        result->g = inverse(_other.g);
+        return GT(reinterpret_cast<void*>(result));
+    }
+    const ::GT &_this = *reinterpret_cast< ::GT* >(d->p);
+    result = new ::GT(_this);
+    result->g /= _other.g;
+    if (result->g.isunity()) {
+        delete result;
+        return GT();
+    }
+    return GT(reinterpret_cast<void*>(result));
+}
+
+GT &GT::operator*=(const GT other) {
+    if (!other.d) return *this;
+    const ::GT &_other = *reinterpret_cast< ::GT* >(other.d->p);
+    if (!d) {
+        ++(d = other.d)->c;
+        return *this;
+    }
+    const ::GT &_this = *reinterpret_cast< ::GT* >(d->p);
+    ::GT *result = new ::GT(_this * _other);
+    if (result->g.isunity()) {
+        delete result;
+        deref();
+        d = 0;
+        return *this;
+    }
+    if (d->c) {
+        --d->c;
+        d = new SharedData(reinterpret_cast<void*>(result));
+    } else {
+        delete reinterpret_cast< ::GT* >(d->p);
+        d->p = reinterpret_cast<void*>(result);
+    }
+    return *this;
+}
+
+GT &GT::operator/=(const GT other) {
+    if (!other.d) return *this;
+    const ::GT &_other = *reinterpret_cast< ::GT* >(other.d->p);
+    ::GT *result;
+    if (!d) {
+        result = new ::GT();
+        result->g = inverse(_other.g);
+        d = new SharedData(reinterpret_cast<void*>(result));
+        return *this;
+    }
+    const ::GT &_this = *reinterpret_cast< ::GT* >(d->p);
+    result = new ::GT(_this);
+    result->g /= _other.g;
+    if (result->g.isunity()) {
+        delete result;
+        deref();
+        d = 0;
+        return *this;
+    }
+    if (d->c) {
+        --d->c;
+        d = new SharedData(reinterpret_cast<void*>(result));
+    } else {
+        delete reinterpret_cast< ::GT* >(d->p);
+        d->p = reinterpret_cast<void*>(result);
+    }
+    return *this;
+}
+
+GT &GT::operator^=(const Fp other) {
+    if (!d) return *this;
+    if (other.isNull()) {
+        deref();
+        d = 0;
+        return *this;
+    }
+    // Note: Since neither this group element nor the scalar are null,
+    // the result won't be null either.
+    const ::GT &_this = *reinterpret_cast< ::GT* >(d->p);
+    const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
+    void *result = reinterpret_cast<void*>(new ::GT(pfc->power(_this, _other)));
+    if (d->c) {
+        --d->c;
+        d = new SharedData(result);
+    } else {
+        delete reinterpret_cast< ::GT* >(d->p);
+        d->p = result;
+    }
+    return *this;
+}
+
+GT GT::operator^(const Fp other) const {
+    if (!d) return *this;
+    if (other.isNull()) return GT();
+    // Note: Since neither this group element nor the scalar are null,
+    // the result won't be null either.
+    const ::GT &_this = *reinterpret_cast< ::GT* >(d->p);
+    const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
+    return GT(reinterpret_cast<void*>(new ::GT(pfc->power(_this, _other))));
+}
+
+GT operator^(const Fp &m, const GT &g) {
+    if (!g.d) return g;
+    if (m.isNull()) return GT();
+    // Note: Since neither this group element nor the scalar are null,
+    // the result won't be null either.
+    const ::GT &_g = *reinterpret_cast< ::GT* >(g.d->p);
+    const ::Big &_m = *reinterpret_cast< ::Big* >(m.d->p);
+    return GT(reinterpret_cast<void*>(new ::GT(pfc->power(_g, _m))));
+}
+
+bool GT::operator==(const GT other) const {
+    if (!d) return !other.d;
+    if (!other.d) return false;
+    const ::GT &_this = *reinterpret_cast< ::GT* >(d->p);
+    const ::GT &_other = *reinterpret_cast< ::GT* >(other.d->p);
+    return (_this == _other);
+}
+
+int GT::getDataLen() const {
+    if (!d) return 0;
+    return pfc->mod->len() * 12 * MIRACL_BYTES;
+}
+
+void GT::getData(char *data) const {
+    if (!d) return;
+    const ::GT &_this = *reinterpret_cast< ::GT* >(d->p);
+    int len = pfc->mod->len() * MIRACL_BYTES;
+    ::ZZn4 a, b, c;
+    ::ZZn2 x, y;
+    ::Big b1, b2;
+    _this.g.get(a, b, c);
+    a.get(x, y);
+    x.get(b1, b2);
+    to_binary(b1, len, data, TRUE);
+    to_binary(b2, len, data += len, TRUE);
+    y.get(b1, b2);
+    to_binary(b1, len, data += len, TRUE);
+    to_binary(b2, len, data += len, TRUE);
+    b.get(x, y);
+    x.get(b1, b2);
+    to_binary(b1, len, data += len, TRUE);
+    to_binary(b2, len, data += len, TRUE);
+    y.get(b1, b2);
+    to_binary(b1, len, data += len, TRUE);
+    to_binary(b2, len, data += len, TRUE);
+    c.get(x, y);
+    x.get(b1, b2);
+    to_binary(b1, len, data += len, TRUE);
+    to_binary(b2, len, data += len, TRUE);
+    y.get(b1, b2);
+    to_binary(b1, len, data += len, TRUE);
+    to_binary(b2, len, data + len, TRUE);
+}
+
+GT GT::getRand() {
+    ::Big b;
+    pfc->random(b);
+    ::GT *el = new ::GT(pfc->power(*rndSeed, b));
+    // Following is very unlikely, but we still want to handle it
+    if (unlikely(el->g.iszero())) {
+        delete el;
+        return GT();
+    }
+    return GT(reinterpret_cast<void*>(el));
+}
+
+GT GT::getValue(const char *data, int len) {
+    if (!len) return GT();
+    ::GT *el = new ::GT();
+    // Note: Sorry about the following const_cast-s, const keyword simply missing in from_binary
+    if (len % 12)
+        throw "pairings::GT::getValue: Unexpected data length";
+    len /= 12;
+    ::ZZn4 a, b, c;
+    ::ZZn2 x, y;
+    ::Big b1, b2;
+    b1 = from_binary(len, const_cast<char*>(data));
+    b2 = from_binary(len, const_cast<char*>(data += len));
+    x.set(b1, b2);
+    b1 = from_binary(len, const_cast<char*>(data += len));
+    b2 = from_binary(len, const_cast<char*>(data += len));
+    y.set(b1, b2);
+    a.set(x, y);
+    b1 = from_binary(len, const_cast<char*>(data += len));
+    b2 = from_binary(len, const_cast<char*>(data += len));
+    x.set(b1, b2);
+    b1 = from_binary(len, const_cast<char*>(data += len));
+    b2 = from_binary(len, const_cast<char*>(data += len));
+    y.set(b1, b2);
+    b.set(x, y);
+    b1 = from_binary(len, const_cast<char*>(data += len));
+    b2 = from_binary(len, const_cast<char*>(data += len));
+    x.set(b1, b2);
+    b1 = from_binary(len, const_cast<char*>(data += len));
+    b2 = from_binary(len, const_cast<char*>(data + len));
+    y.set(b1, b2);
+    c.set(x, y);
+    el->g.set(a, b, c);
+    return GT(reinterpret_cast<void*>(el));
+}
+
+GT GT::pairing(const G1 a, const G2 b) {
+    if ((!a.d) || (!b.d))
+        return GT();
+    const ::G1 &_a = *reinterpret_cast< ::G1* >(a.d->p);
+    const ::G2 &_b = *reinterpret_cast< ::G2* >(b.d->p);
+    ::GT *el = new ::GT(pfc->pairing(_b, _a));
+    return GT(reinterpret_cast<void*>(el));
+}
+
+GT GT::pairing(const std::vector< std::pair<G1,G2> > lst) {
+    ::G1 **a = new ::G1*[lst.size()];
+    ::G2 **b = new ::G2*[lst.size()];
+    int i = 0;
+    for (const std::pair<G1,G2> &p : lst) {
+        if ((!p.first.d) || (!p.second.d))
+            continue;
+        a[i] = reinterpret_cast< ::G1* >(p.first.d->p);
+        b[i] = reinterpret_cast< ::G2* >(p.second.d->p);
+        ++i;
+    }
+    if (!i) {
+        delete[] a;
+        delete[] b;
+        return GT();
+    }
+    ::GT *el = new ::GT(pfc->multi_pairing(i, b, a));
+    delete[] a;
+    delete[] b;
+    if (el->g.isunity()) {
+        delete el;
+        return GT();
+    }
+    return GT(reinterpret_cast<void*>(el));
 }
 
 void GT::deref() {

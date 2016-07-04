@@ -11,7 +11,7 @@ using namespace pairings;
 
 int main() {
     int len;
-    char data[256];
+    char data[512];
     initialize_pairings(0, 0);
 
     /* -------------------- Tests for Fp -------------------- */
@@ -93,6 +93,27 @@ int main() {
     ASSERT((Fp(3) * h1) == (h1 + h3));
     ASSERT((-h1) == (Fp(-1) * h1));
     ASSERT((h1 - h1).isNull());
+
+    /* -------------------- Tests for GT -------------------- */
+    GT t1 = GT::getRand(), t2, t3, t4;
+    ASSERT(t1 != t2); // Note: Just highly unlikely if the randomness is fine
+    t2 = GT::getRand();
+    ASSERT(t1 != t2); // Note: Just highly unlikely if the randomness is fine
+    len = t1.getDataLen();
+    cout << "Len for random GT: " << len << endl;
+    cout << "Testing transfers..." << endl;
+    for (int i = 0; i < TRANSFER_TESTS; ++i) {
+        t1 = GT::getRand();
+        t1.getData(data);
+        t2 = GT::getValue(data, len);
+        ASSERT(t1 == t2);
+    }
+    t1 = GT::getRand();
+    t3 = t1;
+    t3 *= t3;
+    ASSERT((t1 ^ Fp(3)) == (t1 * t3));
+    ASSERT((GT() / t1) == (t1 ^ Fp(-1)));
+    ASSERT((t1 / t1).isUnity());
 
     terminate_pairings();
     cout << "Done." << endl;

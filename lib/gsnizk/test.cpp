@@ -11,12 +11,9 @@
 
 using namespace std;
 
+
+
 int main2() {
     PFC pfc(AES_SECURITY);
-    G2 t1, t2, t3;
-    pfc.random(t1);
-    t2 = t1 + t1;
-    //t2.g.norm();
-    t3 = t1 + t2;
     return 0;
 }

@@ -141,12 +141,12 @@ public:
     inline bool operator!=(const GT other) const;
     int getDataLen() const;
     void getData(char *data) const;
-    bool isUnity() const;
+    inline bool isUnity() const;
 public:
     static GT getRand();
     static GT getValue(const char *data, int len);
     static GT pairing(const G1 a, const G2 b);
-    static GT pairing(const std::vector< std::pair<G1,G2> > p);
+    static GT pairing(const std::vector< std::pair<G1,G2> > lst);
 private:
     inline explicit GT(void *v);
     inline explicit GT(SharedData *d);
@@ -244,6 +244,8 @@ inline GT &GT::operator=(const GT other) {
 inline bool GT::operator!=(const GT other) const {
     return !(*this == other);
 }
+
+inline bool GT::isUnity() const { return !d; }
 
 inline GT::GT(void *v) : d(new SharedData(v)) {}
 
