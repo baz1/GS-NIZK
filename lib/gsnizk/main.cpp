@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cstdlib>
 
 #include "pairings.h"
 
@@ -7,7 +8,9 @@ using namespace pairings;
 
 #define ASSERT(X) if (!(X)) cerr << "Error: Assert of " << #X << " at line " << __LINE__ << " failed!" << endl
 
-#define TRANSFER_TESTS 5
+#define TRANSFER_TESTS 100
+#define PAIRING_TESTS 100
+#define PAIRING_COUNT_MAX 10
 
 int main() {
     int len;
@@ -114,6 +117,30 @@ int main() {
     ASSERT((t1 ^ Fp(3)) == (t1 * t3));
     ASSERT((GT() / t1) == (t1 ^ Fp(-1)));
     ASSERT((t1 / t1).isUnity());
+
+    /* -------------------- Pairing tests -------------------- */
+    g1 = G1::getRand();
+    h1 = G2::getRand();
+    cout << "Testing simple pairings..." << endl;
+    for (int i = 0; i < PAIRING_TESTS; ++i) {
+        v1 = Fp::getRand();
+        v2 = Fp::getRand();
+        ASSERT(GT::pairing(v1 * g1, v2 * h1) == (GT::pairing(g1, h1) ^ (v1 * v2)));
+    }
+    cout << "Testing multiple pairings..." << endl;
+    for (int i = 0; i < PAIRING_TESTS; ++i) {
+        std::vector< std::pair<G1,G2> > pairs;
+        int n = rand() % PAIRING_COUNT_MAX;
+        pairs.reserve(n);
+        t1 = GT();
+        while (n--) {
+            g1 = G1::getRand();
+            h1 = G2::getRand();
+            t1 *= GT::pairing(g1, h1);
+            pairs.push_back(std::pair<G1,G2>(g1, h1));
+        }
+        ASSERT(t1 == GT::pairing(pairs));
+    }
 
     terminate_pairings();
     cout << "Done." << endl;
