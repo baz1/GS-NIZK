@@ -10,12 +10,21 @@
 //#define AES_SECURITY 192
 #endif /* Not AES_SECURITY */
 
+#ifndef HASH_LEN_BITS
+#define HASH_LEN_BITS 256
+//#define HASH_LEN_BITS 512
+#endif
+
+#define HASH_LEN_BYTES  (HASH_LEN_BITS / 8)
+
 #define BUFFER_SIZE 128
 
 #include "pairing_3.h"
 
 #include <cstring>
 #include <ctime>
+
+#define MIRACL_BYTES (MIRACL / 8)
 
 namespace pairings {
 
@@ -29,14 +38,29 @@ template <typename T> inline const T &max(const T &a, const T &b) { return (a < 
 // Note: The following is used more for an indication and hint for the readers
 // rather than an efficiency improvement.
 #ifdef __GNUC__
-#define likely(x)       __builtin_expect(!!(x), 1)
-#define unlikely(x)     __builtin_expect(!!(x), 0)
+#define LIKELY(x)       __builtin_expect(!!(x), 1)
+#define UNLIKELY(x)     __builtin_expect(!!(x), 0)
+#define NB_BITS(x)      ((sizeof(unsigned long) * 8) - __builtin_clzl((unsigned long) (x)))
 #else
-#define likely(x)       (x)
-#define unlikely(x)     (x)
+#define LIKELY(x)       (x)
+#define UNLIKELY(x)     (x)
+inline int count_bits(unsigned long x) {
+    int r = 1;
+    while (x >>= 1) ++r;
+    return r;
+}
+#define NB_BITS(x)      count_bits((unsigned long) (x))
 #endif /* __GNUC__ */
 
-#define MIRACL_BYTES (MIRACL / 8)
+/* Get the number of bits in the big number n */
+/* (Note: unused)
+int getNBits(const Big &n) {
+    int i = n.len();
+    while ((--i >= 0) && (!n[i]));
+    if (i < 0) return 0;
+    return NB_BITS(n[i]) + i * sizeof(mr_small);
+}
+// */
 
 static ::GT *rndSeed = 0;
 
@@ -70,6 +94,45 @@ void terminate_pairings() {
     strong_kill(pfc->RNG);
     delete pfc->RNG;
     delete pfc;
+}
+
+/* Efficiency-improved hash-map function */
+::Big hashToZZn(const char *data, int len, const ::Big &n) {
+    char s[HASH_LEN_BYTES];
+#if HASH_LEN_BITS == 256
+    {
+        sha256 sh;
+        shs256_init(&sh);
+        for (int i = 0; i < len; i++)
+        {
+            shs256_process(&sh, (int) data[i]);
+        }
+        shs256_hash(&sh, s);
+    }
+#elif HASH_LEN_BITS == 512
+    {
+        sha512 sh;
+        shs512_init(&sh);
+        for (int i = 0; i < len; i++)
+        {
+            shs512_process(&sh, (int) data[i]);
+        }
+        shs512_hash(&sh, s);
+    }
+#else
+#error Error: Invalid value of HASH_LEN_BITS (pairings)
+#endif
+    ::Big result(n);
+    char *ptr = reinterpret_cast<char*>(&result[0]);
+    int remaining = result.len() * MIRACL_BYTES;
+    while (remaining) {
+        len = min(remaining, HASH_LEN_BYTES);
+        memcpy(ptr, s, len);
+        remaining -= len;
+        ptr += len;
+    }
+    result %= n;
+    return result;
 }
 
 Fp::Fp(int i) : d(new SharedData(reinterpret_cast<void*>(i >= 0 ? (new ::Big(i)) :
@@ -195,6 +258,10 @@ Fp Fp::getRand() {
 Fp Fp::getValue(const char *data, int len) {
     // Note: Sorry about the following const_cast, const keyword simply missing in from_binary
     return Fp(reinterpret_cast<void*>(new ::Big(from_binary(len, const_cast<char*>(data)))));
+}
+
+Fp Fp::fromHash(const char *data, int len) {
+    return Fp(reinterpret_cast<void*>(new ::Big(hashToZZn(data, len, *pfc->ord))));
 }
 
 void Fp::deref() {
@@ -368,7 +435,7 @@ G1 G1::getRand() {
     ::G1 *el = new ::G1();
     pfc->random(*el);
     // Following is very unlikely, but we still want to handle it
-    if (unlikely(el->g.iszero())) {
+    if (UNLIKELY(el->g.iszero())) {
         delete el;
         return G1();
     }
@@ -589,7 +656,7 @@ G2 G2::getRand() {
     ::G2 *el = new ::G2();
     pfc->random(*el);
     // Following is very unlikely, but we still want to handle it
-    if (unlikely(el->g.iszero())) {
+    if (UNLIKELY(el->g.iszero())) {
         delete el;
         return G2();
     }
@@ -808,7 +875,7 @@ GT GT::getRand() {
     pfc->random(b);
     ::GT *el = new ::GT(pfc->power(*rndSeed, b));
     // Following is very unlikely, but we still want to handle it
-    if (unlikely(el->g.iszero())) {
+    if (UNLIKELY(el->g.iszero())) {
         delete el;
         return GT();
     }
