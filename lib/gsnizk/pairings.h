@@ -53,6 +53,7 @@ public:
     static Fp getUnit();
     static Fp getRand();
     static Fp getValue(const char *data, int len);
+    static Fp fromHash(const char *data, int len);
 private:
     inline explicit Fp(void *v);
     inline explicit Fp(SharedData *d);
@@ -85,6 +86,7 @@ public:
 public:
     static G1 getRand();
     static G1 getValue(const char *data, int len, bool compressed = false);
+    static G1 fromHash(const char *data, int len);
 private:
     inline explicit G1(void *v);
     inline explicit G1(SharedData *d);
@@ -116,6 +118,7 @@ public:
 public:
     static G2 getRand();
     static G2 getValue(const char *data, int len, bool compressed = false);
+    static G2 fromHash(const char *data, int len);
 private:
     inline explicit G2(void *v);
     inline explicit G2(SharedData *d);
@@ -147,6 +150,7 @@ public:
     static GT getValue(const char *data, int len);
     static GT pairing(const G1 a, const G2 b);
     static GT pairing(const std::vector< std::pair<G1,G2> > lst);
+    static GT fromHash(const char *data, int len);
 private:
     inline explicit GT(void *v);
     inline explicit GT(SharedData *d);
