@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2016, Remi Bazin <bazin.remi@gmail.com>
+ * See LICENSE for licensing details.
+ */
+
 #include "pairings.h"
 
 #if defined(USE_MIRACL)
