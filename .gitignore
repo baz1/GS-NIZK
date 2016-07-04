@@ -2,4 +2,4 @@ install_files/master.zip
 miracl/
 build-*
 *.pro.user
-
+doc/

@@ -1,0 +1,62 @@
+project = GS-NIZK
+description = Groth and Sahai NIZK proof system
+
+sources.fileextensions = "*.cpp *.qdoc"
+headers.fileextensions = "*.h"
+
+outputformats = HTML
+
+
+HTML.nonavigationbar      = "false"
+
+HTML.extraimages += doctemplate/images/arrow_bc.png \
+                    doctemplate/images/home.png \
+                    doctemplate/images/ico_out.png \
+                    doctemplate/images/ico_note.png \
+                    doctemplate/images/ico_note_attention.png \
+                    doctemplate/images/btn_prev.png \
+                    doctemplate/images/btn_next.png \
+                    doctemplate/images/bullet_dn.png \
+                    doctemplate/images/bgrContent.png
+
+qhp.extraFiles +=   doctemplate/style/offline.css \
+                    doctemplate/images/arrow_bc.png \
+                    doctemplate/images/home.png \
+                    doctemplate/images/ico_out.png \
+                    doctemplate/images/ico_note.png \
+                    doctemplate/images/ico_note_attention.png \
+                    doctemplate/images/btn_prev.png \
+                    doctemplate/images/btn_next.png \
+                    doctemplate/images/bullet_dn.png \
+                    doctemplate/images/bgrContent.png
+
+HTML.stylesheets = doctemplate/style/offline.css
+
+HTML.headerstyles = "<link rel=\"stylesheet\" type=\"text/css\" href=\"style/offline.css\" />\n"
+HTML.endheader = "</head>\n"
+HTML.postheader = \
+    "<body>\n" \
+    "<div class=\"header\" id=\"qtdocheader\">\n"\
+    "    <div class=\"main\">\n" \
+    "    <div class=\"main-rounded\">\n" \
+    "        <div class=\"navigationbar\">\n"\
+    "        <ul>\n"
+HTML.postpostheader = \
+    "    </ul>\n"\
+    "    </div>\n" \
+    "</div>\n" \
+    "<div class=\"content\">\n" \
+    "<div class=\"line\">\n" \
+    "<div class=\"content mainContent\">\n"
+HTML.footer = \
+    "        </div>\n" \
+    "       </div>\n" \
+    "   </div>\n" \
+    "   </div>\n" \
+    "</div>\n"
+
+headerdirs = ../lib/gsnizk
+
+sourcedirs = ../lib/gsnizk
+
+outputdir = ../doc

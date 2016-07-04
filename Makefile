@@ -1,6 +1,7 @@
 SHELL=/bin/sh
+QDOC=qdoc
 
-all: miracllib doc
+all: miracllib doc/
 
 miracl/:
 	mkdir miracl
@@ -22,5 +23,6 @@ miracl/miracl.h: install_files/master.zip
 install_files/master.zip:
 	wget "https://github.com/miracl/MIRACL/archive/master.zip" -O install_files/master.zip
 
-doc:
+doc/: install_files/config.qdocconf install_files/doctemplate lib/gsnizk/*.h lib/gsnizk/*.cpp lib/gsnizk/*.qdoc
+	cd install_files/; $(QDOC) config.qdocconf
 
