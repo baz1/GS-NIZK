@@ -458,6 +458,18 @@ G1 G1::getValue(const char *data, int len, bool compressed) {
     return G1(reinterpret_cast<void*>(el));
 }
 
+G1 G1::fromHash(const char *data, int len) {
+    ::G1 *el = new ::G1();
+    ::Big x0 = hashToZZn(data, len, *pfc->mod);
+    while (!el->g.set(x0, x0)) ++x0;
+    // Following is very unlikely, but we still want to handle it
+    if (UNLIKELY(el->g.iszero())) {
+        delete el;
+        return G1();
+    }
+    return G1(reinterpret_cast<void*>(el));
+}
+
 void G1::deref() {
     if (d->c) {
         --d->c;
@@ -695,6 +707,63 @@ G2 G2::getValue(const char *data, int len, bool compressed) {
         x.set(b1, b2);
         y.set(b3, b4);
         el->g.set(x, y);
+    }
+    return G2(reinterpret_cast<void*>(el));
+}
+
+/* Fast multiplication of A by q (for Trace-Zero group members only)
+ * Calculate q*P. P(X,Y) -> P(X^p,Y^p))
+ * Function from the MIRACL library */
+void q_power_frobenius(::ECn2 &A, ::ZZn2 &F)
+{
+    ::ZZn2 x, y, z, w, r;
+    A.get(x, y, z);
+    w = F * F;
+    r = F;
+    x = w * conj(x);
+    y = r * w * conj(y);
+    z.conj();
+    A.set(x, y, z);
+}
+
+/* Faster Hashing to G2 - Fuentes-Castaneda, Knapp and Rodriguez-Henriquez
+ * Function from the MIRACL library */
+void map(::ECn2& S, ::Big &x, ::ZZn2 &F)
+{
+    ::ECn2 T, K;
+    T = S;
+    T *= x; // one multiplication by x only
+    T.norm();
+    K = T + T;
+    K += T;
+    K.norm();
+    q_power_frobenius(K, F);
+    q_power_frobenius(S, F);
+    q_power_frobenius(S, F);
+    q_power_frobenius(S, F);
+    S += T;
+    S += K;
+    q_power_frobenius(T, F);
+    q_power_frobenius(T, F);
+    S += T;
+    S.norm();
+}
+
+G2 G2::fromHash(const char *data, int len) {
+    ZZn2 X;
+    ::G2 *el = new ::G2();
+    ::Big x0 = hashToZZn(data, len, *pfc->mod);
+    forever {
+        ++x0;
+        X.set(ZZn(1), ZZn(x0));
+        /* TODO: Check that the LIKELY flag is not mistaken */
+        if (LIKELY(el->g.set(X))) break;
+    }
+    map(el->g, *pfc->x, *pfc->frob);
+    // Following is very unlikely, but we still want to handle it
+    if (UNLIKELY(el->g.iszero())) {
+        delete el;
+        return G2();
     }
     return G2(reinterpret_cast<void*>(el));
 }

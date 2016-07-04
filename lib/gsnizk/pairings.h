@@ -149,7 +149,6 @@ public:
     static GT getValue(const char *data, int len);
     static GT pairing(const G1 a, const G2 b);
     static GT pairing(const std::vector< std::pair<G1,G2> > lst);
-    static GT fromHash(const char *data, int len);
 private:
     inline explicit GT(void *v);
     inline explicit GT(SharedData *d);
