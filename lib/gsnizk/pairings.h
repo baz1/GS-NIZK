@@ -19,6 +19,9 @@ class G2;
 class GT;
 class Fp;
 
+int getHashLen();
+void getHash(const char *data, int len, char *hash);
+
 class Fp {
     friend class G1;
     friend class G2;
@@ -54,6 +57,7 @@ public:
     static Fp getRand();
     static Fp getValue(const char *data, int len);
     static Fp fromHash(const char *data, int len);
+    static Fp fromHash(const char *hash);
 private:
     inline explicit Fp(void *v);
     inline explicit Fp(SharedData *d);
@@ -87,6 +91,7 @@ public:
     static G1 getRand();
     static G1 getValue(const char *data, int len, bool compressed = false);
     static G1 fromHash(const char *data, int len);
+    static G1 fromHash(const char *hash);
 private:
     inline explicit G1(void *v);
     inline explicit G1(SharedData *d);
@@ -119,6 +124,7 @@ public:
     static G2 getRand();
     static G2 getValue(const char *data, int len, bool compressed = false);
     static G2 fromHash(const char *data, int len);
+    static G2 fromHash(const char *hash);
 private:
     inline explicit G2(void *v);
     inline explicit G2(SharedData *d);

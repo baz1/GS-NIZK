@@ -96,43 +96,50 @@ void terminate_pairings() {
     delete pfc;
 }
 
-/* Efficiency-improved hash-map function */
-::Big hashToZZn(const char *data, int len, const ::Big &n) {
-    char s[HASH_LEN_BYTES];
+int getHashLen() {
+    return HASH_LEN_BYTES;
+}
+
+void getHash(const char *data, int len, char *hash) {
 #if HASH_LEN_BITS == 256
+    sha256 sh;
+    shs256_init(&sh);
+    for (int i = 0; i < len; i++)
     {
-        sha256 sh;
-        shs256_init(&sh);
-        for (int i = 0; i < len; i++)
-        {
-            shs256_process(&sh, (int) data[i]);
-        }
-        shs256_hash(&sh, s);
+        shs256_process(&sh, (int) data[i]);
     }
+    shs256_hash(&sh, hash);
 #elif HASH_LEN_BITS == 512
+    sha512 sh;
+    shs512_init(&sh);
+    for (int i = 0; i < len; i++)
     {
-        sha512 sh;
-        shs512_init(&sh);
-        for (int i = 0; i < len; i++)
-        {
-            shs512_process(&sh, (int) data[i]);
-        }
-        shs512_hash(&sh, s);
+        shs512_process(&sh, (int) data[i]);
     }
+    shs512_hash(&sh, hash);
 #else
 #error Error: Invalid value of HASH_LEN_BITS (pairings)
 #endif
-    ::Big result(n);
+}
+
+/* Efficiency-improved hash-map function */
+void hashToZZn(const char *hash, const ::Big &n, ::Big &result) {
+    result = n;
     char *ptr = reinterpret_cast<char*>(&result[0]);
     int remaining = result.len() * MIRACL_BYTES;
     while (remaining) {
-        len = min(remaining, HASH_LEN_BYTES);
-        memcpy(ptr, s, len);
+        int len = min(remaining, HASH_LEN_BYTES);
+        memcpy(ptr, hash, len);
         remaining -= len;
         ptr += len;
     }
     result %= n;
-    return result;
+}
+
+void hashToZZn(const char *data, int len, const ::Big &n, ::Big &result) {
+    char s[HASH_LEN_BYTES];
+    getHash(data, len, s);
+    hashToZZn(s, n, result);
 }
 
 Fp::Fp(int i) : d(new SharedData(reinterpret_cast<void*>(i >= 0 ? (new ::Big(i)) :
@@ -261,7 +268,15 @@ Fp Fp::getValue(const char *data, int len) {
 }
 
 Fp Fp::fromHash(const char *data, int len) {
-    return Fp(reinterpret_cast<void*>(new ::Big(hashToZZn(data, len, *pfc->ord))));
+    ::Big *result = new ::Big();
+    hashToZZn(data, len, *pfc->ord, *result);
+    return Fp(reinterpret_cast<void*>(result));
+}
+
+Fp Fp::fromHash(const char *hash) {
+    ::Big *result = new ::Big();
+    hashToZZn(hash, *pfc->ord, *result);
+    return Fp(reinterpret_cast<void*>(result));
 }
 
 void Fp::deref() {
@@ -460,7 +475,21 @@ G1 G1::getValue(const char *data, int len, bool compressed) {
 
 G1 G1::fromHash(const char *data, int len) {
     ::G1 *el = new ::G1();
-    ::Big x0 = hashToZZn(data, len, *pfc->mod);
+    ::Big x0;
+    hashToZZn(data, len, *pfc->mod, x0);
+    while (!el->g.set(x0, x0)) ++x0;
+    // Following is very unlikely, but we still want to handle it
+    if (UNLIKELY(el->g.iszero())) {
+        delete el;
+        return G1();
+    }
+    return G1(reinterpret_cast<void*>(el));
+}
+
+G1 G1::fromHash(const char *hash) {
+    ::G1 *el = new ::G1();
+    ::Big x0;
+    hashToZZn(hash, *pfc->mod, x0);
     while (!el->g.set(x0, x0)) ++x0;
     // Following is very unlikely, but we still want to handle it
     if (UNLIKELY(el->g.iszero())) {
@@ -728,7 +757,7 @@ void q_power_frobenius(::ECn2 &A, ::ZZn2 &F)
 
 /* Faster Hashing to G2 - Fuentes-Castaneda, Knapp and Rodriguez-Henriquez
  * Function from the MIRACL library */
-void map(::ECn2& S, ::Big &x, ::ZZn2 &F)
+inline void map(::ECn2& S, ::Big &x, ::ZZn2 &F)
 {
     ::ECn2 T, K;
     T = S;
@@ -749,17 +778,35 @@ void map(::ECn2& S, ::Big &x, ::ZZn2 &F)
     S.norm();
 }
 
-G2 G2::fromHash(const char *data, int len) {
+void getG2FromBig(::G2 &el, ::Big &x0) {
     ZZn2 X;
-    ::G2 *el = new ::G2();
-    ::Big x0 = hashToZZn(data, len, *pfc->mod);
     forever {
         ++x0;
         X.set(ZZn(1), ZZn(x0));
         /* TODO: Check that the LIKELY flag is not mistaken */
-        if (LIKELY(el->g.set(X))) break;
+        if (LIKELY(el.g.set(X))) break;
     }
-    map(el->g, *pfc->x, *pfc->frob);
+    map(el.g, *pfc->x, *pfc->frob);
+}
+
+G2 G2::fromHash(const char *data, int len) {
+    ::G2 *el = new ::G2();
+    ::Big x0;
+    hashToZZn(data, len, *pfc->mod, x0);
+    getG2FromBig(*el, x0);
+    // Following is very unlikely, but we still want to handle it
+    if (UNLIKELY(el->g.iszero())) {
+        delete el;
+        return G2();
+    }
+    return G2(reinterpret_cast<void*>(el));
+}
+
+G2 G2::fromHash(const char *hash) {
+    ::G2 *el = new ::G2();
+    ::Big x0;
+    hashToZZn(hash, *pfc->mod, x0);
+    getG2FromBig(*el, x0);
     // Following is very unlikely, but we still want to handle it
     if (UNLIKELY(el->g.iszero())) {
         delete el;
