@@ -162,19 +162,19 @@ Fp Fp::operator-() const {
     return Fp(reinterpret_cast<void*>(new ::Big((*pfc->ord) - _this)));
 }
 
-Fp Fp::operator+(const Fp other) const {
+Fp Fp::operator+(const Fp &other) const {
     const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
     const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
     return Fp(reinterpret_cast<void*>(new ::Big((_this + _other) % (*pfc->ord))));
 }
 
-Fp Fp::operator-(const Fp other) const {
+Fp Fp::operator-(const Fp &other) const {
     const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
     const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
     return Fp(reinterpret_cast<void*>(new ::Big(((*pfc->ord + _this) - _other) % (*pfc->ord))));
 }
 
-Fp &Fp::operator+=(const Fp other) {
+Fp &Fp::operator+=(const Fp &other) {
     const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
     if (d->c) {
         --d->c;
@@ -188,7 +188,7 @@ Fp &Fp::operator+=(const Fp other) {
     return *this;
 }
 
-Fp &Fp::operator-=(const Fp other) {
+Fp &Fp::operator-=(const Fp &other) {
     const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
     if (d->c) {
         --d->c;
@@ -203,19 +203,19 @@ Fp &Fp::operator-=(const Fp other) {
     return *this;
 }
 
-Fp Fp::operator*(const Fp other) const {
+Fp Fp::operator*(const Fp &other) const {
     const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
     const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
     return Fp(reinterpret_cast<void*>(new ::Big(modmult(_this, _other, *pfc->ord))));
 }
 
-Fp Fp::operator/(const Fp other) const {
+Fp Fp::operator/(const Fp &other) const {
     const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
     const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
     return Fp(reinterpret_cast<void*>(new ::Big(moddiv(_this, _other, *pfc->ord))));
 }
 
-Fp &Fp::operator*=(const Fp other) {
+Fp &Fp::operator*=(const Fp &other) {
     const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
     if (d->c) {
         --d->c;
@@ -228,7 +228,7 @@ Fp &Fp::operator*=(const Fp other) {
     return *this;
 }
 
-Fp &Fp::operator/=(const Fp other) {
+Fp &Fp::operator/=(const Fp &other) {
     const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
     if (d->c) {
         --d->c;
@@ -241,7 +241,7 @@ Fp &Fp::operator/=(const Fp other) {
     return *this;
 }
 
-bool Fp::operator==(const Fp other) const {
+bool Fp::operator==(const Fp &other) const {
     const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
     const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
     return _this == _other;
@@ -302,7 +302,7 @@ G1 G1::operator-() const {
     return G1(reinterpret_cast<void*>(new ::G1(-_this)));
 }
 
-G1 G1::operator+(const G1 other) const {
+G1 G1::operator+(const G1 &other) const {
     if (!d) return other;
     if (!other.d) return *this;
     const ::G1 &_this = *reinterpret_cast< ::G1* >(d->p);
@@ -315,7 +315,7 @@ G1 G1::operator+(const G1 other) const {
     return G1(reinterpret_cast<void*>(result));
 }
 
-G1 G1::operator-(const G1 other) const {
+G1 G1::operator-(const G1 &other) const {
     if (!other.d) return *this;
     const ::G1 &_other = *reinterpret_cast< ::G1* >(other.d->p);
     if (!d) return G1(reinterpret_cast<void*>(new ::G1(-_other)));
@@ -328,7 +328,7 @@ G1 G1::operator-(const G1 other) const {
     return G1(reinterpret_cast<void*>(result));
 }
 
-G1 &G1::operator+=(const G1 other) {
+G1 &G1::operator+=(const G1 &other) {
     if (!other.d) return *this;
     const ::G1 &_other = *reinterpret_cast< ::G1* >(other.d->p);
     if (!d) {
@@ -353,7 +353,7 @@ G1 &G1::operator+=(const G1 other) {
     return *this;
 }
 
-G1 &G1::operator-=(const G1 other) {
+G1 &G1::operator-=(const G1 &other) {
     if (!other.d) return *this;
     const ::G1 &_other = *reinterpret_cast< ::G1* >(other.d->p);
     if (!d) {
@@ -378,7 +378,7 @@ G1 &G1::operator-=(const G1 other) {
     return *this;
 }
 
-G1 &G1::operator*=(const Fp other) {
+G1 &G1::operator*=(const Fp &other) {
     if (!d) return *this;
     if (other.isNull()) {
         deref();
@@ -400,7 +400,7 @@ G1 &G1::operator*=(const Fp other) {
     return *this;
 }
 
-G1 G1::operator*(const Fp other) const {
+G1 G1::operator*(const Fp &other) const {
     if (!d) return *this;
     if (other.isNull()) return G1();
     // Note: Since neither this group element nor the scalar are null,
@@ -420,7 +420,7 @@ G1 operator*(const Fp &m, const G1 &g) {
     return G1(reinterpret_cast<void*>(new ::G1(pfc->mult(_g, _m))));
 }
 
-bool G1::operator==(const G1 other) const {
+bool G1::operator==(const G1 &other) const {
     if (!d) return !other.d;
     if (!other.d) return false;
     const ::G1 &_this = *reinterpret_cast< ::G1* >(d->p);
@@ -539,7 +539,7 @@ G2 G2::operator-() const {
     return result;
 }
 
-G2 G2::operator+(const G2 other) const {
+G2 G2::operator+(const G2 &other) const {
     if (!d) return other;
     if (!other.d) return *this;
     const ::G2 &_this = *reinterpret_cast< ::G2* >(d->p);
@@ -552,7 +552,7 @@ G2 G2::operator+(const G2 other) const {
     return G2(reinterpret_cast<void*>(result));
 }
 
-G2 G2::operator-(const G2 other) const {
+G2 G2::operator-(const G2 &other) const {
     if (!other.d) return *this;
     const ::G2 &_other = *reinterpret_cast< ::G2* >(other.d->p);
     if (!d) return G2(reinterpret_cast<void*>(new ::G2(-_other)));
@@ -566,7 +566,7 @@ G2 G2::operator-(const G2 other) const {
     return G2(reinterpret_cast<void*>(result));
 }
 
-G2 &G2::operator+=(const G2 other) {
+G2 &G2::operator+=(const G2 &other) {
     if (!other.d) return *this;
     const ::G2 &_other = *reinterpret_cast< ::G2* >(other.d->p);
     if (!d) {
@@ -591,7 +591,7 @@ G2 &G2::operator+=(const G2 other) {
     return *this;
 }
 
-G2 &G2::operator-=(const G2 other) {
+G2 &G2::operator-=(const G2 &other) {
     if (!other.d) return *this;
     const ::G2 &_other = *reinterpret_cast< ::G2* >(other.d->p);
     if (!d) {
@@ -617,7 +617,7 @@ G2 &G2::operator-=(const G2 other) {
     return *this;
 }
 
-G2 &G2::operator*=(const Fp other) {
+G2 &G2::operator*=(const Fp &other) {
     if (!d) return *this;
     if (other.isNull()) {
         deref();
@@ -639,7 +639,7 @@ G2 &G2::operator*=(const Fp other) {
     return *this;
 }
 
-G2 G2::operator*(const Fp other) const {
+G2 G2::operator*(const Fp &other) const {
     if (!d) return *this;
     if (other.isNull()) return G2();
     // Note: Since neither this group element nor the scalar are null,
@@ -659,7 +659,7 @@ G2 operator*(const Fp &m, const G2 &g) {
     return G2(reinterpret_cast<void*>(new ::G2(pfc->mult(_g, _m))));
 }
 
-bool G2::operator==(const G2 other) const {
+bool G2::operator==(const G2 &other) const {
     if (!d) return !other.d;
     if (!other.d) return false;
     const ::G2 &_this = *reinterpret_cast< ::G2* >(d->p);
@@ -832,7 +832,7 @@ void G2::deref() {
     }
 }
 
-GT GT::operator*(const GT other) const {
+GT GT::operator*(const GT &other) const {
     if (!d) return other;
     if (!other.d) return *this;
     const ::GT &_this = *reinterpret_cast< ::GT* >(d->p);
@@ -845,7 +845,7 @@ GT GT::operator*(const GT other) const {
     return GT(reinterpret_cast<void*>(result));
 }
 
-GT GT::operator/(const GT other) const {
+GT GT::operator/(const GT &other) const {
     if (!other.d) return *this;
     const ::GT &_other = *reinterpret_cast< ::GT* >(other.d->p);
     ::GT *result;
@@ -864,7 +864,7 @@ GT GT::operator/(const GT other) const {
     return GT(reinterpret_cast<void*>(result));
 }
 
-GT &GT::operator*=(const GT other) {
+GT &GT::operator*=(const GT &other) {
     if (!other.d) return *this;
     const ::GT &_other = *reinterpret_cast< ::GT* >(other.d->p);
     if (!d) {
@@ -889,7 +889,7 @@ GT &GT::operator*=(const GT other) {
     return *this;
 }
 
-GT &GT::operator/=(const GT other) {
+GT &GT::operator/=(const GT &other) {
     if (!other.d) return *this;
     const ::GT &_other = *reinterpret_cast< ::GT* >(other.d->p);
     ::GT *result;
@@ -918,7 +918,7 @@ GT &GT::operator/=(const GT other) {
     return *this;
 }
 
-GT &GT::operator^=(const Fp other) {
+GT &GT::operator^=(const Fp &other) {
     if (!d) return *this;
     if (other.isNull()) {
         deref();
@@ -940,7 +940,7 @@ GT &GT::operator^=(const Fp other) {
     return *this;
 }
 
-GT GT::operator^(const Fp other) const {
+GT GT::operator^(const Fp &other) const {
     if (!d) return *this;
     if (other.isNull()) return GT();
     // Note: Since neither this group element nor the scalar are null,
@@ -950,7 +950,7 @@ GT GT::operator^(const Fp other) const {
     return GT(reinterpret_cast<void*>(new ::GT(pfc->power(_this, _other))));
 }
 
-bool GT::operator==(const GT other) const {
+bool GT::operator==(const GT &other) const {
     if (!d) return !other.d;
     if (!other.d) return false;
     const ::GT &_this = *reinterpret_cast< ::GT* >(d->p);
@@ -1041,7 +1041,7 @@ GT GT::getValue(const char *data, int len) {
     return GT(reinterpret_cast<void*>(el));
 }
 
-GT GT::pairing(const G1 a, const G2 b) {
+GT GT::pairing(const G1 &a, const G2 &b) {
     if ((!a.d) || (!b.d))
         return GT();
     const ::G1 &_a = *reinterpret_cast< ::G1* >(a.d->p);
@@ -1050,7 +1050,7 @@ GT GT::pairing(const G1 a, const G2 b) {
     return GT(reinterpret_cast<void*>(el));
 }
 
-GT GT::pairing(const std::vector< std::pair<G1,G2> > lst) {
+GT GT::pairing(const std::vector< std::pair<G1,G2> > &lst) {
     ::G1 **a = new ::G1*[lst.size()];
     ::G2 **b = new ::G2*[lst.size()];
     int i = 0;

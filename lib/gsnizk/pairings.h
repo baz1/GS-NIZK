@@ -127,18 +127,18 @@ public:
      * @brief Releases memory.
      */
     inline ~Fp();
-    inline Fp &operator=(const Fp other);
+    inline Fp &operator=(const Fp &other);
     Fp operator-() const;
-    Fp operator+(const Fp other) const;
-    Fp operator-(const Fp other) const;
-    Fp &operator+=(const Fp other);
-    Fp &operator-=(const Fp other);
-    Fp operator*(const Fp other) const;
-    Fp operator/(const Fp other) const;
-    Fp &operator*=(const Fp other);
-    Fp &operator/=(const Fp other);
-    bool operator==(const Fp other) const;
-    inline bool operator!=(const Fp other) const;
+    Fp operator+(const Fp &other) const;
+    Fp operator-(const Fp &other) const;
+    Fp &operator+=(const Fp &other);
+    Fp &operator-=(const Fp &other);
+    Fp operator*(const Fp &other) const;
+    Fp operator/(const Fp &other) const;
+    Fp &operator*=(const Fp &other);
+    Fp &operator/=(const Fp &other);
+    bool operator==(const Fp &other) const;
+    inline bool operator!=(const Fp &other) const;
     int getDataLen() const;
     void getData(char *data) const;
     bool isNull() const;
@@ -163,17 +163,17 @@ public:
     inline G1();
     inline G1(const G1 &other);
     inline ~G1();
-    inline G1 &operator=(const G1 other);
+    inline G1 &operator=(const G1 &other);
     G1 operator-() const;
-    G1 operator+(const G1 other) const;
-    G1 operator-(const G1 other) const;
-    G1 &operator+=(const G1 other);
-    G1 &operator-=(const G1 other);
-    G1 &operator*=(const Fp other);
-    G1 operator*(const Fp other) const;
+    G1 operator+(const G1 &other) const;
+    G1 operator-(const G1 &other) const;
+    G1 &operator+=(const G1 &other);
+    G1 &operator-=(const G1 &other);
+    G1 &operator*=(const Fp &other);
+    G1 operator*(const Fp &other) const;
     friend G1 operator*(const Fp &m, const G1 &g);
-    bool operator==(const G1 other) const;
-    inline bool operator!=(const G1 other) const;
+    bool operator==(const G1 &other) const;
+    inline bool operator!=(const G1 &other) const;
     int getDataLen(bool compressed = false) const;
     void getData(char *data, bool compressed = false) const;
     inline bool isNull() const;
@@ -196,17 +196,17 @@ public:
     inline G2();
     inline G2(const G2 &other);
     inline ~G2();
-    inline G2 &operator=(const G2 other);
+    inline G2 &operator=(const G2 &other);
     G2 operator-() const;
-    G2 operator+(const G2 other) const;
-    G2 operator-(const G2 other) const;
-    G2 &operator+=(const G2 other);
-    G2 &operator-=(const G2 other);
-    G2 &operator*=(const Fp other);
-    G2 operator*(const Fp other) const;
+    G2 operator+(const G2 &other) const;
+    G2 operator-(const G2 &other) const;
+    G2 &operator+=(const G2 &other);
+    G2 &operator-=(const G2 &other);
+    G2 &operator*=(const Fp &other);
+    G2 operator*(const Fp &other) const;
     friend G2 operator*(const Fp &m, const G2 &g);
-    bool operator==(const G2 other) const;
-    inline bool operator!=(const G2 other) const;
+    bool operator==(const G2 &other) const;
+    inline bool operator!=(const G2 &other) const;
     int getDataLen(bool compressed = false) const;
     void getData(char *data, bool compressed = false) const;
     inline bool isNull() const;
@@ -228,23 +228,23 @@ public:
     inline GT();
     inline GT(const GT &other);
     inline ~GT();
-    inline GT &operator=(const GT other);
-    GT operator*(const GT other) const;
-    GT operator/(const GT other) const;
-    GT &operator*=(const GT other);
-    GT &operator/=(const GT other);
-    GT &operator^=(const Fp other);
-    GT operator^(const Fp other) const;
-    bool operator==(const GT other) const;
-    inline bool operator!=(const GT other) const;
+    inline GT &operator=(const GT &other);
+    GT operator*(const GT &other) const;
+    GT operator/(const GT &other) const;
+    GT &operator*=(const GT &other);
+    GT &operator/=(const GT &other);
+    GT &operator^=(const Fp &other);
+    GT operator^(const Fp &other) const;
+    bool operator==(const GT &other) const;
+    inline bool operator!=(const GT &other) const;
     int getDataLen() const;
     void getData(char *data) const;
     inline bool isUnity() const;
 public:
     static GT getRand();
     static GT getValue(const char *data, int len);
-    static GT pairing(const G1 a, const G2 b);
-    static GT pairing(const std::vector< std::pair<G1,G2> > lst);
+    static GT pairing(const G1 &a, const G2 &b);
+    static GT pairing(const std::vector<std::pair<G1, G2> > &lst);
 private:
     inline explicit GT(void *v);
     inline explicit GT(SharedData *d);
@@ -263,13 +263,13 @@ inline Fp::Fp(const Fp &other) { ++(d = other.d)->c; }
 
 inline Fp::~Fp() { deref(); }
 
-inline Fp &Fp::operator=(const Fp other) {
+inline Fp &Fp::operator=(const Fp &other) {
     deref();
     ++(d = other.d)->c;
     return *this;
 }
 
-inline bool Fp::operator!=(const Fp other) const {
+inline bool Fp::operator!=(const Fp &other) const {
     return !(*this == other);
 }
 
@@ -285,13 +285,13 @@ inline G1::G1(const G1 &other) {
 
 inline G1::~G1() { if (d) deref(); }
 
-inline G1 &G1::operator=(const G1 other) {
+inline G1 &G1::operator=(const G1 &other) {
     if (d) deref();
     if ((d = other.d)) ++d->c;
     return *this;
 }
 
-inline bool G1::operator!=(const G1 other) const {
+inline bool G1::operator!=(const G1 &other) const {
     return !(*this == other);
 }
 
@@ -309,13 +309,13 @@ inline G2::G2(const G2 &other) {
 
 inline G2::~G2() { if (d) deref(); }
 
-inline G2 &G2::operator=(const G2 other) {
+inline G2 &G2::operator=(const G2 &other) {
     if (d) deref();
     if ((d = other.d)) ++d->c;
     return *this;
 }
 
-inline bool G2::operator!=(const G2 other) const {
+inline bool G2::operator!=(const G2 &other) const {
     return !(*this == other);
 }
 
@@ -333,13 +333,13 @@ inline GT::GT(const GT &other) {
 
 inline GT::~GT() { if (d) deref(); }
 
-inline GT &GT::operator=(const GT other) {
+inline GT &GT::operator=(const GT &other) {
     if (d) deref();
     if ((d = other.d)) ++d->c;
     return *this;
 }
 
-inline bool GT::operator!=(const GT other) const {
+inline bool GT::operator!=(const GT &other) const {
     return !(*this == other);
 }
 
