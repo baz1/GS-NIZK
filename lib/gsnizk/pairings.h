@@ -32,7 +32,7 @@ namespace pairings {
  * namespace. You may call it again after having called
  * terminate_pairings().
  *
- * @param len Length of the data pointed to by rndData.
+ * @param len Length of the data pointed to by @p rndData.
  * @param rndData Pointer to some random data used to
  *   initialize the pseudo-random number generator.
  *   `/dev/random` or `/dev/urandom` might be used under Linux.
@@ -74,7 +74,7 @@ int getHashLen();
  * @brief Hashes some data.
  *
  * The hash memory space is to be allocated before calling
- * this function, and thus the parameter hash should point
+ * this function, and thus the parameter @p hash should point
  * to some accessible space containing at least getHashLen()
  * available bytes.
  *
@@ -84,6 +84,7 @@ int getHashLen();
  * @param data Pointer to the data to hash.
  * @param len Length of the data to hash.
  * @param hash Pointer to where the hash is to be stored.
+ * @sa getHashLen()
  */
 void getHash(const char *data, int len, char *hash);
 
@@ -127,26 +128,170 @@ public:
      * @brief Releases memory.
      */
     inline ~Fp();
+    /**
+     * @brief Assigns a new value to this element.
+     * @param other New value for the element.
+     * @return Reference to the current element.
+     */
     inline Fp &operator=(const Fp &other);
+    /**
+     * @brief Unary minus operator.
+     * @return Inverse of the element.
+     */
     Fp operator-() const;
+    /**
+     * @brief Addition operator.
+     * @param other Value to add to the current element.
+     * @return The sum of the two elements.
+     */
     Fp operator+(const Fp &other) const;
+    /**
+     * @brief Subtraction operator.
+     * @param other Value to subtract to the current element.
+     * @return The difference of the two elements.
+     */
     Fp operator-(const Fp &other) const;
+    /**
+     * @brief Inplace addition operator.
+     * @param other Value to append to the current element.
+     * @return Reference to the modified element.
+     */
     Fp &operator+=(const Fp &other);
+    /**
+     * @brief Inplace subtraction operator.
+     * @param other Value to subtract to the current element.
+     * @return Reference to the modified element.
+     */
     Fp &operator-=(const Fp &other);
+    /**
+     * @brief Multiplication operator.
+     * @param other Value to multiply with the current element.
+     * @return The product of the two elements.
+     */
     Fp operator*(const Fp &other) const;
+    /**
+     * @brief Division operator.
+     * @param other Value with which to divide the current element.
+     * @return The fraction of the two elements.
+     */
     Fp operator/(const Fp &other) const;
+    /**
+     * @brief Inplace multiplication operator.
+     * @param other Value to multiply with the current element.
+     * @return Reference to the modified element.
+     */
     Fp &operator*=(const Fp &other);
+    /**
+     * @brief Inplace division operator.
+     * @param other Value with which to divide the current element.
+     * @return Reference to the modified element.
+     */
     Fp &operator/=(const Fp &other);
+    /**
+     * @brief Equality operator.
+     * @param other Value with which to compare the current element.
+     * @return `true` if the two values are equal, `false` otherwise.
+     */
     bool operator==(const Fp &other) const;
+    /**
+     * @brief Inequality operator.
+     * @param other Value with which to compare the current element.
+     * @return `true` if the two values are equal, `false` otherwise.
+     */
     inline bool operator!=(const Fp &other) const;
+    /**
+     * @brief Gets the length of this element's data.
+     *
+     * @warning This function might not always return the same
+     * number, depending on the value of the element to convert.
+     *
+     * @return Number of bytes needed to encode the element.
+     */
     int getDataLen() const;
+    /**
+     * @brief Retrieves this element's data.
+     *
+     * The data memory space is to be allocated before calling
+     * this function, and thus the parameter @p data should point
+     * to some accessible space containing at least getHashLen()
+     * available bytes.
+     *
+     * The data will always contain exactly the number of bytes
+     * returned by the Fp::getDataLen() function.
+     *
+     * It can then be converted back to the corresponding element
+     * value thanks to the Fp::getValue(const char*,int) function.
+     *
+     * @param data Pointer to where the data is to be stored.
+     * @sa Fp::getDataLen()
+     * @sa Fp::getValue(const char*,int)
+     */
     void getData(char *data) const;
+    /**
+     * @brief Checks if the element is null.
+     * @return `true` if the element is null, `false` otherwise.
+     */
     bool isNull() const;
 public:
+    /**
+     * @brief Gets the unity element.
+     *
+     * Note that this is equivalent to `Fp(1)`.
+     *
+     * @return The unity element.
+     * @sa Fp::Fp(int)
+     */
     static Fp getUnit();
+    /**
+     * @brief Get a random element.
+     *
+     * This function picks a random value chosen with uniform probability
+     * within the whole set of possible values.
+     * Note that in practise, the probability distribution might not be
+     * exactly uniform, but this function ensures both that each value
+     * may be reached, and that it is cryptographically secure for most
+     * applications.
+     *
+     * @return A random element value.
+     */
     static Fp getRand();
+    /**
+     * @brief Gets an element value from its data.
+     *
+     * @p data and @p len should be respectively what the functions
+     * Fp::getData(char*) and Fp::getDataLen() give for the element
+     * to be reconstructed.
+     *
+     * @param data Pointer to the data.
+     * @param len Length of the data.
+     * @return The element value corresponding to that data.
+     */
     static Fp getValue(const char *data, int len);
+    /**
+     * @brief Gets an element value from some data to hash.
+     *
+     * Note: This function is equivalent to calling successively
+     * getHash(const char*,int,char*) and then Fp::fromHash(const char*)
+     * with some user-allocated buffer.
+     *
+     * @param data Pointer to the data to hash.
+     * @param len Length of the data to hash.
+     * @return Element generated from the hash of the data.
+     * @sa Fp::fromHash(const char*)
+     */
     static Fp fromHash(const char *data, int len);
+    /**
+     * @brief Gets an element value from some hash.
+     *
+     * The hash value @p hash should be at least getHashLen()
+     * bytes long, as would the getHash(const char*,int,char*)
+     * function generate.
+     *
+     * @param hash A hash value.
+     * @return Element generated from the hash value.
+     * @sa getHashLen()
+     * @sa getHash(const char*,int,char*)
+     */
     static Fp fromHash(const char *hash);
 private:
     inline explicit Fp(void *v);

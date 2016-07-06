@@ -1085,8 +1085,6 @@ void GT::deref() {
     }
 }
 
-// TODO
-
 } /* End of namespace pairings */
 
 #elif defined(USE_PBC)
