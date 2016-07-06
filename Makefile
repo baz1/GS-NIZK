@@ -8,8 +8,7 @@ miracl/:
 miracllib: miracl/miracl.a
 
 miracl/miracl.a: miracl/miracl.h
-	cp "install_files/linux64_cpp.sh" miracl/
-	cd miracl/; bash linux64_cpp.sh
+	cd miracl/; bash linux64_cpp
 	echo "Test: Compiling BLS test with BN pairings"
 	cd miracl/; g++ -m64 -O2 bls.cpp bn_pair.cpp zzn12a.cpp ecn2.cpp zzn4.cpp zzn2.cpp big.cpp zzn.cpp ecn.cpp miracl.a -o bls
 
