@@ -28,7 +28,7 @@ bool checkDataSize(int size, int line) {
 int main() {
     int len, n_err = 0;
     initialize_pairings(0, 0);
-    char data[DATA_SIZE];
+    char data[DATA_SIZE], *data2;
 
     /* -------------------- Hash prerequisite -------------------- */
     char *hash = new char[getHashLen()];
@@ -60,8 +60,6 @@ int main() {
     ASSERT(v1 == v3);
     ASSERT(Fp::fromHash("hello", 5) != Fp::fromHash("hi", 2));
     ASSERT(Fp::fromHash("hello", 5) == Fp::fromHash(hash));
-    v1 += v3;
-    v1 += (v1 + v3);
 
     /* -------------------- Tests for G1 -------------------- */
     G1 g1 = G1::getRand(), g2, g3, g4;
@@ -94,6 +92,16 @@ int main() {
     ASSERT((g1 - g1).isNull());
     ASSERT(G1::fromHash("hello", 5) != G1::fromHash("hi", 2));
     ASSERT(G1::fromHash("hello", 5) == G1::fromHash(hash));
+    g1 = G1::getRand();
+    v1 = Fp::getRand();
+    g2 = v1 * g1;
+    g3 = Fp::getUnit() * g1;
+    ASSERT(g1 == g3);
+    g1.precomputeForMult();
+    g1.saveMultPrecomputations(data2);
+    g3.loadMultPrecomputations(data2);
+    ASSERT(g2 == (v1 * g1));
+    ASSERT(g2 == (v1 * g3));
 
     /* -------------------- Tests for G2 -------------------- */
     G2 h1 = G2::getRand(), h2, h3, h4;
@@ -126,6 +134,16 @@ int main() {
     ASSERT((h1 - h1).isNull());
     ASSERT(G2::fromHash("hello", 5) != G2::fromHash("hi", 2));
     ASSERT(G2::fromHash("hello", 5) == G2::fromHash(hash));
+    h1 = G2::getRand();
+    v1 = Fp::getRand();
+    h2 = v1 * h1;
+    h3 = Fp::getUnit() * h1;
+    ASSERT(h1 == h3);
+    h1.precomputeForMult();
+    h1.saveMultPrecomputations(data2);
+    h3.loadMultPrecomputations(data2);
+    ASSERT(h2 == (v1 * h1));
+    ASSERT(h2 == (v1 * h3));
 
     /* -------------------- Tests for GT -------------------- */
     GT t1 = GT::getRand(), t2, t3, t4;
@@ -148,6 +166,16 @@ int main() {
     ASSERT((t1 ^ Fp(3)) == (t1 * t3));
     ASSERT((GT() / t1) == (t1 ^ Fp(-1)));
     ASSERT((t1 / t1).isUnit());
+    t1 = GT::getRand();
+    v1 = Fp::getRand();
+    t2 = t1 ^ v1;
+    t3 = t1 ^ Fp::getUnit();
+    ASSERT(t1 == t3);
+    t1.precomputeForPower();
+    t1.savePowerPrecomputations(data2);
+    t3.loadPowerPrecomputations(data2);
+    ASSERT(t2 == (t1 ^ v1));
+    ASSERT(t2 == (t3 ^ v1));
 
     /* -------------------- Pairing tests -------------------- */
     g1 = G1::getRand();
@@ -174,6 +202,16 @@ int main() {
     }
     ASSERT((GT::pairing(g1, h1) * GT::pairing(-g1, h1)).isUnit());
     ASSERT((GT::pairing(g1, h1) * GT::pairing(g1, -h1)).isUnit());
+    g1 = G1::getRand();
+    h1 = G2::getRand();
+    t1 = GT::pairing(g1, h1);
+    h3 = Fp::getUnit() * h1;
+    ASSERT(h1 == h3);
+    h1.precomputeForPairing();
+    h1.savePairingPrecomputations(data2);
+    h3.loadPairingPrecomputations(data2);
+    ASSERT(t1 == GT::pairing(g1, h1));
+    ASSERT(t1 == GT::pairing(g1, h3));
 
     terminate_pairings();
     if (n_err) {
