@@ -147,7 +147,7 @@ int main() {
     t3 *= t3;
     ASSERT((t1 ^ Fp(3)) == (t1 * t3));
     ASSERT((GT() / t1) == (t1 ^ Fp(-1)));
-    ASSERT((t1 / t1).isUnity());
+    ASSERT((t1 / t1).isUnit());
 
     /* -------------------- Pairing tests -------------------- */
     g1 = G1::getRand();
@@ -172,8 +172,8 @@ int main() {
         }
         ASSERT(t1 == GT::pairing(pairs));
     }
-    ASSERT((GT::pairing(g1, h1) * GT::pairing(-g1, h1)).isUnity());
-    ASSERT((GT::pairing(g1, h1) * GT::pairing(g1, -h1)).isUnity());
+    ASSERT((GT::pairing(g1, h1) * GT::pairing(-g1, h1)).isUnit());
+    ASSERT((GT::pairing(g1, h1) * GT::pairing(g1, -h1)).isUnit());
 
     terminate_pairings();
     if (n_err) {

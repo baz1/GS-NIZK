@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2016, Remi Bazin <bazin.remi@gmail.com>
+ * See LICENSE for licensing details.
+ */
+
 #ifndef PAIRINGS_H
 #define PAIRINGS_H
 
@@ -213,7 +218,7 @@ public:
      *
      * The data memory space is to be allocated before calling
      * this function, and thus the parameter @p data should point
-     * to some accessible space containing at least getHashLen()
+     * to some accessible space containing at least Fp::getDataLen()
      * available bytes.
      *
      * The data will always contain exactly the number of bytes
@@ -265,6 +270,8 @@ public:
      * @param data Pointer to the data.
      * @param len Length of the data.
      * @return The element value corresponding to that data.
+     * @sa Fp::getDataLen()
+     * @sa Fp::getData(char*)
      */
     static Fp getValue(const char *data, int len);
     /**
@@ -305,27 +312,188 @@ private:
 class G1 {
     friend class GT;
 public:
+    /**
+     * @brief Constructs a new null element.
+     */
     inline G1();
+    /**
+     * @brief Performs a copy of an element.
+     * @param other The element to be copied.
+     */
     inline G1(const G1 &other);
+    /**
+     * @brief Releases memory.
+     */
     inline ~G1();
+    /**
+     * @brief Assigns a new value to this element.
+     * @param other New value for the element.
+     * @return Reference to the current element.
+     */
     inline G1 &operator=(const G1 &other);
+    /**
+     * @brief Unary minus operator.
+     * @return Inverse of the element.
+     */
     G1 operator-() const;
+    /**
+     * @brief Addition operator.
+     * @param other Value to add to the current element.
+     * @return The sum of the two elements.
+     */
     G1 operator+(const G1 &other) const;
+    /**
+     * @brief Subtraction operator.
+     * @param other Value to subtract to the current element.
+     * @return The difference of the two elements.
+     */
     G1 operator-(const G1 &other) const;
+    /**
+     * @brief Inplace addition operator.
+     * @param other Value to append to the current element.
+     * @return Reference to the modified element.
+     */
     G1 &operator+=(const G1 &other);
+    /**
+     * @brief Inplace subtraction operator.
+     * @param other Value to subtract to the current element.
+     * @return Reference to the modified element.
+     */
     G1 &operator-=(const G1 &other);
+    /**
+     * @brief Inplace multiplication operator.
+     * @param other Scalar to multiply with the current element.
+     * @return Reference to the modified element.
+     */
     G1 &operator*=(const Fp &other);
+    /**
+     * @brief Multiplication operator.
+     * @param other Scalar to multiply with the current element.
+     * @return The product of the two elements.
+     */
     G1 operator*(const Fp &other) const;
+    /**
+     * @brief Multiplication operator.
+     * @param m Scalar value.
+     * @param g Element value.
+     * @return Product @f$m\cdot g@f$
+     */
     friend G1 operator*(const Fp &m, const G1 &g);
+    /**
+     * @brief Equality operator.
+     * @param other Value with which to compare the current element.
+     * @return `true` if the two values are equal, `false` otherwise.
+     */
     bool operator==(const G1 &other) const;
+    /**
+     * @brief Inequality operator.
+     * @param other Value with which to compare the current element.
+     * @return `true` if the two values are equal, `false` otherwise.
+     */
     inline bool operator!=(const G1 &other) const;
+    /**
+     * @brief Gets the length of this element's data.
+     *
+     * @warning This function might not always return the same
+     * number, depending on the value of the element to convert,
+     * and the value of the @p compressed parameter.
+     *
+     * @note Compressed data has the advantage of being almost
+     * twice smaller than raw data, but it might take longer to
+     * reconstruct the element in the G1::getValue(const char*,int,bool)
+     * function.
+     *
+     * @param compressed Indicates whether the element data
+     *   is to be compressed or not.
+     * @return Number of bytes needed to encode the element.
+     */
     int getDataLen(bool compressed = false) const;
+    /**
+     * @brief Retrieves this element's data.
+     *
+     * The data memory space is to be allocated before calling
+     * this function, and thus the parameter @p data should point
+     * to some accessible space containing at least G1::getDataLen(bool)
+     * available bytes.
+     *
+     * The data will always contain exactly the number of bytes
+     * returned by the G1::getDataLen(bool) function called with
+     * the same @p compressed value.
+     *
+     * It can then be converted back to the corresponding element
+     * value thanks to the G1::getValue(const char*,int,bool) function.
+     *
+     * @note Compressed data has the advantage of being almost
+     * twice smaller than raw data, but it might take longer to
+     * reconstruct the element in the G1::getValue(const char*,int,bool)
+     * function.
+     *
+     * @param data Pointer to where the data is to be stored.
+     * @param compressed Indicates whether the element data
+     *   is to be compressed or not.
+     * @sa G1::getDataLen(bool)
+     * @sa G1::getValue(const char*,int,bool)
+     */
     void getData(char *data, bool compressed = false) const;
+    /**
+     * @brief Checks if the element is null.
+     * @return `true` if the element is null, `false` otherwise.
+     */
     inline bool isNull() const;
 public:
+    /**
+     * @brief Get a random element.
+     *
+     * This function picks a random value chosen with uniform probability
+     * within the whole set of possible values.
+     * Note that in practise, the probability distribution might not be
+     * exactly uniform, but this function ensures both that each value
+     * may be reached, and that it is cryptographically secure for most
+     * applications.
+     *
+     * @return A random element value.
+     */
     static G1 getRand();
+    /**
+     * @brief Gets an element value from its data.
+     *
+     * @p data and @p len should be respectively what the functions
+     * G1::getData(char*,bool) and G1::getDataLen(bool) give for the element
+     * to be reconstructed, for the same value of @p compressed.
+     *
+     * @param data Pointer to the data.
+     * @param len Length of the data.
+     * @param compressed Whether the data was compressed or not.
+     * @return The element value corresponding to that data.
+     * @sa G1::getDataLen(bool)
+     * @sa G1::getData(char*,bool)
+     */
     static G1 getValue(const char *data, int len, bool compressed = false);
+    /**
+     * @brief Gets an element value from some data to hash.
+     *
+     * Note: This function is equivalent to calling successively
+     * getHash(const char*,int,char*) and then G1::fromHash(const char*)
+     * with some user-allocated buffer.
+     *
+     * @param data Pointer to the data to hash.
+     * @param len Length of the data to hash.
+     * @return Element generated from the hash of the data.
+     * @sa G1::fromHash(const char*)
+     */
     static G1 fromHash(const char *data, int len);
+    /**
+     * @brief Gets an element value from some hash.
+     *
+     * The hash value @p hash should be at least getHashLen()
+     * bytes long, as would the getHash(const char*,int,char*)
+     * function generate.
+     *
+     * @param hash A hash value.
+     * @return Element generated from the hash value.
+     * @sa getHashLen()
+     * @sa getHash(const char*,int,char*)
+     */
     static G1 fromHash(const char *hash);
 private:
     inline explicit G1(void *v);
@@ -338,27 +506,188 @@ private:
 class G2 {
     friend class GT;
 public:
+    /**
+     * @brief Constructs a new null element.
+     */
     inline G2();
+    /**
+     * @brief Performs a copy of an element.
+     * @param other The element to be copied.
+     */
     inline G2(const G2 &other);
+    /**
+     * @brief Releases memory.
+     */
     inline ~G2();
+    /**
+     * @brief Assigns a new value to this element.
+     * @param other New value for the element.
+     * @return Reference to the current element.
+     */
     inline G2 &operator=(const G2 &other);
+    /**
+     * @brief Unary minus operator.
+     * @return Inverse of the element.
+     */
     G2 operator-() const;
+    /**
+     * @brief Addition operator.
+     * @param other Value to add to the current element.
+     * @return The sum of the two elements.
+     */
     G2 operator+(const G2 &other) const;
+    /**
+     * @brief Subtraction operator.
+     * @param other Value to subtract to the current element.
+     * @return The difference of the two elements.
+     */
     G2 operator-(const G2 &other) const;
+    /**
+     * @brief Inplace addition operator.
+     * @param other Value to append to the current element.
+     * @return Reference to the modified element.
+     */
     G2 &operator+=(const G2 &other);
+    /**
+     * @brief Inplace subtraction operator.
+     * @param other Value to subtract to the current element.
+     * @return Reference to the modified element.
+     */
     G2 &operator-=(const G2 &other);
+    /**
+     * @brief Inplace multiplication operator.
+     * @param other Scalar to multiply with the current element.
+     * @return Reference to the modified element.
+     */
     G2 &operator*=(const Fp &other);
+    /**
+     * @brief Multiplication operator.
+     * @param other Scalar to multiply with the current element.
+     * @return The product of the two elements.
+     */
     G2 operator*(const Fp &other) const;
+    /**
+     * @brief Multiplication operator.
+     * @param m Scalar value.
+     * @param g Element value.
+     * @return Product @f$m\cdot g@f$
+     */
     friend G2 operator*(const Fp &m, const G2 &g);
+    /**
+     * @brief Equality operator.
+     * @param other Value with which to compare the current element.
+     * @return `true` if the two values are equal, `false` otherwise.
+     */
     bool operator==(const G2 &other) const;
+    /**
+     * @brief Inequality operator.
+     * @param other Value with which to compare the current element.
+     * @return `true` if the two values are equal, `false` otherwise.
+     */
     inline bool operator!=(const G2 &other) const;
+    /**
+     * @brief Gets the length of this element's data.
+     *
+     * @warning This function might not always return the same
+     * number, depending on the value of the element to convert,
+     * and the value of the @p compressed parameter.
+     *
+     * @note Compressed data has the advantage of being almost
+     * twice smaller than raw data, but it might take longer to
+     * reconstruct the element in the G1::getValue(const char*,int,bool)
+     * function.
+     *
+     * @param compressed Indicates whether the element data
+     *   is to be compressed or not.
+     * @return Number of bytes needed to encode the element.
+     */
     int getDataLen(bool compressed = false) const;
+    /**
+     * @brief Retrieves this element's data.
+     *
+     * The data memory space is to be allocated before calling
+     * this function, and thus the parameter @p data should point
+     * to some accessible space containing at least G2::getDataLen(bool)
+     * available bytes.
+     *
+     * The data will always contain exactly the number of bytes
+     * returned by the G2::getDataLen(bool) function called with
+     * the same @p compressed value.
+     *
+     * It can then be converted back to the corresponding element
+     * value thanks to the G2::getValue(const char*,int,bool) function.
+     *
+     * @note Compressed data has the advantage of being almost
+     * twice smaller than raw data, but it might take longer to
+     * reconstruct the element in the G1::getValue(const char*,int,bool)
+     * function.
+     *
+     * @param data Pointer to where the data is to be stored.
+     * @param compressed Indicates whether the element data
+     *   is to be compressed or not.
+     * @sa G2::getDataLen(bool)
+     * @sa G2::getValue(const char*,int,bool)
+     */
     void getData(char *data, bool compressed = false) const;
+    /**
+     * @brief Checks if the element is null.
+     * @return `true` if the element is null, `false` otherwise.
+     */
     inline bool isNull() const;
 public:
+    /**
+     * @brief Get a random element.
+     *
+     * This function picks a random value chosen with uniform probability
+     * within the whole set of possible values.
+     * Note that in practise, the probability distribution might not be
+     * exactly uniform, but this function ensures both that each value
+     * may be reached, and that it is cryptographically secure for most
+     * applications.
+     *
+     * @return A random element value.
+     */
     static G2 getRand();
+    /**
+     * @brief Gets an element value from its data.
+     *
+     * @p data and @p len should be respectively what the functions
+     * G2::getData(char*,bool) and G2::getDataLen(bool) give for the element
+     * to be reconstructed, for the same value of @p compressed.
+     *
+     * @param data Pointer to the data.
+     * @param len Length of the data.
+     * @param compressed Whether the data was compressed or not.
+     * @return The element value corresponding to that data.
+     * @sa G2::getDataLen(bool)
+     * @sa G2::getData(char*,bool)
+     */
     static G2 getValue(const char *data, int len, bool compressed = false);
+    /**
+     * @brief Gets an element value from some data to hash.
+     *
+     * Note: This function is equivalent to calling successively
+     * getHash(const char*,int,char*) and then G2::fromHash(const char*)
+     * with some user-allocated buffer.
+     *
+     * @param data Pointer to the data to hash.
+     * @param len Length of the data to hash.
+     * @return Element generated from the hash of the data.
+     * @sa G2::fromHash(const char*)
+     */
     static G2 fromHash(const char *data, int len);
+    /**
+     * @brief Gets an element value from some hash.
+     *
+     * The hash value @p hash should be at least getHashLen()
+     * bytes long, as would the getHash(const char*,int,char*)
+     * function generate.
+     *
+     * @param hash A hash value.
+     * @return Element generated from the hash value.
+     * @sa getHashLen()
+     * @sa getHash(const char*,int,char*)
+     */
     static G2 fromHash(const char *hash);
 private:
     inline explicit G2(void *v);
@@ -370,25 +699,147 @@ private:
 
 class GT {
 public:
+    /**
+     * @brief Constructs a new unit element (value 1).
+     */
     inline GT();
+    /**
+     * @brief Performs a copy of an element.
+     * @param other The element to be copied.
+     */
     inline GT(const GT &other);
+    /**
+     * @brief Releases memory.
+     */
     inline ~GT();
+    /**
+     * @brief Assigns a new value to this element.
+     * @param other New value for the element.
+     * @return Reference to the current element.
+     */
     inline GT &operator=(const GT &other);
+    /**
+     * @brief Multiplication operator.
+     * @param other Value to multiply with the current element.
+     * @return The product of the two elements.
+     */
     GT operator*(const GT &other) const;
+    /**
+     * @brief Division operator.
+     * @param other Value with which to divide the current element.
+     * @return The fraction of the two elements.
+     */
     GT operator/(const GT &other) const;
+    /**
+     * @brief Inplace multiplication operator.
+     * @param other Value to multiply with the current element.
+     * @return Reference to the modified element.
+     */
     GT &operator*=(const GT &other);
+    /**
+     * @brief Inplace division operator.
+     * @param other Value with which to divide the current element.
+     * @return Reference to the modified element.
+     */
     GT &operator/=(const GT &other);
+    /**
+     * @brief Inplace power operator.
+     * @param other Exponent value.
+     * @return Reference to the modified element.
+     */
     GT &operator^=(const Fp &other);
+    /**
+     * @brief Power operator.
+     * @param other Exponent value.
+     * @return Power @f$this^{other}@f$
+     */
     GT operator^(const Fp &other) const;
+    /**
+     * @brief Equality operator.
+     * @param other Value with which to compare the current element.
+     * @return `true` if the two values are equal, `false` otherwise.
+     */
     bool operator==(const GT &other) const;
+    /**
+     * @brief Inequality operator.
+     * @param other Value with which to compare the current element.
+     * @return `true` if the two values are equal, `false` otherwise.
+     */
     inline bool operator!=(const GT &other) const;
+    /**
+     * @brief Gets the length of this element's data.
+     *
+     * @warning This function might not always return the same
+     * number, depending on the value of the element to convert.
+     *
+     * @return Number of bytes needed to encode the element.
+     */
     int getDataLen() const;
+    /**
+     * @brief Retrieves this element's data.
+     *
+     * The data memory space is to be allocated before calling
+     * this function, and thus the parameter @p data should point
+     * to some accessible space containing at least GT::getDataLen()
+     * available bytes.
+     *
+     * The data will always contain exactly the number of bytes
+     * returned by the GT::getDataLen() function.
+     *
+     * It can then be converted back to the corresponding element
+     * value thanks to the GT::getValue(const char*,int) function.
+     *
+     * @param data Pointer to where the data is to be stored.
+     * @sa Fp::getDataLen()
+     * @sa Fp::getValue(const char*,int)
+     */
     void getData(char *data) const;
-    inline bool isUnity() const;
+    /**
+     * @brief Checks if the element is 1.
+     * @return `true` if the element is 1, `false` otherwise.
+     */
+    inline bool isUnit() const;
 public:
+    /**
+     * @brief Get a random element.
+     *
+     * This function picks a random value chosen with uniform probability
+     * within the whole set of possible values.
+     * Note that in practise, the probability distribution might not be
+     * exactly uniform, but this function ensures both that each value
+     * may be reached, and that it is cryptographically secure for most
+     * applications.
+     *
+     * @return A random element value.
+     */
     static GT getRand();
+    /**
+     * @brief Gets an element value from its data.
+     *
+     * @p data and @p len should be respectively what the functions
+     * GT::getData(char*) and GT::getDataLen() give for the element
+     * to be reconstructed.
+     *
+     * @param data Pointer to the data.
+     * @param len Length of the data.
+     * @return The element value corresponding to that data.
+     * @sa GT::getDataLen()
+     * @sa GT::getData(char*)
+     */
     static GT getValue(const char *data, int len);
+    /**
+     * @brief Computes a pairing of two elements.
+     * @param a @f$\mathbb{G}_1@f$ member.
+     * @param b @f$\mathbb{G}_2@f$ member.
+     * @return @f$\mathbb{G}_T@f$ member that is the result of calling
+     *   the bilinear map on @p a and @p b.
+     */
     static GT pairing(const G1 &a, const G2 &b);
+    /**
+     * @brief Computes the product of multiple pairings.
+     * @param lst List of couples in @f$(\mathbb{G}_1,\mathbb{G}_2)@f$.
+     * @return Product of the pairings of each couple.
+     */
     static GT pairing(const std::vector<std::pair<G1, G2> > &lst);
 private:
     inline explicit GT(void *v);
@@ -488,7 +939,7 @@ inline bool GT::operator!=(const GT &other) const {
     return !(*this == other);
 }
 
-inline bool GT::isUnity() const { return !d; }
+inline bool GT::isUnit() const { return !d; }
 
 inline GT::GT(void *v) : d(new SharedData(v)) {}
 

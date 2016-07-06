@@ -11,8 +11,6 @@
 
 using namespace std;
 
-
-
 int main2() {
     PFC pfc(AES_SECURITY);
     return 0;
