@@ -553,7 +553,7 @@ G2 G2::operator-() const {
     return G2(reinterpret_cast<void*>(new ::G2(-_this)));
 }
 
-/* Replacement for faulty "G2 operator+(const G2& x,const G2& y)" */
+/* Replacement for "G2 operator+(const G2& x,const G2& y)" */
 ::G2 *addG2(const ::G2 &a, const ::G2 &b) {
     ::G2 *result;
     // Note: Sorry about the following const_cast-s, const keyword simply missing in ECn2::type
