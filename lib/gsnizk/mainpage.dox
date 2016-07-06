@@ -1,0 +1,26 @@
+/**
+ * @mainpage NZ-NIZK Library
+ *
+ * @section intro_sec Introduction
+ *
+ * This library contains all the functions that are useful for
+ * the creation and usage of [Groth and Sahai's Non-Interactive
+ * Zero-Knowledge proofs](https://eprint.iacr.org/2007/155).
+ *
+ * The pairing-based cryptography building blocks have been made
+ * independant of either MIRACL or PBC libraries thanks to the
+ * wrappers that are provided inside the @ref pairings namespace.
+ *
+ * @todo Main GS proof system
+ *
+ * @section usage_sec Usage
+ *
+ * The library should come with a Makefile that take cares of the
+ * compilation of the library into a static library (.a or .lib
+ * file, depending on whether you are using Unix or Windows).
+ *
+ * Once this library is compiled, you just need to link this file
+ * to your project and include the header files (*.h) that are
+ * in the main directory.
+ *
+ */

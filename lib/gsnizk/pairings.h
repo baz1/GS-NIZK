@@ -3,39 +3,129 @@
 
 #include <vector>
 
+/**
+ * @brief Pairing-based cryptography wrapper.
+ *
+ * This namespace contains the main four groups that are used in
+ * pairing-based cryptography over type-3 curves:
+ * the scalar group @f$\mathbb{F}_p@f$,
+ * @f$\mathbb{G}_1@f$, @f$\mathbb{G}_2@f$ and @f$\mathbb{G}_T@f$.
+ * These group are reprensented respectively by the classes
+ * @ref Fp, @ref G1, @ref G2 and @ref GT.
+ * Groups @f$\mathbb{G}_1@f$ and @f$\mathbb{G}_2@f$ are written
+ * additively while @f$\mathbb{G}_T@f$ is written multiplicatively.
+ *
+ * Before using any of the following pairing-based related functions,
+ * you should first call the function initialize_pairings(int,const char*)
+ * once and call the function terminate_pairings() when you are done
+ * in order to release memory.
+ * Note that you can call the initialization function again after
+ * a call to terminate_pairings(), but you should not initialize twice
+ * nor not at all if you are using the following functions.
+ */
 namespace pairings {
 
-void initialize_pairings(int len, char *rndData);
+/**
+ * @brief Initializes pairing-based cryptography.
+ *
+ * You must call this function exactly once before using this
+ * namespace. You may call it again after having called
+ * terminate_pairings().
+ *
+ * @param len Length of the data pointed to by rndData.
+ * @param rndData Pointer to some random data used to
+ *   initialize the pseudo-random number generator.
+ *   `/dev/random` or `/dev/urandom` might be used under Linux.
+ */
+void initialize_pairings(int len, const char *rndData);
+
+/**
+ * @brief Releases memory used for pairing-based cryptography.
+ *
+ * Note that you may call this function multiple times;
+ * additional calls will be ignored.
+ */
 void terminate_pairings();
 
+/**
+ * @cond INTERNAL_DATA_STRUCT
+ */
 struct SharedData {
     unsigned int c;
     void *p;
     inline SharedData(void *v);
 };
+/**
+ * @endcond
+ */
 
+class Fp;
 class G1;
 class G2;
 class GT;
-class Fp;
 
+/**
+ * @brief Gets the length of a hash.
+ * @return Length of a hash in bytes.
+ */
 int getHashLen();
+
+/**
+ * @brief Hashes some data.
+ *
+ * The hash memory space is to be allocated before calling
+ * this function, and thus the parameter hash should point
+ * to some accessible space containing at least getHashLen()
+ * available bytes.
+ *
+ * The hash will always contain exactly the number of bytes
+ * returned by the getHashLen() function.
+ *
+ * @param data Pointer to the data to hash.
+ * @param len Length of the data to hash.
+ * @param hash Pointer to where the hash is to be stored.
+ */
 void getHash(const char *data, int len, char *hash);
 
+/**
+ * @brief The @f$\mathbb{F}_p=\mathbb{Z}/p\mathbb{Z}@f$ class.
+ *
+ * Objects of this class represent integers modulo @f$p@f$ where
+ * @f$p@f$ is the prime order of all the groups in the namespace
+ * @ref pairings.
+ */
 class Fp {
     friend class G1;
     friend class G2;
     friend class GT;
-    friend void initialize_pairings(int, char*);
+    friend void initialize_pairings(int, const char*);
     friend void terminate_pairings();
     friend G1 operator*(const Fp &m, const G1 &g);
     friend G2 operator*(const Fp &m, const G2 &g);
     friend GT operator^(const Fp &m, const GT &g);
 public:
+    /**
+     * @brief Constructs a new null element.
+     */
     inline Fp();
+    /**
+     * @brief Constructs a new element from an int.
+     * @param i The element value, modulo @f$p@f$.
+     */
     Fp(int i);
+    /**
+     * @brief Constructs a new element from an int.
+     * @param i The element value, modulo @f$p@f$.
+     */
     explicit Fp(unsigned long i);
+    /**
+     * @brief Performs a copy of an element.
+     * @param other The element to be copied.
+     */
     inline Fp(const Fp &other);
+    /**
+     * @brief Releases memory.
+     */
     inline ~Fp();
     inline Fp &operator=(const Fp other);
     Fp operator-() const;

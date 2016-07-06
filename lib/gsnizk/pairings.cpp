@@ -69,9 +69,10 @@ int getNBits(const Big &n) {
 
 static ::GT *rndSeed = 0;
 
-void initialize_pairings(int len, char *rndData) {
+void initialize_pairings(int len, const char *rndData) {
     csprng *rnd = new csprng;
-    strong_init(rnd, len, rndData, (unsigned int) clock());
+    // Note: Sorry about the following const_cast, const keyword simply missing in strong_init
+    strong_init(rnd, len, const_cast<char*>(rndData), (unsigned int) clock());
     pfc = new PFC(AES_SECURITY, rnd);
     Fp::zero = new SharedData(reinterpret_cast<void*>(new ::Big()));
     Fp::one = new SharedData(reinterpret_cast<void*>(new ::Big(1)));
@@ -83,7 +84,9 @@ void initialize_pairings(int len, char *rndData) {
 }
 
 void terminate_pairings() {
+    if (!rndSeed) return;
     delete rndSeed;
+    rndSeed = 0;
     if (Fp::zero->c) {
         --Fp::zero->c;
     } else {

@@ -47,3 +47,6 @@ config_miracl {
         error("QMake configuration error: neither MIRACL nor PBC selected")
     }
 }
+
+DISTFILES += \
+    mainpage.dox

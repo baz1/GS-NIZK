@@ -60,6 +60,8 @@ int main() {
     ASSERT(v1 == v3);
     ASSERT(Fp::fromHash("hello", 5) != Fp::fromHash("hi", 2));
     ASSERT(Fp::fromHash("hello", 5) == Fp::fromHash(hash));
+    v1 += v3;
+    v1 += (v1 + v3);
 
     /* -------------------- Tests for G1 -------------------- */
     G1 g1 = G1::getRand(), g2, g3, g4;
