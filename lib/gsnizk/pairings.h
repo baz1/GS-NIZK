@@ -94,6 +94,16 @@ int getHashLen();
 void getHash(const char *data, int len, char *hash);
 
 /**
+ * @brief Checks if the underlying library handles precomputations.
+ * @return `true` if precomputations are supported, `false` otherwise.
+ */
+#if defined(USE_PBC) && !defined(LIB_COMPILATION)
+inline bool hasPrecomputations() { return false; }
+#else
+bool hasPrecomputations();
+#endif
+
+/**
  * @brief The @f$\mathbb{F}_p=\mathbb{Z}/p\mathbb{Z}@f$ class.
  *
  * Objects of this class represent integers modulo @f$p@f$ where
@@ -440,6 +450,72 @@ public:
      * @return `true` if the element is null, `false` otherwise.
      */
     inline bool isNull() const;
+    /**
+     * @brief Does some precomputations in preparation for
+     *   scalar multiplication.
+     *
+     * @note Does nothing if hasPrecomputations() returns false.
+     *
+     * @sa hasPrecomputations()
+     */
+#if defined(USE_PBC) && !defined(LIB_COMPILATION)
+    inline void precomputeForMult() {}
+#else
+    void precomputeForMult();
+#endif
+    /**
+     * @brief Saves the scalar multiplication precomputations in a buffer.
+     *
+     * @warning This function allocates data thanks to the C++ idiom
+     *   `new char[size]`. It is thus expected of the user to delete
+     *   the pointer value that is set after calling this function
+     *   using the operation `delete[] data`.
+     *
+     * @note Has a dummy implementation if hasPrecomputations() returns false.
+     *
+     * @param data Reference to the data pointer to be set.
+     * @return The size of the data in bytes.
+     * @sa G1::precomputeForMult()
+     * @sa G1::loadMultPrecomputations(char*)
+     * @sa hasPrecomputations()
+     */
+#if defined(USE_PBC) && !defined(LIB_COMPILATION)
+    inline int saveMultPrecomputations(char *&data) {
+        /* Note: A good application should not call this function
+         * if hasPrecomputations() returns false, but we still prefer
+         * returning dummy values than throwing an exception for
+         * ease-of-use reasons. */
+        data = new char[1];
+        *data = 0;
+        return 1;
+    }
+#else
+    int saveMultPrecomputations(char *&data);
+#endif
+    /**
+     * @brief Loads the scalar multiplication precomputations from a buffer.
+     *
+     * @warning This function frees data thanks to the C++ idiom
+     *   `delete[] data`. It is thus expected of the user provide a pointer
+     *   value that was allocated thanks to the operation `new data[size]`.
+     *
+     * @warning The element on which this function is called should already
+     *   have the same value as the one that was used to generate the
+     *   precomputation data that is given.
+     *
+     * @note Has a dummy implementation if hasPrecomputations() returns false.
+     *
+     * @param data Pointer to the data to be loaded.
+     * @sa G1::saveMultPrecomputations(char*&)
+     * @sa hasPrecomputations()
+     */
+#if defined(USE_PBC) && !defined(LIB_COMPILATION)
+    void loadMultPrecomputations(char *data) {
+        delete[] data;
+    }
+#else
+    void loadMultPrecomputations(char *data);
+#endif
 public:
     /**
      * @brief Get a random element.
@@ -594,7 +670,7 @@ public:
      *
      * @note Compressed data has the advantage of being almost
      * twice smaller than raw data, but it might take longer to
-     * reconstruct the element in the G1::getValue(const char*,int,bool)
+     * reconstruct the element in the G2::getValue(const char*,int,bool)
      * function.
      *
      * @param compressed Indicates whether the element data
@@ -619,7 +695,7 @@ public:
      *
      * @note Compressed data has the advantage of being almost
      * twice smaller than raw data, but it might take longer to
-     * reconstruct the element in the G1::getValue(const char*,int,bool)
+     * reconstruct the element in the G2::getValue(const char*,int,bool)
      * function.
      *
      * @param data Pointer to where the data is to be stored.
@@ -634,6 +710,138 @@ public:
      * @return `true` if the element is null, `false` otherwise.
      */
     inline bool isNull() const;
+    /**
+     * @brief Does some precomputations in preparation for
+     *   scalar multiplication.
+     *
+     * @note Does nothing if hasPrecomputations() returns false.
+     *
+     * @sa hasPrecomputations()
+     */
+#if defined(USE_PBC) && !defined(LIB_COMPILATION)
+    inline void precomputeForMult() {}
+#else
+    void precomputeForMult();
+#endif
+    /**
+     * @brief Saves the scalar multiplication precomputations in a buffer.
+     *
+     * @warning This function allocates data thanks to the C++ idiom
+     *   `new char[size]`. It is thus expected of the user to delete
+     *   the pointer value that is set after calling this function
+     *   using the operation `delete[] data`.
+     *
+     * @note Has a dummy implementation if hasPrecomputations() returns false.
+     *
+     * @param data Reference to the data pointer to be set.
+     * @return The size of the data in bytes.
+     * @sa G2::precomputeForMult()
+     * @sa G2::loadMultPrecomputations(char*)
+     * @sa hasPrecomputations()
+     */
+#if defined(USE_PBC) && !defined(LIB_COMPILATION)
+    inline int saveMultPrecomputations(char *&data) {
+        /* Note: A good application should not call this function
+         * if hasPrecomputations() returns false, but we still prefer
+         * returning dummy values than throwing an exception for
+         * ease-of-use reasons. */
+        data = new char[1];
+        *data = 0; // (would not be a big threat to leak 1 byte though)
+        return 1;
+    }
+#else
+    int saveMultPrecomputations(char *&data);
+#endif
+    /**
+     * @brief Loads the scalar multiplication precomputations from a buffer.
+     *
+     * @warning This function frees data thanks to the C++ idiom
+     *   `delete[] data`. It is thus expected of the user provide a pointer
+     *   value that was allocated thanks to the operation `new data[size]`.
+     *
+     * @warning The element on which this function is called should already
+     *   have the same value as the one that was used to generate the
+     *   precomputation data that is given.
+     *
+     * @note Has a dummy implementation if hasPrecomputations() returns false.
+     *
+     * @param data Pointer to the data to be loaded.
+     * @sa G2::saveMultPrecomputations(char*&)
+     * @sa hasPrecomputations()
+     */
+#if defined(USE_PBC) && !defined(LIB_COMPILATION)
+    void loadMultPrecomputations(char *data) {
+        delete[] data;
+    }
+#else
+    void loadMultPrecomputations(char *data);
+#endif
+    /**
+     * @brief Does some precomputations in preparation for
+     *   pairing computation.
+     *
+     * @note Does nothing if hasPrecomputations() returns false.
+     *
+     * @sa hasPrecomputations()
+     */
+#if defined(USE_PBC) && !defined(LIB_COMPILATION)
+    inline void precomputeForPairing() {}
+#else
+    void precomputeForPairing();
+#endif
+    /**
+     * @brief Saves the pairing precomputations in a buffer.
+     *
+     * @warning This function allocates data thanks to the C++ idiom
+     *   `new char[size]`. It is thus expected of the user to delete
+     *   the pointer value that is set after calling this function
+     *   using the operation `delete[] data`.
+     *
+     * @note Has a dummy implementation if hasPrecomputations() returns false.
+     *
+     * @param data Reference to the data pointer to be set.
+     * @return The size of the data in bytes.
+     * @sa G2::precomputeForPairing()
+     * @sa G2::loadPairingPrecomputations(char*)
+     * @sa hasPrecomputations()
+     */
+#if defined(USE_PBC) && !defined(LIB_COMPILATION)
+    inline int savePairingPrecomputations(char *&data) {
+        /* Note: A good application should not call this function
+         * if hasPrecomputations() returns false, but we still prefer
+         * returning dummy values than throwing an exception for
+         * ease-of-use reasons. */
+        data = new char[1];
+        *data = 0; // (would not be a big threat to leak 1 byte though)
+        return 1;
+    }
+#else
+    int savePairingPrecomputations(char *&data);
+#endif
+    /**
+     * @brief Loads the pairing precomputations from a buffer.
+     *
+     * @warning This function frees data thanks to the C++ idiom
+     *   `delete[] data`. It is thus expected of the user provide a pointer
+     *   value that was allocated thanks to the operation `new data[size]`.
+     *
+     * @warning The element on which this function is called should already
+     *   have the same value as the one that was used to generate the
+     *   precomputation data that is given.
+     *
+     * @note Has a dummy implementation if hasPrecomputations() returns false.
+     *
+     * @param data Pointer to the data to be loaded.
+     * @sa G2::savePairingPrecomputations(char*&)
+     * @sa hasPrecomputations()
+     */
+#if defined(USE_PBC) && !defined(LIB_COMPILATION)
+    void loadPairingPrecomputations(char *data) {
+        delete[] data;
+    }
+#else
+    void loadPairingPrecomputations(char *data);
+#endif
 public:
     /**
      * @brief Get a random element.
@@ -799,6 +1007,72 @@ public:
      * @return `true` if the element is 1, `false` otherwise.
      */
     inline bool isUnit() const;
+    /**
+     * @brief Does some precomputations in preparation for
+     *   scalar power.
+     *
+     * @note Does nothing if hasPrecomputations() returns false.
+     *
+     * @sa hasPrecomputations()
+     */
+#if defined(USE_PBC) && !defined(LIB_COMPILATION)
+    inline void precomputeForPower() {}
+#else
+    void precomputeForPower();
+#endif
+    /**
+     * @brief Saves the scalar power precomputations in a buffer.
+     *
+     * @warning This function allocates data thanks to the C++ idiom
+     *   `new char[size]`. It is thus expected of the user to delete
+     *   the pointer value that is set after calling this function
+     *   using the operation `delete[] data`.
+     *
+     * @note Has a dummy implementation if hasPrecomputations() returns false.
+     *
+     * @param data Reference to the data pointer to be set.
+     * @return The size of the data in bytes.
+     * @sa GT::precomputeForPower()
+     * @sa GT::loadPowerPrecomputations(char*)
+     * @sa hasPrecomputations()
+     */
+#if defined(USE_PBC) && !defined(LIB_COMPILATION)
+    inline int savePowerPrecomputations(char *&data) {
+        /* Note: A good application should not call this function
+         * if hasPrecomputations() returns false, but we still prefer
+         * returning dummy values than throwing an exception for
+         * ease-of-use reasons. */
+        data = new char[1];
+        *data = 0; // (would not be a big threat to leak 1 byte though)
+        return 1;
+    }
+#else
+    int savePowerPrecomputations(char *&data);
+#endif
+    /**
+     * @brief Loads the scalar power precomputations from a buffer.
+     *
+     * @warning This function frees data thanks to the C++ idiom
+     *   `delete[] data`. It is thus expected of the user provide a pointer
+     *   value that was allocated thanks to the operation `new data[size]`.
+     *
+     * @warning The element on which this function is called should already
+     *   have the same value as the one that was used to generate the
+     *   precomputation data that is given.
+     *
+     * @note Has a dummy implementation if hasPrecomputations() returns false.
+     *
+     * @param data Pointer to the data to be loaded.
+     * @sa G1::savePowerPrecomputations(char*&)
+     * @sa hasPrecomputations()
+     */
+#if defined(USE_PBC) && !defined(LIB_COMPILATION)
+    void loadPowerPrecomputations(char *data) {
+        delete[] data;
+    }
+#else
+    void loadPowerPrecomputations(char *data);
+#endif
 public:
     /**
      * @brief Get a random element.

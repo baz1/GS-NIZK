@@ -15,6 +15,8 @@ CONFIG += config_miracl
 DEFINES += AES_SECURITY=128
 #DEFINES += AES_SECURITY=192
 
+DEFINES += LIB_COMPILATION
+
 config_lib {
     CONFIG += staticlib
     unix {

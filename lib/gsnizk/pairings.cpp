@@ -5,6 +5,10 @@
 
 #include "pairings.h"
 
+#if !defined(LIB_COMPILATION)
+#error LIB_COMPILATION should be defined for the compilation of this library.
+#endif
+
 #if defined(USE_MIRACL)
 /* -------------------- MIRACL build -------------------- */
 
@@ -128,6 +132,10 @@ void getHash(const char *data, int len, char *hash) {
 #else
 #error Error: Invalid value of HASH_LEN_BITS (pairings)
 #endif
+}
+
+bool hasPrecomputations() {
+    return true;
 }
 
 /* Efficiency-improved hash-map function */
@@ -454,6 +462,29 @@ void G1::getData(char *data, bool compressed) const {
     }
 }
 
+void G1::precomputeForMult() {
+    if (!d) return;
+    pfc->precomp_for_mult(*reinterpret_cast< ::G1* >(d->p));
+}
+
+int G1::saveMultPrecomputations(char *&data) {
+    if (!d) {
+        /* Dummy implementation */
+        data = new char[1];
+        *data = 0;
+        return 1;
+    }
+    return reinterpret_cast< ::G1* >(d->p)->spill(data);
+}
+
+void G1::loadMultPrecomputations(char *data) {
+    if (!d) {
+        delete[] data;
+        return;
+    }
+    reinterpret_cast< ::G1* >(d->p)->restore(data);
+}
+
 G1 G1::getRand() {
     ::G1 *el = new ::G1();
     pfc->random(*el);
@@ -699,6 +730,52 @@ void G2::getData(char *data, bool compressed) const {
         to_binary(b3, len, data += len, TRUE);
         to_binary(b4, len, data + len, TRUE);
     }
+}
+
+void G2::precomputeForMult() {
+    if (!d) return;
+    pfc->precomp_for_mult(*reinterpret_cast< ::G2* >(d->p));
+}
+
+int G2::saveMultPrecomputations(char *&data) {
+    if (!d) {
+        /* Dummy implementation */
+        data = new char[1];
+        *data = 0;
+        return 1;
+    }
+    return reinterpret_cast< ::G2* >(d->p)->spill(data);
+}
+
+void G2::loadMultPrecomputations(char *data) {
+    if (!d) {
+        delete[] data;
+        return;
+    }
+    reinterpret_cast< ::G2* >(d->p)->restore(data);
+}
+
+void G2::precomputeForPairing() {
+    if (!d) return;
+    pfc->precomp_for_pairing(*reinterpret_cast< ::G2* >(d->p));
+}
+
+int G2::savePairingPrecomputations(char *&data) {
+    if (!d) {
+        /* Dummy implementation */
+        data = new char[1];
+        *data = 0;
+        return 1;
+    }
+    return pfc->spill(*reinterpret_cast< ::G2* >(d->p), data);
+}
+
+void G2::loadPairingPrecomputations(char *data) {
+    if (!d) {
+        delete[] data;
+        return;
+    }
+    pfc->restore(data, *reinterpret_cast< ::G2* >(d->p));
 }
 
 G2 G2::getRand() {
@@ -994,6 +1071,29 @@ void GT::getData(char *data) const {
     to_binary(b2, len, data + len, TRUE);
 }
 
+void GT::precomputeForPower() {
+    if (!d) return;
+    pfc->precomp_for_power(*reinterpret_cast< ::GT* >(d->p));
+}
+
+int GT::savePowerPrecomputations(char *&data) {
+    if (!d) {
+        /* Dummy implementation */
+        data = new char[1];
+        *data = 0;
+        return 1;
+    }
+    return reinterpret_cast< ::GT* >(d->p)->spill(data);
+}
+
+void GT::loadPowerPrecomputations(char *data) {
+    if (!d) {
+        delete[] data;
+        return;
+    }
+    reinterpret_cast< ::GT* >(d->p)->restore(data);
+}
+
 GT GT::getRand() {
     ::Big b;
     pfc->random(b);
@@ -1091,6 +1191,7 @@ void GT::deref() {
 /* -------------------- PBC build -------------------- */
 
 // TODO
+#error PBC implementation has not been done yet!
 
 #else
 #error Neither MIRACL nor PBC have been specified for this build
