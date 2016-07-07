@@ -100,6 +100,7 @@ int main() {
     g1.precomputeForMult();
     g1.saveMultPrecomputations(data2);
     g3.loadMultPrecomputations(data2);
+    ASSERT(g1 == g3);
     ASSERT(g2 == (v1 * g1));
     ASSERT(g2 == (v1 * g3));
 

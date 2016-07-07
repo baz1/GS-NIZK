@@ -482,7 +482,9 @@ void G1::loadMultPrecomputations(char *data) {
         delete[] data;
         return;
     }
-    reinterpret_cast< ::G1* >(d->p)->restore(data);
+    ::G1 &_this = *reinterpret_cast< ::G1* >(d->p);
+    _this.restore(data);
+    _this.mtbits = MR_ROUNDUP(bits(*pfc->ord),WINDOW_SIZE);
 }
 
 G1 G1::getRand() {
@@ -553,7 +555,7 @@ G2 G2::operator-() const {
     return G2(reinterpret_cast<void*>(new ::G2(-_this)));
 }
 
-/* Replacement for "G2 operator+(const G2& x,const G2& y)" */
+/* Replacement for "::G2 operator+(const ::G2& x,const ::G2& y)" */
 ::G2 *addG2(const ::G2 &a, const ::G2 &b) {
     ::G2 *result;
     // Note: Sorry about the following const_cast-s, const keyword simply missing in ECn2::type
@@ -752,7 +754,9 @@ void G2::loadMultPrecomputations(char *data) {
         delete[] data;
         return;
     }
-    reinterpret_cast< ::G2* >(d->p)->restore(data);
+    ::G2 &_this = *reinterpret_cast< ::G2* >(d->p);
+    _this.restore(data);
+    _this.mtbits = MR_ROUNDUP(bits(*pfc->ord),WINDOW_SIZE);
 }
 
 void G2::precomputeForPairing() {
@@ -1091,7 +1095,9 @@ void GT::loadPowerPrecomputations(char *data) {
         delete[] data;
         return;
     }
-    reinterpret_cast< ::GT* >(d->p)->restore(data);
+    ::GT &_this = *reinterpret_cast< ::GT* >(d->p);
+    _this.restore(data);
+    _this.etbits = MR_ROUNDUP(bits(*pfc->ord),WINDOW_SIZE);
 }
 
 GT GT::getRand() {
