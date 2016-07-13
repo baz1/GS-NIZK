@@ -34,10 +34,12 @@ CONFIG += c++11
 
 SOURCES += gsnizk.cpp \
     pairings.cpp \
-    test.cpp
+    test.cpp \
+    maps.cpp
 
 HEADERS += gsnizk.h \
-    pairings.h
+    pairings.h \
+    maps.h
 
 config_miracl {
     include(BN.pri)

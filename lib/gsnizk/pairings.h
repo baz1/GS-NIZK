@@ -9,6 +9,14 @@
 #include <vector>
 
 /**
+ * @file pairings.h
+ * @brief Pairing-based cryptography wrapper - @ref pairings namespace.
+ *
+ * This file defines the @ref pairings namespace that is at the core
+ * of pairing-based cryptography.
+ */
+
+/**
  * @brief Pairing-based cryptography wrapper.
  *
  * This namespace contains the main four groups that are used in
@@ -319,6 +327,11 @@ private:
     SharedData *d;
 };
 
+/**
+ * @brief The @f$\mathbb{G}_1@f$ class.
+ *
+ * Group of order @f$p@f$.
+ */
 class G1 {
     friend class GT;
 public:
@@ -579,6 +592,11 @@ private:
     SharedData *d;
 };
 
+/**
+ * @brief The @f$\mathbb{G}_2@f$ class.
+ *
+ * Group of order @f$p@f$.
+ */
 class G2 {
     friend class GT;
 public:
@@ -905,6 +923,13 @@ private:
     SharedData *d;
 };
 
+/**
+ * @brief The @f$\mathbb{G}_T@f$ class.
+ *
+ * Group of order @f$p@f$, provided with a bilinear map
+ * going from @f$\mathbb{G}_1\times\mathbb{G}_2@f$
+ * to @f$\mathbb{G}_T@f$.
+ */
 class GT {
 public:
     /**
@@ -1221,4 +1246,4 @@ inline GT::GT(SharedData *d) : d(d) { ++d->c; }
 
 } /* End of namespace pairings */
 
-#endif // PAIRINGS_H
+#endif /* End of PAIRINGS_H */
