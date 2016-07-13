@@ -22,5 +22,5 @@ install_files/master.zip:
 	wget "https://github.com/miracl/MIRACL/archive/master.zip" -O install_files/master.zip
 
 doc/: lib/gsnizk/*.h lib/gsnizk/*.dox lib/gsnizk/Doxyfile
-	
+	cd lib/gsnizk/; doxygen Doxyfile
 
