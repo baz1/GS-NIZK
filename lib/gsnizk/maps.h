@@ -273,6 +273,54 @@ public:
      */
     inline BT(const GT &_11, const GT &_12, const GT &_21, const GT &_22);
     /**
+     * @brief Multiplication operator.
+     * @param other Value to multiply with the current element.
+     * @return The product of the two elements.
+     */
+    inline BT operator*(const BT &other) const;
+    /**
+     * @brief Division operator.
+     * @param other Value with which to divide the current element.
+     * @return The fraction of the two elements.
+     */
+    inline BT operator/(const BT &other) const;
+    /**
+     * @brief Inplace multiplication operator.
+     * @param other Value to multiply with the current element.
+     * @return Reference to the modified element.
+     */
+    inline BT &operator*=(const BT &other);
+    /**
+     * @brief Inplace division operator.
+     * @param other Value with which to divide the current element.
+     * @return Reference to the modified element.
+     */
+    inline BT &operator/=(const BT &other);
+    /**
+     * @brief Inplace power operator.
+     * @param other Exponent value.
+     * @return Reference to the modified element.
+     */
+    inline BT &operator^=(const Fp &other);
+    /**
+     * @brief Power operator.
+     * @param other Exponent value.
+     * @return Power @f$this^{other}@f$
+     */
+    inline BT operator^(const Fp &other) const;
+    /**
+     * @brief Equality operator.
+     * @param other Value with which to compare the current element.
+     * @return `true` if the two values are equal, `false` otherwise.
+     */
+    inline bool operator==(const BT &other) const;
+    /**
+     * @brief Inequality operator.
+     * @param other Value with which to compare the current element.
+     * @return `false` if the two values are equal, `true` otherwise.
+     */
+    inline bool operator!=(const BT &other) const;
+    /**
      * @brief Writes this element to an output stream.
      * @param stream Output stream.
      * @param el Element to write in the stream.
@@ -504,6 +552,42 @@ inline BT::BT() {}
 
 inline BT::BT(const GT &_11, const GT &_12, const GT &_21, const GT &_22)
     : _11(_11), _12(_12), _21(_21), _22(_22) {}
+
+inline BT BT::operator*(const BT &other) const {
+    return BT(_11 * other._11, _12 * other._12,
+              _21 * other._21, _22 * other._22);
+}
+
+inline BT BT::operator/(const BT &other) const {
+    return BT(_11 / other._11, _12 / other._12,
+              _21 / other._21, _22 / other._22);
+}
+
+inline BT &BT::operator*=(const BT &other) {
+    _11 *= other._11;
+    _12 *= other._12;
+    _21 *= other._21;
+    _22 *= other._22;
+    return *this;
+}
+
+inline BT &BT::operator/=(const BT &other) {
+    _11 /= other._11;
+    _12 /= other._12;
+    _21 /= other._21;
+    _22 /= other._22;
+    return *this;
+}
+
+inline bool BT::operator==(const BT &other) const {
+    return (_11 == other._11) && (_12 == other._12) &&
+            (_21 == other._21) && (_22 == other._22);
+}
+
+inline bool BT::operator!=(const BT &other) const {
+    return !((_11 == other._11) && (_12 == other._12) &&
+             (_21 == other._21) && (_22 == other._22));
+}
 
 inline std::ostream &operator<<(std::ostream &stream, const BT &el) {
     stream << el._11 << el._12;
