@@ -523,6 +523,10 @@ public:
      */
     inline bool isNull() const;
     /**
+     * @brief Sets this element to the null value.
+     */
+    inline void clear();
+    /**
      * @brief Does some precomputations in preparation for
      *   scalar multiplication.
      *
@@ -809,6 +813,10 @@ public:
      * @return `true` if the element is null, `false` otherwise.
      */
     inline bool isNull() const;
+    /**
+     * @brief Sets this element to the null value.
+     */
+    inline void clear();
     /**
      * @brief Does some precomputations in preparation for
      *   scalar multiplication.
@@ -1134,6 +1142,10 @@ public:
      */
     inline bool isUnit() const;
     /**
+     * @brief Sets this element to 1.
+     */
+    inline void clear();
+    /**
      * @brief Does some precomputations in preparation for
      *   scalar power.
      *
@@ -1293,6 +1305,8 @@ inline bool G1::operator!=(const G1 &other) const {
 
 inline bool G1::isNull() const { return !d; }
 
+inline void G1::clear() { if (d) deref(); }
+
 inline G1::G1(void *v) : d(new SharedData(v)) {}
 
 inline G1::G1(SharedData *d) : d(d) { ++d->c; }
@@ -1317,6 +1331,8 @@ inline bool G2::operator!=(const G2 &other) const {
 
 inline bool G2::isNull() const { return !d; }
 
+inline void G2::clear() { if (d) deref(); }
+
 inline G2::G2(void *v) : d(new SharedData(v)) {}
 
 inline G2::G2(SharedData *d) : d(d) { ++d->c; }
@@ -1340,6 +1356,8 @@ inline bool GT::operator!=(const GT &other) const {
 }
 
 inline bool GT::isUnit() const { return !d; }
+
+inline void GT::clear() { if (d) deref(); }
 
 inline GT::GT(void *v) : d(new SharedData(v)) {}
 
