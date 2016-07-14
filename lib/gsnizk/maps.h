@@ -106,6 +106,25 @@ public:
      */
     inline B1 &operator-=(const B1 &other);
     /**
+     * @brief Inplace multiplication operator.
+     * @param other Scalar to multiply with the current element.
+     * @return Reference to the modified element.
+     */
+    inline B1 &operator*=(const Fp &other);
+    /**
+     * @brief Multiplication operator.
+     * @param other Scalar to multiply with the current element.
+     * @return The product of the two elements.
+     */
+    inline B1 operator*(const Fp &other) const;
+    /**
+     * @brief Multiplication operator.
+     * @param m Scalar value.
+     * @param g Element value.
+     * @return Product @f$m\cdot g@f$
+     */
+    inline friend B1 operator*(const Fp &m, const B1 &g);
+    /**
      * @brief Writes this element to an output stream.
      * @param stream Output stream.
      * @param el Element to write in the stream.
@@ -171,6 +190,25 @@ public:
      * @return Reference to the modified element.
      */
     inline B2 &operator-=(const B2 &other);
+    /**
+     * @brief Inplace multiplication operator.
+     * @param other Scalar to multiply with the current element.
+     * @return Reference to the modified element.
+     */
+    inline B2 &operator*=(const Fp &other);
+    /**
+     * @brief Multiplication operator.
+     * @param other Scalar to multiply with the current element.
+     * @return The product of the two elements.
+     */
+    inline B2 operator*(const Fp &other) const;
+    /**
+     * @brief Multiplication operator.
+     * @param m Scalar value.
+     * @param g Element value.
+     * @return Product @f$m\cdot g@f$
+     */
+    inline friend B2 operator*(const Fp &m, const B2 &g);
     /**
      * @brief Writes this element to an output stream.
      * @param stream Output stream.
@@ -337,11 +375,27 @@ inline B1 B1::operator-(const B1 &other) const {
 inline B1 &B1::operator+=(const B1 &other) {
     _1 += other._1;
     _2 += other._2;
+    return *this;
 }
 
 inline B1 &B1::operator-=(const B1 &other) {
     _1 -= other._1;
     _2 -= other._2;
+    return *this;
+}
+
+inline B1 &B1::operator*=(const Fp &other) {
+    _1 *= other;
+    _2 *= other;
+    return *this;
+}
+
+inline B1 B1::operator*(const Fp &other) const {
+    return B1(other * _1, other * _2);
+}
+
+inline B1 operator*(const Fp &m, const B1 &g) {
+    return B1(m * g._1, m * g._2);
 }
 
 inline std::ostream &operator<<(std::ostream &stream, const B1 &el) {
@@ -373,11 +427,27 @@ inline B2 B2::operator-(const B2 &other) const {
 inline B2 &B2::operator+=(const B2 &other) {
     _1 += other._1;
     _2 += other._2;
+    return *this;
 }
 
 inline B2 &B2::operator-=(const B2 &other) {
     _1 -= other._1;
     _2 -= other._2;
+    return *this;
+}
+
+inline B2 &B2::operator*=(const Fp &other) {
+    _1 *= other;
+    _2 *= other;
+    return *this;
+}
+
+inline B2 B2::operator*(const Fp &other) const {
+    return B2(other * _1, other * _2);
+}
+
+inline B2 operator*(const Fp &m, const B2 &g) {
+    return B2(m * g._1, m * g._2);
 }
 
 inline std::ostream &operator<<(std::ostream &stream, const B2 &el) {
