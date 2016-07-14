@@ -53,9 +53,104 @@ typedef pairings::G2 G2;
  */
 typedef pairings::GT GT;
 
-class B1;
-class B2;
-class BT;
+class CRS;
+
+class B1 {
+public:
+    /**
+     * @brief Constructs a null element.
+     */
+    inline B1();
+    /**
+     * @brief Constructs an element from its components
+     * @param _1 First component.
+     * @param _2 Second component.
+     */
+    inline B1(const G1 &_1, const G1 &_2);
+    /**
+     * @brief Writes this element to an output stream.
+     * @param stream Output stream.
+     * @param el Element to write in the stream.
+     * @return Reference to the output stream.
+     * @sa operator>>(std::istream&,B1&)
+     */
+    inline friend std::ostream &operator<<(std::ostream &stream, const B1 &el);
+    /**
+     * @brief Reads this element from an input stream.
+     * @param stream Input stream.
+     * @param el Element to read from the stream.
+     * @return Reference to the input stream.
+     * @sa operator<<(std::istream&,const B1&)
+     */
+    inline friend std::istream &operator>>(std::istream &stream, B1 &el);
+public:
+    G1 _1, _2;
+};
+
+class B2 {
+public:
+    /**
+     * @brief Constructs a null element.
+     */
+    inline B2();
+    /**
+     * @brief Constructs an element from its components
+     * @param _1 First component.
+     * @param _2 Second component.
+     */
+    inline B2(const G2 &_1, const G2 &_2);
+    /**
+     * @brief Writes this element to an output stream.
+     * @param stream Output stream.
+     * @param el Element to write in the stream.
+     * @return Reference to the output stream.
+     * @sa operator>>(std::istream&,B2&)
+     */
+    inline friend std::ostream &operator<<(std::ostream &stream, const B2 &el);
+    /**
+     * @brief Reads this element from an input stream.
+     * @param stream Input stream.
+     * @param el Element to read from the stream.
+     * @return Reference to the input stream.
+     * @sa operator<<(std::istream&,const B2&)
+     */
+    inline friend std::istream &operator>>(std::istream &stream, B2 &el);
+public:
+    G2 _1, _2;
+};
+
+class BT {
+public:
+    /**
+     * @brief Constructs a new unit element (value 1).
+     */
+    inline BT();
+    /**
+     * @brief Constructs an element from its components
+     * @param _1 First component.
+     * @param _2 Second component.
+     */
+    inline BT(const GT &_11, const GT &_12, const GT &_21, const GT &_22);
+    /**
+     * @brief Writes this element to an output stream.
+     * @param stream Output stream.
+     * @param el Element to write in the stream.
+     * @return Reference to the output stream.
+     * @sa operator>>(std::istream&,BT&)
+     */
+    inline friend std::ostream &operator<<(std::ostream &stream, const BT &el);
+    /**
+     * @brief Reads this element from an input stream.
+     * @param stream Input stream.
+     * @param el Element to read from the stream.
+     * @return Reference to the input stream.
+     * @sa operator<<(std::istream&,const BT&)
+     */
+    inline friend std::istream &operator>>(std::istream &stream, BT &el);
+public:
+    GT _11, _12;
+    GT _21, _22;
+};
 
 /* Below are the three different possible types of CRS */
 #define CRS_TYPE_PUBLIC     0 /* No additional information */
@@ -106,11 +201,60 @@ public:
      */
     friend std::istream &operator>>(std::istream &stream, CRS &crs);
 private:
+    void computeElements();
+private:
     B1 u1, v1, w1;
     B2 u2, v2, w2;
     int type;
-    Fp i1, i2;
+    Fp i1, j1, i2, j2;
 };
+
+/* Inline definitions: */
+
+inline B1::B1() {}
+
+inline B1::B1(const G1 &_1, const G1 &_2) : _1(_1), _2(_2) {}
+
+inline std::ostream &operator<<(std::ostream &stream, const B1 &el) {
+    stream << el._1 << el._2;
+    return stream;
+}
+
+inline std::istream &operator>>(std::istream &stream, B1 &el) {
+    stream >> el._1 >> el._2;
+    return stream;
+}
+
+inline B2::B2() {}
+
+inline B2::B2(const G2 &_1, const G2 &_2) : _1(_1), _2(_2) {}
+
+inline std::ostream &operator<<(std::ostream &stream, const B2 &el) {
+    stream << el._1 << el._2;
+    return stream;
+}
+
+inline std::istream &operator>>(std::istream &stream, B2 &el) {
+    stream >> el._1 >> el._2;
+    return stream;
+}
+
+inline BT::BT() {}
+
+inline BT::BT(const GT &_11, const GT &_12, const GT &_21, const GT &_22)
+    : _11(_11), _12(_12), _21(_21), _22(_22) {}
+
+inline std::ostream &operator<<(std::ostream &stream, const BT &el) {
+    stream << el._11 << el._12;
+    stream << el._21 << el._22;
+    return stream;
+}
+
+inline std::istream &operator>>(std::istream &stream, BT &el) {
+    stream >> el._21 >> el._22;
+    stream >> el._21 >> el._22;
+    return stream;
+}
 
 } /* End of gsnizk */
 
