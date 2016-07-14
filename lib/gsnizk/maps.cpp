@@ -2,6 +2,14 @@
 
 namespace gsnizk {
 
+G1 B1::extract(const CRS &crs) const {
+    return _2 - (Fp(1) / crs.j1) * _1;
+}
+
+G2 B2::extract(const CRS &crs) const {
+    return _2 - (Fp(1) / crs.j2) * _1;
+}
+
 BT BT::pairing(const B1 &a, const B2 &b) {
     // TODO precompute pairings?
     return BT(GT::pairing(a._1, b._1), GT::pairing(a._1, b._2),

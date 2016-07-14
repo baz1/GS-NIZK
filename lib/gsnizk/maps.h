@@ -165,6 +165,16 @@ public:
      * @sa operator<<(std::istream&,const B1&)
      */
     inline friend std::istream &operator>>(std::istream &stream, B1 &el);
+    /**
+     * @brief Extracts the value in @f$\mathbb{G}_1@f$ that this
+     *   commitment refers to.
+     * @note If this value refers to a commitment in @f$\mathbb{F}_p@f$,
+     *   the value that is returned will be equal to `crs.getG()`
+     *   multiplied with the commited value.
+     * @param crs CRS with information on the binding key.
+     * @return Value in @f$\mathbb{G}_1@f$ that this commitment refers to.
+     */
+    G1 extract(const CRS &crs) const;
 public:
     G1 _1, _2;
 };
@@ -275,6 +285,16 @@ public:
      * @sa operator<<(std::istream&,const B2&)
      */
     inline friend std::istream &operator>>(std::istream &stream, B2 &el);
+    /**
+     * @brief Extracts the value in @f$\mathbb{G}_2@f$ that this
+     *   commitment refers to.
+     * @note If this value refers to a commitment in @f$\mathbb{F}_p@f$,
+     *   the value that is returned will be equal to `crs.getH()`
+     *   multiplied with the commited value.
+     * @param crs CRS with information on the binding key.
+     * @return Value in @f$\mathbb{G}_2@f$ that this commitment refers to.
+     */
+    G2 extract(const CRS &crs) const;
 public:
     G2 _1, _2;
 };
