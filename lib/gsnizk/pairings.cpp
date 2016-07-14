@@ -519,14 +519,14 @@ void G1::getData(char *data, bool compressed) const {
         ::Big x, y;
         _this.g.get(x, y);
         to_binary(x, big_size, data, TRUE);
-        to_binary(y, big_size, data + len, TRUE);
+        to_binary(y, big_size, data + big_size, TRUE);
     }
 }
 
 std::ostream &operator<<(std::ostream &stream, const G1 &el) {
     char lsb;
     if (!el.d) {
-        lsb = 0xFF;
+        lsb = (char) (unsigned char) 0xFF;
         stream.write(&lsb, 1);
         return stream;
     }
@@ -551,7 +551,7 @@ std::istream &operator>>(std::istream &stream, G1 &el) {
     ::G1 *_el = new ::G1();
     char lsb;
     stream.read(&lsb, 1);
-    if (lsb == 0xFF) {
+    if (lsb == (char) (unsigned char) 0xFF) {
         if (el.d) el.deref();
         return stream;
     }
@@ -567,7 +567,7 @@ std::istream &operator>>(std::istream &stream, G1 &el) {
     if (el.d) {
         if (el.d->c) {
             --el.d->c;
-            el->d = new SharedData(reinterpret_cast<void*>(_el));
+            el.d = new SharedData(reinterpret_cast<void*>(_el));
         } else {
             delete reinterpret_cast< ::G1* >(el.d->p);
             el.d->p = reinterpret_cast<void*>(_el);
@@ -852,7 +852,7 @@ void G2::getData(char *data, bool compressed) const {
 std::ostream &operator<<(std::ostream &stream, const G2 &el) {
     char lsb;
     if (!el.d) {
-        lsb = 0xFF;
+        lsb = (char) (unsigned char) 0xFF;
         stream.write(&lsb, 1);
         return stream;
     }
@@ -884,7 +884,7 @@ std::istream &operator>>(std::istream &stream, G2 &el) {
     ::G2 *_el = new ::G2();
     char lsb;
     stream.read(&lsb, 1);
-    if (lsb == 0xFF) {
+    if (lsb == (char) (unsigned char) 0xFF) {
         if (el.d) el.deref();
         return stream;
     }
@@ -904,15 +904,15 @@ std::istream &operator>>(std::istream &stream, G2 &el) {
 #endif
     ZZn2 x, y;
     x.set(b1, b2);
-    el->g.set(x);
-    el->g.get(x, y);
+    _el->g.set(x);
+    _el->g.get(x, y);
     y.get(b1);
     if ((b1.get(1) & 1) != (int) lsb)
-        *el = -(*el);
+        *_el = -(*_el);
     if (el.d) {
         if (el.d->c) {
             --el.d->c;
-            el->d = new SharedData(reinterpret_cast<void*>(_el));
+            el.d = new SharedData(reinterpret_cast<void*>(_el));
         } else {
             delete reinterpret_cast< ::G2* >(el.d->p);
             el.d->p = reinterpret_cast<void*>(_el);
@@ -1263,10 +1263,10 @@ void GT::getData(char *data) const {
     to_binary(b2, big_size, data + big_size, TRUE);
 }
 
-std::ostream &operator<<(std::ostream &stream, const G2 &el) {
+std::ostream &operator<<(std::ostream &stream, const GT &el) {
     char lsb;
     if (!el.d) {
-        lsb = 0xFF;
+        lsb = (char) (unsigned char) 0xFF;
         stream.write(&lsb, 1);
         return stream;
     }
@@ -1351,11 +1351,11 @@ std::ostream &operator<<(std::ostream &stream, const G2 &el) {
     return stream;
 }
 
-std::istream &operator>>(std::istream &stream, G2 &el) {
+std::istream &operator>>(std::istream &stream, GT &el) {
     ::GT *_el = new ::GT();
     char lsb;
     stream.read(&lsb, 1);
-    if (lsb == 0xFF) {
+    if (lsb == (char) (unsigned char) 0xFF) {
         if (el.d) el.deref();
         return stream;
     }
@@ -1364,80 +1364,80 @@ std::istream &operator>>(std::istream &stream, G2 &el) {
     ::Big b1, b2;
 #ifdef GSNIZK_IOSTREAM_NOTHREADS
     stream.read(iostream_nothreads_buffer, big_size);
-    b1 = from_binary(len, iostream_nothreads_buffer);
+    b1 = from_binary(big_size, iostream_nothreads_buffer);
     stream.read(iostream_nothreads_buffer, big_size);
-    b2 = from_binary(len, iostream_nothreads_buffer);
+    b2 = from_binary(big_size, iostream_nothreads_buffer);
     x.set(b1, b2);
     stream.read(iostream_nothreads_buffer, big_size);
-    b1 = from_binary(len, iostream_nothreads_buffer);
+    b1 = from_binary(big_size, iostream_nothreads_buffer);
     stream.read(iostream_nothreads_buffer, big_size);
-    b2 = from_binary(len, iostream_nothreads_buffer);
+    b2 = from_binary(big_size, iostream_nothreads_buffer);
     y.set(b1, b2);
     a.set(x, y);
     stream.read(iostream_nothreads_buffer, big_size);
-    b1 = from_binary(len, iostream_nothreads_buffer);
+    b1 = from_binary(big_size, iostream_nothreads_buffer);
     stream.read(iostream_nothreads_buffer, big_size);
-    b2 = from_binary(len, iostream_nothreads_buffer);
+    b2 = from_binary(big_size, iostream_nothreads_buffer);
     x.set(b1, b2);
     stream.read(iostream_nothreads_buffer, big_size);
-    b1 = from_binary(len, iostream_nothreads_buffer);
+    b1 = from_binary(big_size, iostream_nothreads_buffer);
     stream.read(iostream_nothreads_buffer, big_size);
-    b2 = from_binary(len, iostream_nothreads_buffer);
+    b2 = from_binary(big_size, iostream_nothreads_buffer);
     y.set(b1, b2);
     b.set(x, y);
     stream.read(iostream_nothreads_buffer, big_size);
-    b1 = from_binary(len, iostream_nothreads_buffer);
+    b1 = from_binary(big_size, iostream_nothreads_buffer);
     stream.read(iostream_nothreads_buffer, big_size);
-    b2 = from_binary(len, iostream_nothreads_buffer);
+    b2 = from_binary(big_size, iostream_nothreads_buffer);
     x.set(b1, b2);
     stream.read(iostream_nothreads_buffer, big_size);
-    b1 = from_binary(len, iostream_nothreads_buffer);
+    b1 = from_binary(big_size, iostream_nothreads_buffer);
     stream.read(iostream_nothreads_buffer, big_size);
-    b2 = from_binary(len, iostream_nothreads_buffer);
+    b2 = from_binary(big_size, iostream_nothreads_buffer);
     y.set(b1, b2);
     c.set(x, y);
 #else
     char *iostream_threads_buffer = new char[big_size];
     stream.read(iostream_threads_buffer, big_size);
-    b1 = from_binary(len, iostream_threads_buffer);
+    b1 = from_binary(big_size, iostream_threads_buffer);
     stream.read(iostream_threads_buffer, big_size);
-    b2 = from_binary(len, iostream_threads_buffer);
+    b2 = from_binary(big_size, iostream_threads_buffer);
     x.set(b1, b2);
     stream.read(iostream_threads_buffer, big_size);
-    b1 = from_binary(len, iostream_threads_buffer);
+    b1 = from_binary(big_size, iostream_threads_buffer);
     stream.read(iostream_threads_buffer, big_size);
-    b2 = from_binary(len, iostream_threads_buffer);
+    b2 = from_binary(big_size, iostream_threads_buffer);
     y.set(b1, b2);
     a.set(x, y);
     stream.read(iostream_threads_buffer, big_size);
-    b1 = from_binary(len, iostream_threads_buffer);
+    b1 = from_binary(big_size, iostream_threads_buffer);
     stream.read(iostream_threads_buffer, big_size);
-    b2 = from_binary(len, iostream_threads_buffer);
+    b2 = from_binary(big_size, iostream_threads_buffer);
     x.set(b1, b2);
     stream.read(iostream_threads_buffer, big_size);
-    b1 = from_binary(len, iostream_threads_buffer);
+    b1 = from_binary(big_size, iostream_threads_buffer);
     stream.read(iostream_threads_buffer, big_size);
-    b2 = from_binary(len, iostream_threads_buffer);
+    b2 = from_binary(big_size, iostream_threads_buffer);
     y.set(b1, b2);
     b.set(x, y);
     stream.read(iostream_threads_buffer, big_size);
-    b1 = from_binary(len, iostream_threads_buffer);
+    b1 = from_binary(big_size, iostream_threads_buffer);
     stream.read(iostream_threads_buffer, big_size);
-    b2 = from_binary(len, iostream_threads_buffer);
+    b2 = from_binary(big_size, iostream_threads_buffer);
     x.set(b1, b2);
     stream.read(iostream_threads_buffer, big_size);
-    b1 = from_binary(len, iostream_threads_buffer);
+    b1 = from_binary(big_size, iostream_threads_buffer);
     stream.read(iostream_threads_buffer, big_size);
-    b2 = from_binary(len, iostream_threads_buffer);
+    b2 = from_binary(big_size, iostream_threads_buffer);
     y.set(b1, b2);
     c.set(x, y);
     delete[] iostream_threads_buffer;
 #endif
-    el->g.set(a, b, c);
+    _el->g.set(a, b, c);
     if (el.d) {
         if (el.d->c) {
             --el.d->c;
-            el->d = new SharedData(reinterpret_cast<void*>(_el));
+            el.d = new SharedData(reinterpret_cast<void*>(_el));
         } else {
             delete reinterpret_cast< ::G2* >(el.d->p);
             el.d->p = reinterpret_cast<void*>(_el);
