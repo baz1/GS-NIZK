@@ -237,7 +237,7 @@ public:
     /**
      * @brief Inequality operator.
      * @param other Value with which to compare the current element.
-     * @return `true` if the two values are equal, `false` otherwise.
+     * @return `false` if the two values are equal, `true` otherwise.
      */
     inline bool operator!=(const Fp &other) const;
     /**
@@ -740,7 +740,7 @@ public:
     /**
      * @brief Inequality operator.
      * @param other Value with which to compare the current element.
-     * @return `true` if the two values are equal, `false` otherwise.
+     * @return `false` if the two values are equal, `true` otherwise.
      */
     inline bool operator!=(const G2 &other) const;
     /**
@@ -1086,7 +1086,7 @@ public:
     /**
      * @brief Inequality operator.
      * @param other Value with which to compare the current element.
-     * @return `true` if the two values are equal, `false` otherwise.
+     * @return `false` if the two values are equal, `true` otherwise.
      */
     inline bool operator!=(const GT &other) const;
     /**

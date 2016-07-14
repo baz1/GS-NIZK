@@ -125,6 +125,18 @@ public:
      */
     inline friend B1 operator*(const Fp &m, const B1 &g);
     /**
+     * @brief Equality operator.
+     * @param other Value with which to compare the current element.
+     * @return `true` if the two values are equal, `false` otherwise.
+     */
+    inline bool operator==(const B1 &other) const;
+    /**
+     * @brief Inequality operator.
+     * @param other Value with which to compare the current element.
+     * @return `false` if the two values are equal, `true` otherwise.
+     */
+    inline bool operator!=(const B1 &other) const;
+    /**
      * @brief Writes this element to an output stream.
      * @param stream Output stream.
      * @param el Element to write in the stream.
@@ -209,6 +221,18 @@ public:
      * @return Product @f$m\cdot g@f$
      */
     inline friend B2 operator*(const Fp &m, const B2 &g);
+    /**
+     * @brief Equality operator.
+     * @param other Value with which to compare the current element.
+     * @return `true` if the two values are equal, `false` otherwise.
+     */
+    inline bool operator==(const B2 &other) const;
+    /**
+     * @brief Inequality operator.
+     * @param other Value with which to compare the current element.
+     * @return `false` if the two values are equal, `true` otherwise.
+     */
+    inline bool operator!=(const B2 &other) const;
     /**
      * @brief Writes this element to an output stream.
      * @param stream Output stream.
@@ -398,6 +422,14 @@ inline B1 operator*(const Fp &m, const B1 &g) {
     return B1(m * g._1, m * g._2);
 }
 
+inline bool B1::operator==(const B1 &other) const {
+    return (_1 == other._1) && (_2 == other._2);
+}
+
+inline bool B1::operator!=(const B1 &other) const {
+    return !((_1 == other._1) && (_2 == other._2));
+}
+
 inline std::ostream &operator<<(std::ostream &stream, const B1 &el) {
     stream << el._1 << el._2;
     return stream;
@@ -448,6 +480,14 @@ inline B2 B2::operator*(const Fp &other) const {
 
 inline B2 operator*(const Fp &m, const B2 &g) {
     return B2(m * g._1, m * g._2);
+}
+
+inline bool B2::operator==(const B2 &other) const {
+    return (_1 == other._1) && (_2 == other._2);
+}
+
+inline bool B2::operator!=(const B2 &other) const {
+    return !((_1 == other._1) && (_2 == other._2));
 }
 
 inline std::ostream &operator<<(std::ostream &stream, const B2 &el) {
