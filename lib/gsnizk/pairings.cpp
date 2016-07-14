@@ -1439,7 +1439,7 @@ std::istream &operator>>(std::istream &stream, GT &el) {
             --el.d->c;
             el.d = new SharedData(reinterpret_cast<void*>(_el));
         } else {
-            delete reinterpret_cast< ::G2* >(el.d->p);
+            delete reinterpret_cast< ::GT* >(el.d->p);
             el.d->p = reinterpret_cast<void*>(_el);
         }
     } else {

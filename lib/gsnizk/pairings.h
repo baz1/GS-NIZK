@@ -1305,7 +1305,12 @@ inline bool G1::operator!=(const G1 &other) const {
 
 inline bool G1::isNull() const { return !d; }
 
-inline void G1::clear() { if (d) deref(); }
+inline void G1::clear() {
+    if (d) {
+        deref();
+        d = 0;
+    }
+}
 
 inline G1::G1(void *v) : d(new SharedData(v)) {}
 
@@ -1331,7 +1336,12 @@ inline bool G2::operator!=(const G2 &other) const {
 
 inline bool G2::isNull() const { return !d; }
 
-inline void G2::clear() { if (d) deref(); }
+inline void G2::clear() {
+    if (d) {
+        deref();
+        d = 0;
+    }
+}
 
 inline G2::G2(void *v) : d(new SharedData(v)) {}
 
@@ -1357,7 +1367,12 @@ inline bool GT::operator!=(const GT &other) const {
 
 inline bool GT::isUnit() const { return !d; }
 
-inline void GT::clear() { if (d) deref(); }
+inline void GT::clear() {
+    if (d) {
+        deref();
+        d = 0;
+    }
+}
 
 inline GT::GT(void *v) : d(new SharedData(v)) {}
 

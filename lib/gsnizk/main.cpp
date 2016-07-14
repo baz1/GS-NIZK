@@ -9,8 +9,8 @@ using namespace pairings;
 
 #define ASSERT(X) if (!(X)) (cerr << "Error: Assert of " << #X << " at line " << __LINE__ << " failed!" << endl, ++n_err)
 
-#define TRANSFER_TESTS 100
-#define PAIRING_TESTS 100
+#define TRANSFER_TESTS 10
+#define PAIRING_TESTS 10
 #define PAIRING_COUNT_MAX 10
 
 #define DATA_SIZE 512
