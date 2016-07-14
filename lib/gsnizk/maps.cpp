@@ -57,8 +57,8 @@ void CRS::makePublic() {
 std::ostream &operator<<(std::ostream &stream, const CRS &crs) {
     stream << crs.type;
     if (crs.type == CRS_TYPE_PUBLIC) {
-        stream << crs.u1 << crs.v1 << crs.w1;
-        stream << crs.u2 << crs.v2 << crs.w2;
+        stream << crs.v1 << crs.w1;
+        stream << crs.v2 << crs.w2;
     } else {
         stream << crs.v1._2 << crs.v2._2;
         stream << crs.i1 << crs.j1 << crs.i2 << crs.j2;
@@ -70,8 +70,12 @@ std::istream &operator>>(std::istream &stream, CRS &crs) {
     stream >> crs.type;
     // TODO precomputations?
     if (crs.type == CRS_TYPE_PUBLIC) {
-        stream >> crs.u1 >> crs.v1 >> crs.w1;
-        stream >> crs.u2 >> crs.v2 >> crs.w2;
+        stream >> crs.v1 >> crs.w1;
+        stream >> crs.v2 >> crs.w2;
+        crs.u1._1 = crs.w1._1;
+        crs.u1._2 = crs.w1._2 + crs.v1._2;
+        crs.u2._1 = crs.w2._1;
+        crs.u2._2 = crs.w2._2 + crs.v2._2;
 #if !defined(USE_PBC)
         /* Precomputations of generators in G1 and G2 */
         crs.v1._2.precomputeForMult();
@@ -115,10 +119,10 @@ void CRS::computeElements() {
     }
 #if !defined(USE_PBC)
     /* Precomputations for commitments of scalars */
-    crs.u1._1.precomputeForMult();
-    crs.u1._2.precomputeForMult();
-    crs.u2._1.precomputeForMult();
-    crs.u2._2.precomputeForMult();
+    u1._1.precomputeForMult();
+    u1._2.precomputeForMult();
+    u2._1.precomputeForMult();
+    u2._2.precomputeForMult();
 #endif
 }
 
