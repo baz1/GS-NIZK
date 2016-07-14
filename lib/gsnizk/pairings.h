@@ -6,6 +6,7 @@
 #ifndef PAIRINGS_H
 #define PAIRINGS_H
 
+#include <iostream>
 #include <vector>
 
 /**
@@ -251,6 +252,20 @@ public:
      */
     void getData(char *data) const;
     /**
+     * @brief Writes this element to an output stream.
+     * @param stream Output stream.
+     * @param el Element to write in the stream.
+     * @return Reference to the output stream.
+     */
+    friend std::ostream &operator<<(std::ostream &stream, const Fp &el);
+    /**
+     * @brief Reads this element from an input stream.
+     * @param stream Input stream.
+     * @param el Element to read from the stream.
+     * @return Reference to the input stream.
+     */
+    friend std::istream &operator>>(std::istream &stream, Fp &el);
+    /**
      * @brief Checks if the element is null.
      * @return `true` if the element is null, `false` otherwise.
      */
@@ -458,6 +473,20 @@ public:
      * @sa G1::getValue(const char*,int,bool)
      */
     void getData(char *data, bool compressed = false) const;
+    /**
+     * @brief Writes this element to an output stream.
+     * @param stream Output stream.
+     * @param el Element to write in the stream.
+     * @return Reference to the output stream.
+     */
+    friend std::ostream &operator<<(std::ostream &stream, const G1 &el);
+    /**
+     * @brief Reads this element from an input stream.
+     * @param stream Input stream.
+     * @param el Element to read from the stream.
+     * @return Reference to the input stream.
+     */
+    friend std::istream &operator>>(std::istream &stream, G1 &el);
     /**
      * @brief Checks if the element is null.
      * @return `true` if the element is null, `false` otherwise.
@@ -723,6 +752,20 @@ public:
      * @sa G2::getValue(const char*,int,bool)
      */
     void getData(char *data, bool compressed = false) const;
+    /**
+     * @brief Writes this element to an output stream.
+     * @param stream Output stream.
+     * @param el Element to write in the stream.
+     * @return Reference to the output stream.
+     */
+    friend std::ostream &operator<<(std::ostream &stream, const G2 &el);
+    /**
+     * @brief Reads this element from an input stream.
+     * @param stream Input stream.
+     * @param el Element to read from the stream.
+     * @return Reference to the input stream.
+     */
+    friend std::istream &operator>>(std::istream &stream, G2 &el);
     /**
      * @brief Checks if the element is null.
      * @return `true` if the element is null, `false` otherwise.
@@ -1027,6 +1070,20 @@ public:
      * @sa Fp::getValue(const char*,int)
      */
     void getData(char *data) const;
+    /**
+     * @brief Writes this element to an output stream.
+     * @param stream Output stream.
+     * @param el Element to write in the stream.
+     * @return Reference to the output stream.
+     */
+    friend std::ostream &operator<<(std::ostream &stream, const GT &el);
+    /**
+     * @brief Reads this element from an input stream.
+     * @param stream Input stream.
+     * @param el Element to read from the stream.
+     * @return Reference to the input stream.
+     */
+    friend std::istream &operator>>(std::istream &stream, GT &el);
     /**
      * @brief Checks if the element is 1.
      * @return `true` if the element is 1, `false` otherwise.
