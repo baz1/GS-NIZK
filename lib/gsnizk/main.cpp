@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <cstdlib>
 
 #include "pairings.h"
@@ -213,6 +214,41 @@ int main() {
     h3.loadPairingPrecomputations(data2);
     ASSERT(t1 == GT::pairing(g1, h1));
     ASSERT(t1 == GT::pairing(g1, h3));
+
+    /* -------------------- iostream tests -------------------- */
+    cout << "Testing iostream serialization..." << endl;
+    v1 = Fp::getRand();
+    v2 = Fp();
+    g1 = G1::getRand();
+    g2.clear();
+    h1 = G2::getRand();
+    h2.clear();
+    t1 = GT::getRand();
+    t2.clear();
+    {
+        ofstream out("test.test");
+        out << v1 << v2;
+        out << g1 << g2;
+        out << h1 << h2;
+        out << t1 << t2;
+        out.close();
+    }
+    {
+        ifstream in("test.test");
+        in >> v3 >> v4;
+        in >> g3 >> g4;
+        in >> h3 >> h4;
+        in >> t3 >> t4;
+        in.close();
+    }
+    ASSERT(v1 == v3);
+    ASSERT(v2 == v4);
+    ASSERT(g1 == g3);
+    ASSERT(g2 == g4);
+    ASSERT(h1 == h3);
+    ASSERT(h2 == h4);
+    ASSERT(t1 == t3);
+    ASSERT(t2 == t4);
 
     terminate_pairings();
     if (n_err) {
