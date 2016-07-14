@@ -409,6 +409,13 @@ public:
      * @sa operator<<(std::istream&,const BT&)
      */
     inline friend std::istream &operator>>(std::istream &stream, BT &el);
+    /**
+     * @brief Extracts the value that this commitment refers to,
+     *   as an element of @f$\mathbb{G}_T@f$.
+     * @param crs CRS with information on the binding key.
+     * @return Value in @f$\mathbb{G}_T@f$ that this commitment refers to.
+     */
+    GT extract(const CRS &crs) const;
 public:
     /**
      * @brief Computes a pairing of two elements.

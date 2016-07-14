@@ -10,6 +10,11 @@ G2 B2::extract(const CRS &crs) const {
     return _2 - (Fp(1) / crs.j2) * _1;
 }
 
+GT BT::extract(const CRS &crs) const {
+    Fp p = Fp(-1) / crs.j1;
+    return (_22 * (_12 ^ p)) * ((_21 * (_11 ^ p)) ^ (Fp(-1) / crs.j2));
+}
+
 BT BT::pairing(const B1 &a, const B2 &b) {
     // TODO precompute pairings?
     return BT(GT::pairing(a._1, b._1), GT::pairing(a._1, b._2),
