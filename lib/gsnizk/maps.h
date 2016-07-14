@@ -6,6 +6,10 @@
 #ifndef MAPS_H
 #define MAPS_H
 
+#include <iostream>
+#include <utility>
+#include <vector>
+
 #include "pairings.h"
 
 /**
@@ -55,6 +59,11 @@ typedef pairings::GT GT;
 
 class CRS;
 
+/**
+ * @brief The @f$\mathbb{B}_1@f$ class.
+ *
+ * Group of order @f$p@f$.
+ */
 class B1 {
 public:
     /**
@@ -67,6 +76,35 @@ public:
      * @param _2 Second component.
      */
     inline B1(const G1 &_1, const G1 &_2);
+    /**
+     * @brief Unary minus operator.
+     * @return Inverse of the element.
+     */
+    inline B1 operator-() const;
+    /**
+     * @brief Addition operator.
+     * @param other Value to add to the current element.
+     * @return The sum of the two elements.
+     */
+    inline B1 operator+(const B1 &other) const;
+    /**
+     * @brief Subtraction operator.
+     * @param other Value to subtract to the current element.
+     * @return The difference of the two elements.
+     */
+    inline B1 operator-(const B1 &other) const;
+    /**
+     * @brief Inplace addition operator.
+     * @param other Value to append to the current element.
+     * @return Reference to the modified element.
+     */
+    inline B1 &operator+=(const B1 &other);
+    /**
+     * @brief Inplace subtraction operator.
+     * @param other Value to subtract to the current element.
+     * @return Reference to the modified element.
+     */
+    inline B1 &operator-=(const B1 &other);
     /**
      * @brief Writes this element to an output stream.
      * @param stream Output stream.
@@ -87,6 +125,11 @@ public:
     G1 _1, _2;
 };
 
+/**
+ * @brief The @f$\mathbb{B}_2@f$ class.
+ *
+ * Group of order @f$p@f$.
+ */
 class B2 {
 public:
     /**
@@ -99,6 +142,35 @@ public:
      * @param _2 Second component.
      */
     inline B2(const G2 &_1, const G2 &_2);
+    /**
+     * @brief Unary minus operator.
+     * @return Inverse of the element.
+     */
+    inline B2 operator-() const;
+    /**
+     * @brief Addition operator.
+     * @param other Value to add to the current element.
+     * @return The sum of the two elements.
+     */
+    inline B2 operator+(const B2 &other) const;
+    /**
+     * @brief Subtraction operator.
+     * @param other Value to subtract to the current element.
+     * @return The difference of the two elements.
+     */
+    inline B2 operator-(const B2 &other) const;
+    /**
+     * @brief Inplace addition operator.
+     * @param other Value to append to the current element.
+     * @return Reference to the modified element.
+     */
+    inline B2 &operator+=(const B2 &other);
+    /**
+     * @brief Inplace subtraction operator.
+     * @param other Value to subtract to the current element.
+     * @return Reference to the modified element.
+     */
+    inline B2 &operator-=(const B2 &other);
     /**
      * @brief Writes this element to an output stream.
      * @param stream Output stream.
@@ -119,6 +191,13 @@ public:
     G2 _1, _2;
 };
 
+/**
+ * @brief The @f$\mathbb{B}_T@f$ class.
+ *
+ * Group of order @f$p@f$, provided with a bilinear map
+ * going from @f$\mathbb{B}_1\times\mathbb{B}_2@f$
+ * to @f$\mathbb{B}_T@f$.
+ */
 class BT {
 public:
     /**
@@ -148,6 +227,21 @@ public:
      */
     inline friend std::istream &operator>>(std::istream &stream, BT &el);
 public:
+    /**
+     * @brief Computes a pairing of two elements.
+     * @param a @f$\mathbb{B}_1@f$ member.
+     * @param b @f$\mathbb{B}_2@f$ member.
+     * @return @f$\mathbb{B}_T@f$ member that is the result of calling
+     *   the bilinear map on @p a and @p b.
+     */
+    static BT pairing(const B1 &a, const B2 &b);
+    /**
+     * @brief Computes the product of multiple pairings.
+     * @param lst List of couples in @f$(\mathbb{B}_1,\mathbb{B}_2)@f$.
+     * @return Product of the pairings of each couple.
+     */
+    static BT pairing(const std::vector<std::pair<B1, B2> > &lst);
+public:
     GT _11, _12;
     GT _21, _22;
 };
@@ -166,6 +260,19 @@ class CRS {
     friend class BT;
 public:
     /**
+     * @brief CRS dummmy constructor.
+     *
+     * Constructs an invalid CRS.
+     *
+     * @warning This constructor is only meant to be used as a way to
+     * define CRS variables before assigning them
+     * (`operator=` or `operator<<`). Do not use any such uninitialized
+     * CRS in any way, since no protection is implemented to prevent
+     * undefined behavior.
+     * @sa operator<<(std::istream&,const CRS&)
+     */
+    inline CRS();
+    /**
      * @brief CRS contructor.
      *
      * This constructor generates a whole new Common Reference String
@@ -175,7 +282,7 @@ public:
      * @param binding Whether this CRS is to be a binding (`true`)
      *   or hiding (`false`) CRS.
      */
-    CRS(bool binding = true);
+    CRS(bool binding);
     /**
      * @brief Makes the CRS public.
      *
@@ -215,6 +322,28 @@ inline B1::B1() {}
 
 inline B1::B1(const G1 &_1, const G1 &_2) : _1(_1), _2(_2) {}
 
+inline B1 B1::operator-() const {
+    return B1(-_1, -_2);
+}
+
+inline B1 B1::operator+(const B1 &other) const {
+    return B1(_1 + other._1, _2 + other._2);
+}
+
+inline B1 B1::operator-(const B1 &other) const {
+    return B1(_1 - other._1, _2 - other._2);
+}
+
+inline B1 &B1::operator+=(const B1 &other) {
+    _1 += other._1;
+    _2 += other._2;
+}
+
+inline B1 &B1::operator-=(const B1 &other) {
+    _1 -= other._1;
+    _2 -= other._2;
+}
+
 inline std::ostream &operator<<(std::ostream &stream, const B1 &el) {
     stream << el._1 << el._2;
     return stream;
@@ -228,6 +357,28 @@ inline std::istream &operator>>(std::istream &stream, B1 &el) {
 inline B2::B2() {}
 
 inline B2::B2(const G2 &_1, const G2 &_2) : _1(_1), _2(_2) {}
+
+inline B2 B2::operator-() const {
+    return B2(-_1, -_2);
+}
+
+inline B2 B2::operator+(const B2 &other) const {
+    return B2(_1 + other._1, _2 + other._2);
+}
+
+inline B2 B2::operator-(const B2 &other) const {
+    return B2(_1 - other._1, _2 - other._2);
+}
+
+inline B2 &B2::operator+=(const B2 &other) {
+    _1 += other._1;
+    _2 += other._2;
+}
+
+inline B2 &B2::operator-=(const B2 &other) {
+    _1 -= other._1;
+    _2 -= other._2;
+}
 
 inline std::ostream &operator<<(std::ostream &stream, const B2 &el) {
     stream << el._1 << el._2;
@@ -255,6 +406,8 @@ inline std::istream &operator>>(std::istream &stream, BT &el) {
     stream >> el._21 >> el._22;
     return stream;
 }
+
+inline CRS::CRS() {}
 
 } /* End of gsnizk */
 

@@ -7,6 +7,7 @@
 #define PAIRINGS_H
 
 #include <iostream>
+#include <utility>
 #include <vector>
 
 /**

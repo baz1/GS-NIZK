@@ -2,11 +2,35 @@
 
 namespace gsnizk {
 
+BT BT::pairing(const B1 &a, const B2 &b) {
+    // TODO precompute pairings?
+    return BT(GT::pairing(a._1, b._1), GT::pairing(a._1, b._2),
+              GT::pairing(a._2, b._1), GT::pairing(a._2, b._2));
+}
+
+BT BT::pairing(const std::vector<std::pair<B1, B2> > &lst) {
+    // TODO precompute pairings?
+    std::vector<std::pair<G1, G2> > p11, p12, p21, p22;
+    p11.reserve(lst.size());
+    p12.reserve(lst.size());
+    p21.reserve(lst.size());
+    p22.reserve(lst.size());
+    for (const std::pair<B1, B2> p: lst) {
+        p11.push_back(std::pair<G1, G2>(p.first._1, p.second._1));
+        p12.push_back(std::pair<G1, G2>(p.first._1, p.second._2));
+        p21.push_back(std::pair<G1, G2>(p.first._2, p.second._1));
+        p22.push_back(std::pair<G1, G2>(p.first._2, p.second._2));
+    }
+    return BT(GT::pairing(p11), GT::pairing(p12),
+              GT::pairing(p21), GT::pairing(p22));
+}
+
 CRS::CRS(bool binding) : v1(G1(), G1::getRand()), v2(G2(), G2::getRand()),
     type(binding ? CRS_TYPE_EXTRACT : CRS_TYPE_ZK),
     i1(Fp::getRand()), j1(Fp::getRand()),
     i2(Fp::getRand()), j2(Fp::getRand())
 {
+    // TODO precomputations?
     computeElements();
 }
 
@@ -32,7 +56,7 @@ std::ostream &operator<<(std::ostream &stream, const CRS &crs) {
 
 std::istream &operator>>(std::istream &stream, CRS &crs) {
     stream >> crs.type;
-    // TODO precompute as necessary to increase efficiency afterwards
+    // TODO precomputations?
     if (crs.type == CRS_TYPE_PUBLIC) {
         stream >> crs.u1 >> crs.v1 >> crs.w1;
         stream >> crs.u2 >> crs.v2 >> crs.w2;
