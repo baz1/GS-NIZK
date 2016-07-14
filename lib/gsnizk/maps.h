@@ -66,8 +66,45 @@ class BT;
  * @brief The Common Reference String.
  */
 class CRS {
+    friend class B1;
+    friend class B2;
+    friend class BT;
 public:
+    /**
+     * @brief CRS contructor.
+     *
+     * This constructor generates a whole new Common Reference String
+     * that may be based either on a binding key (extraction parameters
+     * will be included) or a hiding key (simulation parameters included).
+     *
+     * @param binding Whether this CRS is to be a binding (`true`)
+     *   or hiding (`false`) CRS.
+     */
     CRS(bool binding = true);
+    /**
+     * @brief Makes the CRS public.
+     *
+     * Here, making a CRS public means clearing any extra information
+     * that may be linked to it, be it extraction parameters or simulation
+     * parameters depending on the type of key that is involved.
+     */
+    void makePublic();
+    /**
+     * @brief Writes this CRS to an output stream.
+     * @param stream Output stream.
+     * @param crs CRS to write in the stream.
+     * @return Reference to the output stream.
+     * @sa operator>>(std::istream&,CRS&)
+     */
+    friend std::ostream &operator<<(std::ostream &stream, const CRS &crs);
+    /**
+     * @brief Reads the CRS from an input stream.
+     * @param stream Input stream.
+     * @param crs CRS to read from the stream.
+     * @return Reference to the input stream.
+     * @sa operator<<(std::istream&,const CRS&)
+     */
+    friend std::istream &operator>>(std::istream &stream, CRS &crs);
 private:
     B1 u1, v1, w1;
     B2 u2, v2, w2;
