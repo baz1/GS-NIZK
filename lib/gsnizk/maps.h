@@ -77,6 +77,19 @@ public:
      */
     inline B1(const G1 &_1, const G1 &_2);
     /**
+     * @brief Maps from @f$\mathbb{G}_1@f$.
+     * @param el Element from @f$\mathbb{G}_1@f$ to map to
+     *   @f$\mathbb{B}_1@f$.
+     */
+    inline B1(const G1 &el);
+    /**
+     * @brief Maps from @f$\mathbb{F}_p@f$.
+     * @param el Element from @f$\mathbb{F}_p@f$ to map to
+     *   @f$\mathbb{B}_1@f$.
+     * @param crs Reference to the CRS to use for mapping.
+     */
+    inline B1(const Fp &el, const CRS &crs);
+    /**
      * @brief Unary minus operator.
      * @return Inverse of the element.
      */
@@ -173,6 +186,19 @@ public:
      * @param _2 Second component.
      */
     inline B2(const G2 &_1, const G2 &_2);
+    /**
+     * @brief Maps from @f$\mathbb{G}_2@f$.
+     * @param el Element from @f$\mathbb{G}_2@f$ to map to
+     *   @f$\mathbb{B}_2@f$.
+     */
+    inline B2(const G2 &el);
+    /**
+     * @brief Maps from @f$\mathbb{F}_p@f$.
+     * @param el Element from @f$\mathbb{F}_p@f$ to map to
+     *   @f$\mathbb{B}_2@f$.
+     * @param crs Reference to the CRS to use for mapping.
+     */
+    inline B2(const Fp &el, const CRS &crs);
     /**
      * @brief Unary minus operator.
      * @return Inverse of the element.
@@ -272,6 +298,33 @@ public:
      * @param _2 Second component.
      */
     inline BT(const GT &_11, const GT &_12, const GT &_21, const GT &_22);
+    /**
+     * @brief Maps from @f$\mathbb{F}_p@f$.
+     * @param el Element from @f$\mathbb{F}_p@f$ to map to
+     *   @f$\mathbb{B}_T@f$.
+     * @param crs Reference to the CRS to use for mapping.
+     */
+    inline BT(const Fp &el, const CRS &crs);
+    /**
+     * @brief Maps from @f$\mathbb{G}_1@f$.
+     * @param el Element from @f$\mathbb{G}_1@f$ to map to
+     *   @f$\mathbb{B}_T@f$.
+     * @param crs Reference to the CRS to use for mapping.
+     */
+    inline BT(const G1 &el, const CRS &crs);
+    /**
+     * @brief Maps from @f$\mathbb{G}_2@f$.
+     * @param el Element from @f$\mathbb{G}_2@f$ to map to
+     *   @f$\mathbb{B}_T@f$.
+     * @param crs Reference to the CRS to use for mapping.
+     */
+    inline BT(const G2 &el, const CRS &crs);
+    /**
+     * @brief Maps from @f$\mathbb{G}_T@f$.
+     * @param el Element from @f$\mathbb{G}_T@f$ to map to
+     *   @f$\mathbb{B}_T@f$.
+     */
+    inline BT(const GT &el);
     /**
      * @brief Multiplication operator.
      * @param other Value to multiply with the current element.
@@ -432,6 +485,11 @@ inline B1::B1() {}
 
 inline B1::B1(const G1 &_1, const G1 &_2) : _1(_1), _2(_2) {}
 
+inline B1::B1(const G1 &el) : _1(), _2(el) {}
+
+inline B1::B1(const Fp &el, const CRS &crs)
+    : _1(el * crs.u1._1), _2(el * crs.u1._2) {}
+
 inline B1 B1::operator-() const {
     return B1(-_1, -_2);
 }
@@ -491,6 +549,11 @@ inline std::istream &operator>>(std::istream &stream, B1 &el) {
 inline B2::B2() {}
 
 inline B2::B2(const G2 &_1, const G2 &_2) : _1(_1), _2(_2) {}
+
+inline B2::B2(const G2 &el) : _1(), _2(el) {}
+
+inline B2::B2(const Fp &el, const CRS &crs)
+    : _1(el * crs.u2._1), _2(el * crs.u2._2) {}
 
 inline B2 B2::operator-() const {
     return B2(-_1, -_2);
@@ -552,6 +615,18 @@ inline BT::BT() {}
 
 inline BT::BT(const GT &_11, const GT &_12, const GT &_21, const GT &_22)
     : _11(_11), _12(_12), _21(_21), _22(_22) {}
+
+inline BT::BT(const Fp &el, const CRS &crs) {
+    *this = BT::pairing(el * crs.u1, crs.u2);
+}
+
+inline BT::BT(const G1 &el, const CRS &crs) : _11(), _12(),
+    _21(GT::pairing(el, crs.u2._1)), _22(GT::pairing(el, crs.u2._2)) {}
+
+inline BT::BT(const G2 &el, const CRS &crs) : _11(),
+    _12(GT::pairing(crs.u1._1, el)), _21(), _22(GT::pairing(crs.u1._2, el)) {}
+
+inline BT::BT(const GT &el) : _11(), _12(), _21(), _22(el) {}
 
 inline BT BT::operator*(const BT &other) const {
     return BT(_11 * other._11, _12 * other._12,
