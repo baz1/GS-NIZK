@@ -113,6 +113,22 @@ bool hasPrecomputations();
 #endif
 
 /**
+ * @brief Checks if the iostream implementations supports threads.
+ *
+ * This function returns `true` if the iostream-based functions
+ * do NOT support threads. Otherwise, it returns `false`.
+ * @note No thread support implies a memory and efficiency gain.
+ * @note In order to enable or disable thread support,
+ *   you can define the macro `GSNIZK_IOSTREAM_NOTHREADS`
+ *   when compiling the library.
+ */
+#if defined(GSNIZK_IOSTREAM_NOTHREADS) && !defined(LIB_COMPILATION)
+inline bool iostream_nothreads() { return true; }
+#else
+bool iostream_nothreads();
+#endif
+
+/**
  * @brief The @f$\mathbb{F}_p=\mathbb{Z}/p\mathbb{Z}@f$ class.
  *
  * Objects of this class represent integers modulo @f$p@f$ where
@@ -475,6 +491,7 @@ public:
     void getData(char *data, bool compressed = false) const;
     /**
      * @brief Writes this element to an output stream.
+     * @note The element is written in its compressed form.
      * @param stream Output stream.
      * @param el Element to write in the stream.
      * @return Reference to the output stream.
@@ -482,6 +499,7 @@ public:
     friend std::ostream &operator<<(std::ostream &stream, const G1 &el);
     /**
      * @brief Reads this element from an input stream.
+     * @note The element is to be read from its compressed form.
      * @param stream Input stream.
      * @param el Element to read from the stream.
      * @return Reference to the input stream.
@@ -754,6 +772,7 @@ public:
     void getData(char *data, bool compressed = false) const;
     /**
      * @brief Writes this element to an output stream.
+     * @note The element is written in its compressed form.
      * @param stream Output stream.
      * @param el Element to write in the stream.
      * @return Reference to the output stream.
@@ -761,6 +780,7 @@ public:
     friend std::ostream &operator<<(std::ostream &stream, const G2 &el);
     /**
      * @brief Reads this element from an input stream.
+     * @note The element is to be read from its compressed form.
      * @param stream Input stream.
      * @param el Element to read from the stream.
      * @return Reference to the input stream.
