@@ -269,16 +269,22 @@ public:
     void getData(char *data) const;
     /**
      * @brief Writes this element to an output stream.
+     * @warning The iostream based function do not necessarily work
+     *   with the same data as the `getData`-based functions.
      * @param stream Output stream.
      * @param el Element to write in the stream.
      * @return Reference to the output stream.
+     * @sa operator>>(std::istream&,Fp&)
      */
     friend std::ostream &operator<<(std::ostream &stream, const Fp &el);
     /**
      * @brief Reads this element from an input stream.
+     * @warning The iostream based function do not necessarily work
+     *   with the same data as the `getData`-based functions.
      * @param stream Input stream.
      * @param el Element to read from the stream.
      * @return Reference to the input stream.
+     * @sa operator<<(std::istream&,const Fp&)
      */
     friend std::istream &operator>>(std::istream &stream, Fp &el);
     /**
@@ -492,17 +498,23 @@ public:
     /**
      * @brief Writes this element to an output stream.
      * @note The element is written in its compressed form.
+     * @warning The iostream based function do not necessarily work
+     *   with the same data as the `getData`-based functions.
      * @param stream Output stream.
      * @param el Element to write in the stream.
      * @return Reference to the output stream.
+     * @sa operator>>(std::istream&,G1&)
      */
     friend std::ostream &operator<<(std::ostream &stream, const G1 &el);
     /**
      * @brief Reads this element from an input stream.
      * @note The element is to be read from its compressed form.
+     * @warning The iostream based function do not necessarily work
+     *   with the same data as the `getData`-based functions.
      * @param stream Input stream.
      * @param el Element to read from the stream.
      * @return Reference to the input stream.
+     * @sa operator<<(std::istream&,const G1&)
      */
     friend std::istream &operator>>(std::istream &stream, G1 &el);
     /**
@@ -773,17 +785,23 @@ public:
     /**
      * @brief Writes this element to an output stream.
      * @note The element is written in its compressed form.
+     * @warning The iostream based function do not necessarily work
+     *   with the same data as the `getData`-based functions.
      * @param stream Output stream.
      * @param el Element to write in the stream.
      * @return Reference to the output stream.
+     * @sa operator>>(std::istream&,G2&)
      */
     friend std::ostream &operator<<(std::ostream &stream, const G2 &el);
     /**
      * @brief Reads this element from an input stream.
      * @note The element is to be read from its compressed form.
+     * @warning The iostream based function do not necessarily work
+     *   with the same data as the `getData`-based functions.
      * @param stream Input stream.
      * @param el Element to read from the stream.
      * @return Reference to the input stream.
+     * @sa operator<<(std::istream&,const G2&)
      */
     friend std::istream &operator>>(std::istream &stream, G2 &el);
     /**
@@ -1092,16 +1110,22 @@ public:
     void getData(char *data) const;
     /**
      * @brief Writes this element to an output stream.
+     * @warning The iostream based function do not necessarily work
+     *   with the same data as the `getData`-based functions.
      * @param stream Output stream.
      * @param el Element to write in the stream.
      * @return Reference to the output stream.
+     * @sa operator>>(std::istream&,GT&)
      */
     friend std::ostream &operator<<(std::ostream &stream, const GT &el);
     /**
      * @brief Reads this element from an input stream.
+     * @warning The iostream based function do not necessarily work
+     *   with the same data as the `getData`-based functions.
      * @param stream Input stream.
      * @param el Element to read from the stream.
      * @return Reference to the input stream.
+     * @sa operator<<(std::istream&,const GT&)
      */
     friend std::istream &operator>>(std::istream &stream, GT &el);
     /**
