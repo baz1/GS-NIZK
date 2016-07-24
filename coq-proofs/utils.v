@@ -55,7 +55,19 @@ Qed.
 (* Proof that a<=b -> (S a)<=(S b) *)
 Theorem le_translates : forall (a b:nat), (a <= b) -> ((S a) <= (S b)).
 Proof.
-  admit. (* TODO *)
+  intros a b.
+  elim b.
+    (* Case b=0 *)
+    intro H.
+    rewrite (le_zero a H).
+    constructor.
+    (* Case b --> b+1 *)
+    intros n H1 H2.
+    inversion H2.
+      (* Case a<=b *)
+      constructor.
+      (* Case a<b *)
+      exact (le_S (S a) (S n) (H1 H0)).
 Qed.
 
 (* Proof that <= is a totally ordered relation (fine grained version) *)
