@@ -177,19 +177,49 @@ Proof.
       admit. (* TODO finish *)
 Qed.
 
-(* TODO
-Definition modulo (a n:nat) : nat :=
-  match n with
-    | O => a
-    | S x => match (modulo_existence a (S x) (le_translates 0 x (zero_min x)): ex (fun r => is_modulo a n r)) with
-      | ex_intro w proof_of_Pw => w
+Fixpoint modulo_ex (a r n:nat) : nat :=
+  match a with
+    | O => match r with
+      | O => O
+      | S r_1 => n-r
     end
-  end
-.
+    | S a_1 => match r with
+      | O => modulo_ex a_1 (n-1) n
+      | S r_1 => modulo_ex a_1 r_1 n
+    end
+  end.
+Definition modulo (a n:nat) : nat := modulo_ex a O n.
 
 Theorem modulo_well_formed :
-  forall (a n:nat), (n<>0) -> is_modulo a n (modulo a n).
+  forall (a n:nat), IF n=0 then (modulo a n)=0 else is_modulo a n (modulo a n).
 Proof.
-
+  unfold IF_then_else.
+  destruct n.
+    (* Case n=0 *)
+    refine (or_introl _).
+    refine (conj (eq_refl O) _).
+    unfold modulo.
+    elim a.
+      (* Case a=0 *)
+      unfold modulo_ex.
+      reflexivity.
+      (* Case a --> a+1 *)
+      intros n H.
+      unfold modulo_ex.
+      assert (repl_zero : (0 - 1) = 0).
+      simpl.
+      reflexivity.
+      rewrite repl_zero.
+      exact H.
+    (* Case n>0 *)
+    refine (or_intror _).
+    refine (conj _ _).
+    intro Hfalse.
+    discriminate Hfalse.
+    unfold is_modulo.
+    refine (conj _ _).
+      (* modulo result is lower than n *)
+      admit. (* TODO finish *)
+      (* existence of k *)
+      admit. (* TODO finish *)
 Qed.
-*)
