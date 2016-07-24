@@ -146,6 +146,11 @@ Proof.
       exact (eq_refl (S (S (m0 + n0)))).
 Qed.
 
+Theorem le_wrong : forall (x:nat), ~ (S x <= x).
+Proof.
+  admit.
+Qed.
+
 Definition is_modulo (a n r:nat) : Prop :=
   (r<n) /\ (exists (k:nat), a=(k*n+r))
 .
@@ -186,7 +191,23 @@ Proof.
       exact (ex_intro _ (S x) (conj H3
         (ex_intro (fun (k:nat) => S n0 = k * n + (S x)) x0 right))).
       (* Case (S x)>=n *)
-      admit. (* TODO finish *)
+      intro H3.
+      refine (ex_intro _ O _).
+      refine (conj H _).
+      refine (ex_intro _ (S x0) _).
+      inversion H3.
+      unfold mult.
+      assert (subg : n0 = x + x0 * n + 0).
+      admit.
+      simpl.
+      rewrite <- H4.
+      unfold mult in subg.
+      rewrite <- subg.
+      reflexivity.
+      pose (impossible1 := conj H21 (le_S_n n x H4)).
+      unfold lt in impossible1.
+      pose (impossible2 := le_wrong x (le_transitive (S x) n x impossible1)).
+      case impossible2.
 Qed.
 
 Fixpoint modulo_ex (a r n:nat) : nat :=
