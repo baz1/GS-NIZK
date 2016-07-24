@@ -40,6 +40,18 @@ Proof.
     exact (le_S a n (Hind H3)).
 Qed.
 
+(* Proof that 0<=x for all x *)
+Theorem zero_min : forall (x:nat), 0 <= x.
+Proof.
+  intro x.
+  elim x.
+    (* Case x=0 *)
+    exact (le_n 0).
+    (* Case x --> x+1 *)
+    intros n H.
+    exact (le_S 0 n H).
+Qed.
+
 (* Proof that a<=b -> (S a)<=(S b) *)
 Theorem le_translates : forall (a b:nat), (a <= b) -> ((S a) <= (S b)).
 Proof.
