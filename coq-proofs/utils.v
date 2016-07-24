@@ -40,24 +40,6 @@ Proof.
     exact (le_S a n (Hind H3)).
 Qed.
 
-(* Proof that a<=b -> (S a)<=(S b) *)
-Theorem le_translates : forall (a b:nat), (a <= b) -> ((S a) <= (S b)).
-Proof.
-  intros a b.
-  elim b.
-    (* Case b=0 *)
-    intro H.
-    rewrite (le_zero a H).
-    constructor.
-    (* Case b --> b+1 *)
-    intros n H1 H2.
-    inversion H2.
-      (* Case a<=b *)
-      constructor.
-      (* Case a<b *)
-      exact (le_S (S a) (S n) (H1 H0)).
-Qed.
-
 (* Proof that <= is a totally ordered relation (fine grained version) *)
 Theorem le_tot_ordered : forall (a b:nat), (a<=b) \/ (a>b).
 Proof.
@@ -82,7 +64,7 @@ Proof.
         exact (or_intror (le_n (S n))).
         (* Case n<b *)
         intros m H2.
-        exact (or_introl (le_translates n m H2)).
+        exact (or_introl (le_n_S n m H2)).
       (* Case n>b *)
       intro H1.
       exact (or_intror (le_S (S b) n H1)).
