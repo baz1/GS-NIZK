@@ -40,6 +40,18 @@ Proof.
     exact (le_S a n (Hind H3)).
 Qed.
 
+(* Proof that 0<=x for all x *)
+Theorem zero_min : forall (x:nat), 0 <= x.
+Proof.
+  intro x.
+  elim x.
+    (* Case x=0 *)
+    exact (le_n 0).
+    (* Case x --> x+1 *)
+    intros n H.
+    exact (le_S 0 n H).
+Qed.
+
 (* Proof that a<=b -> (S a)<=(S b) *)
 Theorem le_translates : forall (a b:nat), (a <= b) -> ((S a) <= (S b)).
 Proof.
@@ -164,3 +176,20 @@ Proof.
       (* Case (S x)>=n *)
       admit. (* TODO finish *)
 Qed.
+
+(* TODO
+Definition modulo (a n:nat) : nat :=
+  match n with
+    | O => a
+    | S x => match (modulo_existence a (S x) (le_translates 0 x (zero_min x)): ex (fun r => is_modulo a n r)) with
+      | ex_intro w proof_of_Pw => w
+    end
+  end
+.
+
+Theorem modulo_well_formed :
+  forall (a n:nat), (n<>0) -> is_modulo a n (modulo a n).
+Proof.
+
+Qed.
+*)

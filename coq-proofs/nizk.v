@@ -32,7 +32,7 @@ Inductive BT : Set :=
   | ConstrBT : GT -> GT -> GT -> GT -> BT.
 
 Definition Fp_0 : Fp :=
-  ConstrFp 0 (lt_transitive 1 2 p (conj (le_S 1 1 (le_n 1)) p_big)).
+  ConstrFp 0 (le_transitive 1 2 p (conj (le_S 1 1 (le_n 1)) p_big)).
 Definition Fp_1 : Fp := ConstrFp 1 p_big.
 
 Definition G1_O : G1 := ConstrG1 Fp_0.
@@ -46,13 +46,15 @@ Definition BT_1 : BT := ConstrBT GT_1 GT_1 GT_1 GT_1.
 
 
 (* Group operations *)
+(* TODO
 Definition addFp (a b:Fp) : Fp :=
   match a with | ConstrFp v_a p_a =>
     match b with | ConstrFp v_b p_b =>
-      
+
     end
   end
 .
+*)
 
 Variable addFp : Fp -> Fp -> Fp.
 Variable addG1 : G1 -> G1 -> G1.
