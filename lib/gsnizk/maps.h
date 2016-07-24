@@ -440,6 +440,7 @@ public:
 #define CRS_TYPE_PUBLIC     0 /* No additional information */
 #define CRS_TYPE_EXTRACT    1 /* Binding key with extraction parameters */
 #define CRS_TYPE_ZK         2 /* Hiding key with simulation parameters */
+#define CRS_TYPE_PRIVATE    3 /* Binding key with efficiency parameters */
 
 /**
  * @brief The Common Reference String.
@@ -481,6 +482,11 @@ public:
      * parameters depending on the type of key that is involved.
      */
     void makePublic();
+    /**
+     * @brief Generates a private CRS from this public CRS.
+     * @return Private CRS.
+     */
+    CRS genPrivate() const;
     /**
      * @brief Writes this CRS to an output stream.
      * @param stream Output stream.

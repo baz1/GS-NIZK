@@ -54,6 +54,13 @@ void CRS::makePublic() {
     }
 }
 
+CRS CRS::genPrivate() const {
+    CRS priv;
+    priv.v1 = v1;
+    priv.i1 = Fp::getRand();
+    // TODO
+}
+
 std::ostream &operator<<(std::ostream &stream, const CRS &crs) {
     stream << crs.type;
     if (crs.type == CRS_TYPE_PUBLIC) {
