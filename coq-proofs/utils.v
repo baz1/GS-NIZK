@@ -1,5 +1,5 @@
 (* Proof that (a <= 0) -> (a = 0) *)
-Theorem leq_zero :
+Theorem le_zero :
   forall (a:nat),
   ((a <= 0) -> (a = 0))
 .
@@ -15,7 +15,7 @@ Proof.
 Qed.
 
 (* Proof that <= is transitive *)
-Theorem leq_transitive :
+Theorem le_transitive :
   forall (a:nat) (b:nat) (c:nat), (
     (a <= b) /\ (b <= c) -> (a <= c)
   )
@@ -28,7 +28,7 @@ Proof.
   elim c.
     (* Case c=0 *)
     intro H2.
-    rewrite (leq_zero b H2) in H1.
+    rewrite (le_zero b H2) in H1.
     exact H1.
     (* Case c --> c+1 *)
     intro n.
@@ -40,14 +40,90 @@ Proof.
     exact (le_S a n (Hind H3)).
 Qed.
 
-(* Proof that <= is a totally ordered relation *)
-Theorem leq_tot_ordered : forall (a b:nat), (a<=b) \/ (b<=a).
+(* Proof that a<=b -> (S a)<=(S b) *)
+Theorem le_translates : forall (a b:nat), (a <= b) -> ((S a) <= (S b)).
 Proof.
-  admit.
+  admit. (* TODO *)
+Qed.
+
+(* Proof that <= is a totally ordered relation (fine grained version) *)
+Theorem le_tot_ordered : forall (a b:nat), (a<=b) \/ (a>b).
+Proof.
+  intro a.
+  elim a.
+    (* Case a=0 *)
+    intro b.
+    refine (or_introl _).
+    elim b.
+      (* Case b=0 *)
+      exact (le_n 0).
+      (* Case b --> b+1 *)
+      intros n H.
+      exact (le_S 0 n H).
+    (* Case a --> a+1 *)
+    intros n H b.
+    case (H b).
+      (* Case n<=b *)
+      intro H1.
+      case H1.
+        (* Case n=b *)
+        exact (or_intror (le_n (S n))).
+        (* Case n<b *)
+        intros m H2.
+        exact (or_introl (le_translates n m H2)).
+      (* Case n>b *)
+      intro H1.
+      exact (or_intror (le_S (S b) n H1)).
+Qed.
+
+(* Proof that n+0=n *)
+Theorem plus_n_O : (forall n, n + O = n).
+Proof.
+  intros n.
+  elim n.
+    (* Case n=0 *)
+    simpl.
+    exact (eq_refl O).
+    (* Case n --> n+1 *)
+    intros n0.
+    intros H1.
+    simpl.
+    rewrite H1.
+    exact (eq_refl (S n0)).
+Qed.
+
+(* Proof that + commutes *)
+Theorem plus_comm : (forall (n m:nat), n + m = m + n).
+Proof.
+  intros n.
+  elim n.
+    (* Case n=0 *)
+    intros m.
+    rewrite (plus_n_O m).
+    simpl.
+    exact (eq_refl m).
+    (* Case n --> n+1 *)
+    intros n0.
+    intros lH.
+    intros m.
+    elim m.
+      (* Case m=0 *)
+      rewrite (plus_n_O (S n0)).
+      simpl.
+      exact (eq_refl (S n0)).
+      (* Case m --> m+1 *)
+      intros m0.
+      intros lH2.
+      simpl.
+      rewrite <- lH2.
+      rewrite (lH (S m0)).
+      simpl.
+      rewrite (lH m0).
+      exact (eq_refl (S (S (m0 + n0)))).
 Qed.
 
 Definition is_modulo (a n r:nat) : Prop :=
-  (a<n) /\ (exists (k:nat), r=(k*n+a))
+  (r<n) /\ (exists (k:nat), a=(k*n+r))
 .
 
 Theorem modulo_existence :
@@ -72,6 +148,19 @@ Proof.
     intros H21 H22.
     case H22.
     intros x0 H221.
-    pose (test := ((S (S n0)) <= n)).
-    (* TODO finish *)
+    pose (test := (le_tot_ordered (S (S x)) n)).
+    case test.
+      (* Case (S x)<n *)
+      intro H3. (* left *)
+      assert (right : (S n0) = x0 * n + (S x)).
+      simpl.
+      rewrite (plus_comm (x0*n) (S x)).
+      simpl.
+      rewrite (plus_comm x (x0*n)).
+      rewrite <- H221.
+      exact (eq_refl (S n0)).
+      exact (ex_intro _ (S x) (conj H3
+        (ex_intro (fun (k:nat) => S n0 = k * n + (S x)) x0 right))).
+      (* Case (S x)>=n *)
+      admit. (* TODO finish *)
 Qed.
