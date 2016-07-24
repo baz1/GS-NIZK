@@ -1,5 +1,7 @@
+(* NIZK Proof System - Useful functions by Remi Bazin *)
+
 (* Proof that (a <= 0) -> (a = 0) *)
-Theorem le_zero :
+Lemma le_zero :
   forall (a:nat),
   ((a <= 0) -> (a = 0))
 .
@@ -15,7 +17,7 @@ Proof.
 Qed.
 
 (* Proof that <= is transitive *)
-Theorem le_transitive :
+Lemma le_transitive :
   forall (a:nat) (b:nat) (c:nat), (
     (a <= b) /\ (b <= c) -> (a <= c)
   )
@@ -41,7 +43,7 @@ Proof.
 Qed.
 
 (* Proof that 0<=x for all x *)
-Theorem zero_min : forall (x:nat), 0 <= x.
+Lemma zero_min : forall (x:nat), 0 <= x.
 Proof.
   intro x.
   elim x.
@@ -53,7 +55,7 @@ Proof.
 Qed.
 
 (* Proof that a<=b -> (S a)<=(S b) *)
-Theorem le_translates : forall (a b:nat), (a <= b) -> ((S a) <= (S b)).
+Lemma le_translates : forall (a b:nat), (a <= b) -> ((S a) <= (S b)).
 Proof.
   intros a b.
   elim b.
@@ -71,7 +73,7 @@ Proof.
 Qed.
 
 (* Proof that <= is a totally ordered relation (fine grained version) *)
-Theorem le_tot_ordered : forall (a b:nat), (a<=b) \/ (a>b).
+Lemma le_tot_ordered : forall (a b:nat), (a<=b) \/ (a>b).
 Proof.
   intro a.
   elim a.
@@ -101,7 +103,7 @@ Proof.
 Qed.
 
 (* Proof that n+0=n *)
-Theorem plus_n_O : (forall n, n + O = n).
+Lemma plus_n_O : (forall n, n + O = n).
 Proof.
   intros n.
   elim n.
@@ -117,7 +119,7 @@ Proof.
 Qed.
 
 (* Proof that + commutes *)
-Theorem plus_comm : (forall (n m:nat), n + m = m + n).
+Lemma plus_comm : (forall (n m:nat), n + m = m + n).
 Proof.
   intros n.
   elim n.
@@ -146,15 +148,23 @@ Proof.
       exact (eq_refl (S (S (m0 + n0)))).
 Qed.
 
-Theorem le_wrong : forall (x:nat), ~ (S x <= x).
+(* Proof that there is no x such that x<x *)
+Lemma le_wrong : forall (x:nat), ~ (S x <= x).
 Proof.
   admit.
 Qed.
 
+Lemma sub_lowers : forall (a b:nat), (a-b <= a).
+Proof.
+  admit.
+Qed.
+
+(* Function that checks the result of a modulo operation *)
 Definition is_modulo (a n r:nat) : Prop :=
   (r<n) /\ (exists (k:nat), a=(k*n+r))
 .
 
+(* Theorem that proves the existence of a modulo operation *)
 Theorem modulo_existence :
   forall (a n:nat), (1<=n) ->
   (exists r, is_modulo a n r).
@@ -210,6 +220,7 @@ Proof.
       case impossible2.
 Qed.
 
+(* The modulo operation *)
 Fixpoint modulo_ex (a r n:nat) : nat :=
   match a with
     | O => match r with
@@ -223,6 +234,8 @@ Fixpoint modulo_ex (a r n:nat) : nat :=
   end.
 Definition modulo (a n:nat) : nat := modulo_ex a O n.
 
+(* Proof that the modulo operation we defined is well-formed regarding to is_modulo *)
+(* Note the fine-grained case for when n=0. *)
 Theorem modulo_well_formed :
   forall (a n:nat), IF n=0 then (modulo a n)=0 else is_modulo a n (modulo a n).
 Proof.
@@ -249,10 +262,45 @@ Proof.
     refine (conj _ _).
     intro Hfalse.
     discriminate Hfalse.
-    unfold is_modulo.
+    unfold is_modulo, modulo, lt.
     refine (conj _ _).
-      (* modulo result is lower than n *)
-      admit. (* TODO finish *)
+      (* Proof that the modulo result is lower than n: *)
+      assert (generalization : forall k, (k<=n) -> (S (modulo_ex a k (S n)) <= S n)).
+      elim a.
+        (* Case a=0 *)
+        intro k.
+        case k.
+          (* Case k=0 *)
+          intros H.
+          unfold modulo_ex.
+          exact (le_translates O n (zero_min n)).
+          (* Case k>0 *)
+          intros n0 useless.
+          unfold modulo_ex.
+          refine (le_translates (S n - S n0) n _).
+          elim n.
+          simpl.
+          exact (le_n O).
+          intros n1 H.
+          simpl in H.
+          simpl.
+          destruct n0.
+          exact (le_n (S n1)).
+          exact (le_S (n1-n0) n1 (sub_lowers n1 n0)).
+        (* Case a --> a+1 *)
+        intros n0 H1 k H2.
+        case k.
+          (* Case k=0 *)
+          unfold modulo_ex.
+          assert (subg1 : S (modulo_ex n0 (S n - 1) (S n)) <= S n).
+          assert (subg2 : (S n - 1) <= n).
+          simpl.
+          admit. (* TODO finish *)
+          exact (H1 (S n - 1) subg2).
+          exact subg1.
+          (* Case k>0 *)
+          admit. (* TODO finish *)
+      exact (generalization O (zero_min n)).
       (* existence of k *)
       admit. (* TODO finish *)
 Qed.
