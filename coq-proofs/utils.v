@@ -118,6 +118,11 @@ Proof.
     exact (eq_refl (S n0)).
 Qed.
 
+Lemma plus_vs_le : forall (a b:nat), a <= a + b.
+Proof.
+  admit.
+Qed.
+
 (* Proof that + commutes *)
 Lemma plus_comm : (forall (n m:nat), n + m = m + n).
 Proof.
@@ -155,6 +160,36 @@ Proof.
 Qed.
 
 Lemma sub_lowers : forall (a b:nat), (a-b <= a).
+Proof.
+  admit.
+Qed.
+
+Lemma sub_zero : forall (a:nat), a-O=a.
+Proof.
+  intro a.
+  destruct a.
+    (* Case a=0 *)
+    unfold minus.
+    reflexivity.
+    (* Case a>0 *)
+    unfold minus.
+    reflexivity.
+Qed.
+
+Lemma plus_1_vs_S : forall (a:nat), a+1=S a.
+Proof.
+  intro a.
+  rewrite (plus_comm a 1).
+  unfold plus.
+  reflexivity.
+Qed.
+
+Lemma plus_transitive : forall (a b c:nat), a+b+c=a+(b+c).
+Proof.
+  admit.
+Qed.
+
+Lemma plus_funny_proof : forall (a b c:nat), a+b=b+c -> a=c.
 Proof.
   admit.
 Qed.
@@ -234,6 +269,13 @@ Fixpoint modulo_ex (a r n:nat) : nat :=
   end.
 Definition modulo (a n:nat) : nat := modulo_ex a O n.
 
+Lemma add_transitive : forall (a b c:nat), a+b+c = a+(b+c).
+Proof.
+  admit.
+Qed.
+
+Require Import Minus.
+
 (* Proof that the modulo operation we defined is well-formed regarding to is_modulo *)
 (* Note the fine-grained case for when n=0. *)
 Theorem modulo_well_formed :
@@ -255,7 +297,6 @@ Proof.
       assert (repl_zero : (0 - 1) = 0).
       simpl.
       reflexivity.
-      rewrite repl_zero.
       exact H.
     (* Case n>0 *)
     refine (or_intror _).
@@ -263,7 +304,7 @@ Proof.
     intro Hfalse.
     discriminate Hfalse.
     unfold is_modulo, modulo, lt.
-    refine (conj _ _).
+    assert (firstPart : S (modulo_ex a 0 (S n)) <= S n).
       (* Proof that the modulo result is lower than n: *)
       assert (generalization : forall k, (k<=n) -> (S (modulo_ex a k (S n)) <= S n)).
       elim a.
@@ -288,19 +329,102 @@ Proof.
           exact (le_n (S n1)).
           exact (le_S (n1-n0) n1 (sub_lowers n1 n0)).
         (* Case a --> a+1 *)
-        intros n0 H1 k H2.
+        intros n0 H1 k.
         case k.
           (* Case k=0 *)
+          intro H2.
           unfold modulo_ex.
           assert (subg1 : S (modulo_ex n0 (S n - 1) (S n)) <= S n).
           assert (subg2 : (S n - 1) <= n).
           simpl.
-          admit. (* TODO finish *)
+          exact (sub_lowers n O).
           exact (H1 (S n - 1) subg2).
           exact subg1.
           (* Case k>0 *)
-          admit. (* TODO finish *)
+          intros n1 H2.
+          pose (le_n1_n := le_S_n n1 n (le_S (S n1) n H2)).
+          unfold modulo_ex.
+          exact (H1 n1 le_n1_n).
       exact (generalization O (zero_min n)).
+    refine (conj _ _).
+    exact firstPart.
       (* existence of k *)
-      admit. (* TODO finish *)
+      assert (generalization : forall l, (l<=n) -> (
+        exists (k:nat), a+S n = k*(S n) + l + modulo_ex a l (S n))).
+      elim a.
+        (* Case a=0 *)
+        intros l.
+        case l.
+          (* Case l=0 *)
+          intro useless.
+          unfold modulo_ex.
+          refine (ex_intro _ 1 _).
+          rewrite (plus_comm (1 * S n + O) O).
+          rewrite (plus_comm (1 * S n) O).
+          unfold mult.
+          rewrite (plus_comm (S n) O).
+          unfold plus.
+          reflexivity.
+          (* Case l>0 *)
+          intros n0 H.
+          unfold modulo_ex.
+          pose (simplif := (le_plus_minus (S n0) (S n) (le_S (S n0) n H))).
+          refine (ex_intro _ O _).
+          rewrite (add_transitive (0*S n) (S n0) (S n - S n0)).
+          rewrite <- simplif.
+          unfold mult, plus.
+          reflexivity.
+        (* Case a --> a+1 *)
+        intros n0 H1 l.
+        destruct l.
+          (* Case l=0 *)
+          intro H2.
+          pose (H1red := H1 n (le_n n)).
+          inversion H1red.
+          refine (ex_intro _ (S x) _).
+          unfold mult, modulo_ex, plus at 1, minus.
+          assert (subg1 : S (n0 + S n) = S n + x * (S n) + 0 + modulo_ex n0 (n - O) (S n)).
+          rewrite (sub_zero n).
+          unfold plus at 4, plus at 3, plus at 2.
+          assert (subg2 : n0 + S n = n + x * S n + 0 + modulo_ex n0 n (S n)).
+          rewrite (plus_comm n (x * S n)).
+          rewrite (plus_n_O (x * S n + n)).
+          exact H.
+          rewrite subg2.
+          reflexivity.
+          exact subg1.
+          (* Case l>0 *)
+          intro H2.
+          pose (H1red := H1 l (le_S_n l n (le_S (S l) n H2))).
+          inversion H1red.
+          refine (ex_intro _ x _).
+          unfold modulo_ex, plus at 1.
+          assert (subg1 : S (n0 + S n) = x * S n + S l + modulo_ex n0 l (S n)).
+          rewrite <- (plus_1_vs_S l).
+          rewrite <- (plus_transitive (x*S n) l 1).
+          rewrite (plus_transitive (x * S n + l) 1 (modulo_ex n0 l (S n))).
+          rewrite (plus_comm 1 (modulo_ex n0 l (S n))).
+          rewrite <- (plus_transitive (x*S n + l) (modulo_ex n0 l (S n)) 1).
+          rewrite <- H.
+          rewrite (plus_1_vs_S (n0 + S n)).
+          reflexivity.
+          exact subg1.
+      (* todo use generalization *)
+      pose (genred := generalization O (zero_min n)).
+      inversion genred.
+      destruct x.
+        (* Case x=0 *)
+        unfold mult, plus at 3, plus at 2 in H.
+        rewrite <- H in firstPart.
+        pose (wrong1 := le_S_n (a + S n) n firstPart).
+        rewrite (plus_comm a (S n)) in wrong1.
+        pose (wrong2 := le_transitive (S n) (S n + a) n (conj (plus_vs_le (S n) a) wrong1)).
+        case (le_wrong n wrong2).
+        (* Case x>0 *)
+        refine (ex_intro _ x _).
+        refine (plus_funny_proof a (S n) (x * S n + modulo_ex a 0 (S n)) _).
+        rewrite (plus_n_O (S x * S n)) in H.
+        rewrite <- (plus_transitive (S n) (x * S n) (modulo_ex a 0 (S n))).
+        unfold mult in H.
+        exact H.
 Qed.
