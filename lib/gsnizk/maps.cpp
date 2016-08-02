@@ -58,7 +58,11 @@ CRS CRS::genPrivate() const {
     CRS priv;
     priv.v1 = v1;
     priv.i1 = Fp::getRand();
-    // TODO
+    priv.v2 = v2;
+    priv.i2 = Fp::getRand();
+    priv.computeElements();
+    // TODO generate proof?
+    return priv;
 }
 
 std::ostream &operator<<(std::ostream &stream, const CRS &crs) {
@@ -66,6 +70,9 @@ std::ostream &operator<<(std::ostream &stream, const CRS &crs) {
     if (crs.type == CRS_TYPE_PUBLIC) {
         stream << crs.v1 << crs.w1;
         stream << crs.v2 << crs.w2;
+    } else if (crs.type == CRS_TYPE_PRIVATE) {
+        stream << crs.v1 << crs.v2;
+        stream << crs.i1 << crs.i2;
     } else {
         stream << crs.v1._2 << crs.v2._2;
         stream << crs.i1 << crs.j1 << crs.i2 << crs.j2;
@@ -93,6 +100,10 @@ std::istream &operator>>(std::istream &stream, CRS &crs) {
         crs.u2._1.precomputeForMult();
         crs.u2._2.precomputeForMult();
 #endif
+    } else if (crs.type == CRS_TYPE_PRIVATE) {
+        stream >> crs.v1 >> crs.v2;
+        stream >> crs.i1 >> crs.i2;
+        crs.computeElements();
     } else {
         stream >> crs.v1._2 >> crs.v2._2;
         stream >> crs.i1 >> crs.j1 >> crs.i2 >> crs.j2;
@@ -107,22 +118,33 @@ void CRS::computeElements() {
     v1._2.precomputeForMult();
     v2._2.precomputeForMult();
 #endif
-    v1._1 = j1 * v1._2;
-    w1._1 = (i1 * j1) * v1._2;
-    u1._1 = w1._1;
-    v2._1 = j2 * v2._2;
-    w2._1 = (i2 * j2) * v2._2;
-    u2._1 = w2._1;
-    if (type == CRS_TYPE_EXTRACT) {
+    if (type == CRS_TYPE_PRIVATE) {
+        w1._1 = i1 * v1._1;
         w1._2 = i1 * v1._2;
+        u1._1 = w1._1;
         u1._2 = w1._2 + v1._2;
+        w2._1 = i2 * v2._1;
         w2._2 = i2 * v2._2;
+        u2._1 = w2._1;
         u2._2 = w2._2 + v2._2;
     } else {
-        u1._2 = i1 * v1._2;
-        w1._2 = w1._2 - v1._2;
-        u2._2 = i2 * v2._2;
-        w2._2 = w2._2 - v2._2;
+        v1._1 = j1 * v1._2;
+        w1._1 = (i1 * j1) * v1._2;
+        u1._1 = w1._1;
+        v2._1 = j2 * v2._2;
+        w2._1 = (i2 * j2) * v2._2;
+        u2._1 = w2._1;
+        if (type == CRS_TYPE_EXTRACT) {
+            w1._2 = i1 * v1._2;
+            u1._2 = w1._2 + v1._2;
+            w2._2 = i2 * v2._2;
+            u2._2 = w2._2 + v2._2;
+        } else {
+            u1._2 = i1 * v1._2;
+            w1._2 = w1._2 - v1._2;
+            u2._2 = i2 * v2._2;
+            w2._2 = w2._2 - v2._2;
+        }
     }
 #if !defined(USE_PBC)
     /* Precomputations for commitments of scalars */

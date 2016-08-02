@@ -506,6 +506,17 @@ public:
 private:
     void computeElements();
 private:
+    /* Notations u, v and w come from the paper by Alex Escala
+     * and Jens Groth.
+     * type==CRS_TYPE_PUBLIC:
+     *   i1,j1,i2,j2 are not used.
+     * type==CRS_TYPE_EXTRACT||type==CRS_TYPE_ZK:
+     *   i1 stands for rho and j1 for epsilon in Escala's paper,
+     *   with similar bindings for i2 and j2 to sigma and psi.
+     * type==CRS_TYPE_PRIVATE:
+     *   Only i1 and i2 are available; they stand for rho_P
+     *   and sigma_P in Escala's paper.
+     */
     B1 u1, v1, w1;
     B2 u2, v2, w2;
     int type;
