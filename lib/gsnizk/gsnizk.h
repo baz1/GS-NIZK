@@ -38,8 +38,20 @@ enum ElementType {
  * @brief A @f$\mathbb{F}_p@f$ element inside an equation.
  */
 class FpElement {
+    /**
+     * @brief Contructs a copy of an element.
+     * @param other The element to copy.
+     */
     inline FpElement(const FpElement &other);
+    /**
+     * @brief Sets this element to be equal to @a other.
+     * @param The new value for this element.
+     * @return Reference to the current element.
+     */
     inline FpElement &operator=(const FpElement &other);
+    /**
+     * @brief Destructs the element.
+     */
     inline ~FpElement();
 private:
     inline FpElement(ElementType type);
@@ -67,6 +79,54 @@ private:
     union {
         int index;
         Fp el;
+    };
+};
+
+/**
+ * @brief A @f$\mathbb{G}_1@f$ element inside an equation.
+ */
+class G1Element {
+    /**
+     * @brief Contructs a copy of an element.
+     * @param other The element to copy.
+     */
+    inline G1Element(const G1Element &other);
+    /**
+     * @brief Sets this element to be equal to @a other.
+     * @param The new value for this element.
+     * @return Reference to the current element.
+     */
+    inline G1Element &operator=(const G1Element &other);
+    /**
+     * @brief Destructs the element.
+     */
+    inline ~G1Element();
+private:
+    inline G1Element(ElementType type);
+public:
+    /**
+     * @brief Creates a variable in @f$\mathbb{G}_1@f$ with index @a index.
+     * @param index Index of the variable in @f$\mathbb{G}_1@f$.
+     * @return The variable element.
+     */
+    inline friend G1Element G1Var(int index);
+    /**
+     * @brief Creates a constant in @f$\mathbb{G}_1@f$ with index @a index.
+     * @param index Index of the constant in @f$\mathbb{G}_1@f$.
+     * @return The constant element.
+     */
+    inline friend G1Element G1Const(int index);
+    /**
+     * @brief Creates a constant in @f$\mathbb{G}_1@f$ with a specific value.
+     * @param value Value of the constant in @f$\mathbb{G}_1@f$.
+     * @return The constant element.
+     */
+    inline friend G1Element G1Const(G1 value);
+private:
+    ElementType type;
+    union {
+        int index;
+        G1 el;
     };
 };
 
@@ -124,6 +184,57 @@ inline FpElement FpConst(int index) {
 inline FpElement FpConst(Fp value) {
     FpElement el(ELEMENT_CONST_VALUE);
     new (&el.el) Fp(value);
+    return el;
+}
+
+inline G1Element::G1Element(const G1Element &other) : type(other.type) {
+    if (type == ELEMENT_CONST_VALUE)
+        new (&el) G1(other.el);
+    else
+        index = other.index;
+}
+
+inline G1Element &G1Element::operator=(const G1Element &other) {
+    if (type == ELEMENT_CONST_VALUE) {
+        if (other.type == ELEMENT_CONST_VALUE) {
+            el = other.el;
+        } else {
+            el.~G1();
+            index = other.index;
+        }
+    } else {
+        if (other.type == ELEMENT_CONST_VALUE) {
+            new (&el) G1(other.el);
+        } else {
+            index = other.index;
+        }
+    }
+    type = other.type;
+    return *this;
+}
+
+inline G1Element::~G1Element() {
+    if (type == ELEMENT_CONST_VALUE)
+        el.~G1();
+}
+
+inline G1Element::G1Element(ElementType type) : type(type) {}
+
+inline G1Element G1Var(int index) {
+    G1Element el(ELEMENT_VARIABLE);
+    el.index = index;
+    return el;
+}
+
+inline G1Element G1Const(int index) {
+    G1Element el(ELEMENT_CONST_INDEX);
+    el.index = index;
+    return el;
+}
+
+inline G1Element G1Const(G1 value) {
+    G1Element el(ELEMENT_CONST_VALUE);
+    new (&el.el) G1(value);
     return el;
 }
 
