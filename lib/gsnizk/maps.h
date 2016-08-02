@@ -484,9 +484,19 @@ public:
     void makePublic();
     /**
      * @brief Generates a private CRS from this public CRS.
+     * @param stream Output stream to which the proof that the returned
+     *   private CRS is well-formed will be written.
      * @return Private CRS.
      */
-    CRS genPrivate() const;
+    CRS genPrivate(std::ostream &stream) const;
+    /**
+     * @brief checkPrivate Checks the proof that a private CRS has been
+     *   correctly generated.
+     * @param stream Input stream from which the proof will be read.
+     * @param priv The private CRS to check.
+     * @return `true` if the proof is correct, `false` otherwise.
+     */
+    bool checkPrivate(std::istream &stream, CRS priv) const;
     /**
      * @brief Writes this CRS to an output stream.
      * @param stream Output stream.

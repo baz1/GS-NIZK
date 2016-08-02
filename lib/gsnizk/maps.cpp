@@ -54,15 +54,22 @@ void CRS::makePublic() {
     }
 }
 
-CRS CRS::genPrivate() const {
+CRS CRS::genPrivate(std::ostream &stream) const {
+    if (type != CRS_TYPE_PUBLIC)
+        throw "Unexpected use of gsnizk::genPrivate";
     CRS priv;
     priv.v1 = v1;
     priv.i1 = Fp::getRand();
     priv.v2 = v2;
     priv.i2 = Fp::getRand();
     priv.computeElements();
-    // TODO generate proof?
+    // TODO Write the proof in stream
     return priv;
+}
+
+bool CRS::checkPrivate(std::istream &stream, CRS priv) const {
+    // TODO Check the proof
+    return false;
 }
 
 std::ostream &operator<<(std::ostream &stream, const CRS &crs) {
