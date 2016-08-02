@@ -64,11 +64,14 @@ CRS CRS::genPrivate(std::ostream &stream) const {
     priv.i2 = Fp::getRand();
     priv.computeElements();
     // TODO Write the proof in stream
+    (void) stream;
     return priv;
 }
 
 bool CRS::checkPrivate(std::istream &stream, CRS priv) const {
     // TODO Check the proof
+    (void) priv;
+    (void) stream;
     return false;
 }
 
@@ -162,4 +165,4 @@ void CRS::computeElements() {
 #endif
 }
 
-}
+} /* End of namespace nizk */

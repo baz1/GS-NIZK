@@ -3,6 +3,8 @@
 
 #include "maps.h"
 
+#include <memory>
+
 /**
  * @file gsnizk.h
  * @brief Groth and Sahai's NIZK proof system.
@@ -28,8 +30,11 @@ namespace gsnizk {
 enum ElementType {
     ELEMENT_VARIABLE,
     ELEMENT_CONST_INDEX,
-    ELEMENT_CONST_VALUE
+    ELEMENT_CONST_VALUE,
+    ELEMENT_PAIR
 };
+class FpElement;
+typedef std::shared_ptr< std::pair<FpElement,FpElement> > SharedPtrFp;
 /**
  * @endcond
  */
@@ -38,21 +43,28 @@ enum ElementType {
  * @brief A @f$\mathbb{F}_p@f$ element inside an equation.
  */
 class FpElement {
+public:
     /**
      * @brief Contructs a copy of an element.
      * @param other The element to copy.
      */
-    inline FpElement(const FpElement &other);
+    FpElement(const FpElement &other);
     /**
      * @brief Sets this element to be equal to @a other.
      * @param The new value for this element.
      * @return Reference to the current element.
      */
-    inline FpElement &operator=(const FpElement &other);
+    FpElement &operator=(const FpElement &other);
     /**
      * @brief Destructs the element.
      */
-    inline ~FpElement();
+    ~FpElement();
+    /**
+     * @brief Multiplies two elements in @f$\mathbb{F}_p@f$.
+     * @param other Second element in @f$\mathbb{F}_p@f$.
+     * @return Product element, in @f$\mathbb{F}_p@f$.
+     */
+    inline FpElement operator*(const FpElement &other) const;
 private:
     inline FpElement(ElementType type);
 public:
@@ -79,6 +91,7 @@ private:
     union {
         int index;
         Fp el;
+        SharedPtrFp ptr;
     };
 };
 
@@ -232,35 +245,11 @@ private:
 
 /* Inline definitions: */
 
-inline FpElement::FpElement(const FpElement &other) : type(other.type) {
-    if (type == ELEMENT_CONST_VALUE)
-        new (&el) Fp(other.el);
-    else
-        index = other.index;
-}
-
-inline FpElement &FpElement::operator=(const FpElement &other) {
-    if (type == ELEMENT_CONST_VALUE) {
-        if (other.type == ELEMENT_CONST_VALUE) {
-            el = other.el;
-        } else {
-            el.~Fp();
-            index = other.index;
-        }
-    } else {
-        if (other.type == ELEMENT_CONST_VALUE) {
-            new (&el) Fp(other.el);
-        } else {
-            index = other.index;
-        }
-    }
-    type = other.type;
-    return *this;
-}
-
-inline FpElement::~FpElement() {
-    if (type == ELEMENT_CONST_VALUE)
-        el.~Fp();
+FpElement FpElement::operator*(const FpElement &other) const {
+    FpElement el(ELEMENT_PAIR);
+    new (&el.ptr) SharedPtrFp(
+            new (std::pair<FpElement,FpElement>)(*this, other));
+    return el;
 }
 
 inline FpElement::FpElement(ElementType type) : type(type) {}
@@ -436,6 +425,6 @@ inline GTElement GTConst(GT value) {
     return el;
 }
 
-} /* End of gsnizk */
+} /* End of namespace nizk */
 
-#endif // GSNIZK_H
+#endif /* End of GSNIZK_H */

@@ -732,6 +732,6 @@ inline std::istream &operator>>(std::istream &stream, BT &el) {
 
 inline CRS::CRS() {}
 
-} /* End of gsnizk */
+} /* End of namespace nizk */
 
 #endif /* End of MAPS_H */
