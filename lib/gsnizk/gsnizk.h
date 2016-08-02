@@ -131,6 +131,54 @@ private:
 };
 
 /**
+ * @brief A @f$\mathbb{G}_2@f$ element inside an equation.
+ */
+class G2Element {
+    /**
+     * @brief Contructs a copy of an element.
+     * @param other The element to copy.
+     */
+    inline G2Element(const G2Element &other);
+    /**
+     * @brief Sets this element to be equal to @a other.
+     * @param The new value for this element.
+     * @return Reference to the current element.
+     */
+    inline G2Element &operator=(const G2Element &other);
+    /**
+     * @brief Destructs the element.
+     */
+    inline ~G2Element();
+private:
+    inline G2Element(ElementType type);
+public:
+    /**
+     * @brief Creates a variable in @f$\mathbb{G}_2@f$ with index @a index.
+     * @param index Index of the variable in @f$\mathbb{G}_2@f$.
+     * @return The variable element.
+     */
+    inline friend G2Element G2Var(int index);
+    /**
+     * @brief Creates a constant in @f$\mathbb{G}_2@f$ with index @a index.
+     * @param index Index of the constant in @f$\mathbb{G}_2@f$.
+     * @return The constant element.
+     */
+    inline friend G2Element G2Const(int index);
+    /**
+     * @brief Creates a constant in @f$\mathbb{G}_2@f$ with a specific value.
+     * @param value Value of the constant in @f$\mathbb{G}_2@f$.
+     * @return The constant element.
+     */
+    inline friend G2Element G2Const(G2 value);
+private:
+    ElementType type;
+    union {
+        int index;
+        G2 el;
+    };
+};
+
+/**
  * @todo Continue and finish the proof system.
  */
 
@@ -235,6 +283,57 @@ inline G1Element G1Const(int index) {
 inline G1Element G1Const(G1 value) {
     G1Element el(ELEMENT_CONST_VALUE);
     new (&el.el) G1(value);
+    return el;
+}
+
+inline G2Element::G2Element(const G2Element &other) : type(other.type) {
+    if (type == ELEMENT_CONST_VALUE)
+        new (&el) G2(other.el);
+    else
+        index = other.index;
+}
+
+inline G2Element &G2Element::operator=(const G2Element &other) {
+    if (type == ELEMENT_CONST_VALUE) {
+        if (other.type == ELEMENT_CONST_VALUE) {
+            el = other.el;
+        } else {
+            el.~G2();
+            index = other.index;
+        }
+    } else {
+        if (other.type == ELEMENT_CONST_VALUE) {
+            new (&el) G2(other.el);
+        } else {
+            index = other.index;
+        }
+    }
+    type = other.type;
+    return *this;
+}
+
+inline G2Element::~G2Element() {
+    if (type == ELEMENT_CONST_VALUE)
+        el.~G2();
+}
+
+inline G2Element::G2Element(ElementType type) : type(type) {}
+
+inline G2Element G2Var(int index) {
+    G2Element el(ELEMENT_VARIABLE);
+    el.index = index;
+    return el;
+}
+
+inline G2Element G2Const(int index) {
+    G2Element el(ELEMENT_CONST_INDEX);
+    el.index = index;
+    return el;
+}
+
+inline G2Element G2Const(G2 value) {
+    G2Element el(ELEMENT_CONST_VALUE);
+    new (&el.el) G2(value);
     return el;
 }
 
