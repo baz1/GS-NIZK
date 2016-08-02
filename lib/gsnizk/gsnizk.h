@@ -179,6 +179,54 @@ private:
 };
 
 /**
+ * @brief A @f$\mathbb{G}_T@f$ element inside an equation.
+ */
+class GTElement {
+    /**
+     * @brief Contructs a copy of an element.
+     * @param other The element to copy.
+     */
+    inline GTElement(const GTElement &other);
+    /**
+     * @brief Sets this element to be equal to @a other.
+     * @param The new value for this element.
+     * @return Reference to the current element.
+     */
+    inline GTElement &operator=(const GTElement &other);
+    /**
+     * @brief Destructs the element.
+     */
+    inline ~GTElement();
+private:
+    inline GTElement(ElementType type);
+public:
+    /**
+     * @brief Creates a variable in @f$\mathbb{G}_T@f$ with index @a index.
+     * @param index Index of the variable in @f$\mathbb{G}_T@f$.
+     * @return The variable element.
+     */
+    inline friend GTElement GTVar(int index);
+    /**
+     * @brief Creates a constant in @f$\mathbb{G}_T@f$ with index @a index.
+     * @param index Index of the constant in @f$\mathbb{G}_T@f$.
+     * @return The constant element.
+     */
+    inline friend GTElement GTConst(int index);
+    /**
+     * @brief Creates a constant in @f$\mathbb{G}_T@f$ with a specific value.
+     * @param value Value of the constant in @f$\mathbb{G}_T@f$.
+     * @return The constant element.
+     */
+    inline friend GTElement GTConst(GT value);
+private:
+    ElementType type;
+    union {
+        int index;
+        GT el;
+    };
+};
+
+/**
  * @todo Continue and finish the proof system.
  */
 
@@ -334,6 +382,57 @@ inline G2Element G2Const(int index) {
 inline G2Element G2Const(G2 value) {
     G2Element el(ELEMENT_CONST_VALUE);
     new (&el.el) G2(value);
+    return el;
+}
+
+inline GTElement::GTElement(const GTElement &other) : type(other.type) {
+    if (type == ELEMENT_CONST_VALUE)
+        new (&el) GT(other.el);
+    else
+        index = other.index;
+}
+
+inline GTElement &GTElement::operator=(const GTElement &other) {
+    if (type == ELEMENT_CONST_VALUE) {
+        if (other.type == ELEMENT_CONST_VALUE) {
+            el = other.el;
+        } else {
+            el.~GT();
+            index = other.index;
+        }
+    } else {
+        if (other.type == ELEMENT_CONST_VALUE) {
+            new (&el) GT(other.el);
+        } else {
+            index = other.index;
+        }
+    }
+    type = other.type;
+    return *this;
+}
+
+inline GTElement::~GTElement() {
+    if (type == ELEMENT_CONST_VALUE)
+        el.~GT();
+}
+
+inline GTElement::GTElement(ElementType type) : type(type) {}
+
+inline GTElement GTVar(int index) {
+    GTElement el(ELEMENT_VARIABLE);
+    el.index = index;
+    return el;
+}
+
+inline GTElement GTConst(int index) {
+    GTElement el(ELEMENT_CONST_INDEX);
+    el.index = index;
+    return el;
+}
+
+inline GTElement GTConst(GT value) {
+    GTElement el(ELEMENT_CONST_VALUE);
+    new (&el.el) GT(value);
     return el;
 }
 
