@@ -129,6 +129,18 @@ public:
      */
     inline FpElement();
     /**
+     * @brief Adds two elements in @f$\mathbb{F}_p@f$.
+     * @param other Second element in @f$\mathbb{F}_p@f$.
+     * @return Reference to the modified element.
+     */
+    FpElement &operator+=(const FpElement &other);
+    /**
+     * @brief Adds two elements in @f$\mathbb{F}_p@f$.
+     * @param other Second element in @f$\mathbb{F}_p@f$.
+     * @return Product element, in @f$\mathbb{F}_p@f$.
+     */
+    FpElement operator+(const FpElement &other) const;
+    /**
      * @brief Multiplies two elements in @f$\mathbb{F}_p@f$.
      * @param other Second element in @f$\mathbb{F}_p@f$.
      * @return Reference to the modified element.

@@ -1,5 +1,7 @@
 #include "gsnizk.h"
 
+#include <set>
+
 namespace gsnizk {
 
 FpData::~FpData() {
@@ -8,6 +10,7 @@ FpData::~FpData() {
         el.~Fp();
         return;
     case ELEMENT_PAIR:
+    case ELEMENT_SCALAR:
         pair.~PairFp();
         return;
     default:
@@ -66,15 +69,28 @@ GTData::~GTData() {
     }
 }
 
-FpElement &FpElement::operator*=(const FpElement &other) {
+FpElement &FpElement::operator+=(const FpElement &other) {
     FpData *d = new FpData(ELEMENT_PAIR);
     new (&d->pair) PairFp(data, other.data);
     data = std::shared_ptr<FpData>(d);
     return *this;
 }
 
-FpElement FpElement::operator*(const FpElement &other) const {
+FpElement FpElement::operator+(const FpElement &other) const {
     FpData *d = new FpData(ELEMENT_PAIR);
+    new (&d->pair) PairFp(data, other.data);
+    return FpElement(std::shared_ptr<FpData>(d));
+}
+
+FpElement &FpElement::operator*=(const FpElement &other) {
+    FpData *d = new FpData(ELEMENT_SCALAR);
+    new (&d->pair) PairFp(data, other.data);
+    data = std::shared_ptr<FpData>(d);
+    return *this;
+}
+
+FpElement FpElement::operator*(const FpElement &other) const {
+    FpData *d = new FpData(ELEMENT_SCALAR);
     new (&d->pair) PairFp(data, other.data);
     return FpElement(std::shared_ptr<FpData>(d));
 }
@@ -238,11 +254,195 @@ void NIZKProof::addEquation(const GTElement &leftHandSide,
     eqsGT.push_back(PairGT(leftHandSide.data, rightHandSide.data));
 }
 
-void NIZKProof::endEquations() {
+void getIndexes(const FpData &d,
+                std::set<int> &FpVars, std::set<int> &FpConsts,
+                std::set<int> &G1Vars, std::set<int> &G1Consts,
+                std::set<int> &G2Vars, std::set<int> &G2Consts,
+                std::set<int> &GTVars, std::set<int> &GTConsts) {
+    switch (d.type) {
+    case ELEMENT_VARIABLE:
+        FpVars.insert(d.index);
+        return;
+    case ELEMENT_CONST_INDEX:
+        FpConsts.insert(d.index);
+        return;
+    case ELEMENT_CONST_VALUE:
+        return;
+    case ELEMENT_PAIR:
+    case ELEMENT_SCALAR:
+        getIndexes(*d.pair.first, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        getIndexes(*d.pair.second, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        return;
+    default:
+        throw "Unexpected data type in gsnizk::endEquations";
+    }
+}
+
+void getIndexes(const G1Data &d,
+                std::set<int> &FpVars, std::set<int> &FpConsts,
+                std::set<int> &G1Vars, std::set<int> &G1Consts,
+                std::set<int> &G2Vars, std::set<int> &G2Consts,
+                std::set<int> &GTVars, std::set<int> &GTConsts) {
+    switch (d.type) {
+    case ELEMENT_VARIABLE:
+        G1Vars.insert(d.index);
+        return;
+    case ELEMENT_CONST_INDEX:
+        G1Consts.insert(d.index);
+        return;
+    case ELEMENT_CONST_VALUE:
+        return;
+    case ELEMENT_PAIR:
+        getIndexes(*d.pair.first, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        getIndexes(*d.pair.second, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        return;
+    case ELEMENT_SCALAR:
+        getIndexes(*d.scalar.first, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        getIndexes(*d.scalar.second, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        return;
+    default:
+        throw "Unexpected data type in gsnizk::endEquations";
+    }
+}
+
+void getIndexes(const G2Data &d,
+                std::set<int> &FpVars, std::set<int> &FpConsts,
+                std::set<int> &G1Vars, std::set<int> &G1Consts,
+                std::set<int> &G2Vars, std::set<int> &G2Consts,
+                std::set<int> &GTVars, std::set<int> &GTConsts) {
+    switch (d.type) {
+    case ELEMENT_VARIABLE:
+        G2Vars.insert(d.index);
+        return;
+    case ELEMENT_CONST_INDEX:
+        G2Consts.insert(d.index);
+        return;
+    case ELEMENT_CONST_VALUE:
+        return;
+    case ELEMENT_PAIR:
+        getIndexes(*d.pair.first, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        getIndexes(*d.pair.second, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        return;
+    case ELEMENT_SCALAR:
+        getIndexes(*d.scalar.first, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        getIndexes(*d.scalar.second, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        return;
+    default:
+        throw "Unexpected data type in gsnizk::endEquations";
+    }
+}
+
+void getIndexes(const GTData &d,
+                std::set<int> &FpVars, std::set<int> &FpConsts,
+                std::set<int> &G1Vars, std::set<int> &G1Consts,
+                std::set<int> &G2Vars, std::set<int> &G2Consts,
+                std::set<int> &GTVars, std::set<int> &GTConsts) {
+    switch (d.type) {
+    case ELEMENT_VARIABLE:
+        GTVars.insert(d.index);
+        return;
+    case ELEMENT_CONST_INDEX:
+        GTConsts.insert(d.index);
+        return;
+    case ELEMENT_CONST_VALUE:
+        return;
+    case ELEMENT_PAIR:
+        getIndexes(*d.pair.first, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        getIndexes(*d.pair.second, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        return;
+    case ELEMENT_SCALAR:
+        getIndexes(*d.scalar.first, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        getIndexes(*d.scalar.second, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        return;
+    case ELEMENT_PAIRING:
+        getIndexes(*d.pring.first, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        getIndexes(*d.pring.second, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        return;
+    default:
+        throw "Unexpected data type in gsnizk::endEquations";
+    }
+}
+
+int checkIndexesSet(const std::set<int> &s) {
+    std::set<int>::const_iterator it = s.cbegin();
+    int expect = 0;
+    while (it != s.cend()) {
+        if (*it != expect)
+            return -1;
+        ++expect;
+        ++it;
+    }
+    return s.size();
+}
+
+bool NIZKProof::endEquations() {
     /* Subsequent calls are ignored. */
-    if (fixed) return;
-    // TODO
+    if (fixed) return true;
+    std::set<int> FpVars, FpConsts, G1Vars, G1Consts;
+    std::set<int> G2Vars, G2Consts, GTVars, GTConsts;
+    for (const PairFp &p : eqsFp) {
+        getIndexes(*p.first, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        if (!p.second) continue;
+        getIndexes(*p.second, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+    }
+    for (const PairG1 &p : eqsG1) {
+        getIndexes(*p.first, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        if (!p.second) continue;
+        getIndexes(*p.second, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+    }
+    for (const PairG2 &p : eqsG2) {
+        getIndexes(*p.first, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        if (!p.second) continue;
+        getIndexes(*p.second, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+    }
+    for (const PairGT &p : eqsGT) {
+        getIndexes(*p.first, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        if (!p.second) continue;
+        getIndexes(*p.second, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+    }
+    varFp = checkIndexesSet(FpVars);
+    if (varFp < 0) return false;
+    cstFp = checkIndexesSet(FpConsts);
+    if (cstFp < 0) return false;
+    varG1 = checkIndexesSet(G1Vars);
+    if (varG1 < 0) return false;
+    cstG1 = checkIndexesSet(G1Consts);
+    if (cstG1 < 0) return false;
+    varG2 = checkIndexesSet(G2Vars);
+    if (varG2 < 0) return false;
+    cstG2 = checkIndexesSet(G2Consts);
+    if (cstG2 < 0) return false;
+    varGT = checkIndexesSet(GTVars);
+    if (varGT < 0) return false;
+    cstGT = checkIndexesSet(GTConsts);
+    if (cstGT < 0) return false;
+    // TODO selected commitments precomputation
     fixed = true;
+    return true;
 }
 
 } /* End of namespace nizk */
