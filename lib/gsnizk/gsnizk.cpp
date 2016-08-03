@@ -8,7 +8,7 @@ FpElement::FpElement(const FpElement &other) : type(other.type) {
         new (&el) Fp(other.el);
         return;
     case ELEMENT_PAIR:
-        new (&ptr) SharedPtrFp(other.ptr);
+        new (&pair) PairFp(other.pair);
         return;
     default:
         index = other.index;
@@ -20,10 +20,10 @@ FpElement &FpElement::operator=(const FpElement &other) {
         switch (type) {
         case ELEMENT_CONST_VALUE:
             el = other.el;
-            return *this;
+            break;
         case ELEMENT_PAIR:
-            ptr = other.ptr;
-            return *this;
+            pair = other.pair;
+            break;
         default:
             index = other.index;
         }
@@ -40,7 +40,190 @@ FpElement::~FpElement() {
         el.~Fp();
         return;
     case ELEMENT_PAIR:
-        ptr.~SharedPtrFp();
+        pair.~PairFp();
+        return;
+    default:
+        return;
+    }
+}
+
+FpElement &FpElement::operator*=(const FpElement &other) {
+    PairFp tmp = PairFp(new (std::pair<FpElement,FpElement>)(*this, other));
+    if (type == ELEMENT_PAIR) {
+        pair = tmp;
+    } else {
+        this->~FpElement();
+        type = ELEMENT_PAIR;
+        new (&pair) PairFp(tmp);
+    }
+    return *this;
+}
+
+G1Element::G1Element(const G1Element &other) : type(other.type) {
+    switch (type) {
+    case ELEMENT_CONST_VALUE:
+        new (&el) G1(other.el);
+        return;
+    case ELEMENT_PAIR:
+        new (&pair) PairG1(other.pair);
+        return;
+    case ELEMENT_SCALAR:
+        new (&scalar) ScalarG1(other.scalar);
+        return;
+    default:
+        index = other.index;
+    }
+}
+
+G1Element &G1Element::operator=(const G1Element &other) {
+    if (type == other.type) {
+        switch (type) {
+        case ELEMENT_CONST_VALUE:
+            el = other.el;
+            break;
+        case ELEMENT_PAIR:
+            pair = other.pair;
+            break;
+        case ELEMENT_SCALAR:
+            scalar = other.scalar;
+            break;
+        default:
+            index = other.index;
+        }
+        return *this;
+    }
+    this->~G1Element();
+    new (this) G1Element(other);
+    return *this;
+}
+
+G1Element::~G1Element() {
+    switch (type) {
+    case ELEMENT_CONST_VALUE:
+        el.~G1();
+        return;
+    case ELEMENT_PAIR:
+        pair.~PairG1();
+        return;
+    case ELEMENT_SCALAR:
+        scalar.~ScalarG1();
+        return;
+    default:
+        return;
+    }
+}
+
+G2Element::G2Element(const G2Element &other) : type(other.type) {
+    switch (type) {
+    case ELEMENT_CONST_VALUE:
+        new (&el) G2(other.el);
+        return;
+    case ELEMENT_PAIR:
+        new (&pair) PairG2(other.pair);
+        return;
+    case ELEMENT_SCALAR:
+        new (&scalar) ScalarG2(other.scalar);
+        return;
+    default:
+        index = other.index;
+    }
+}
+
+G2Element &G2Element::operator=(const G2Element &other) {
+    if (type == other.type) {
+        switch (type) {
+        case ELEMENT_CONST_VALUE:
+            el = other.el;
+            break;
+        case ELEMENT_PAIR:
+            pair = other.pair;
+            break;
+        case ELEMENT_SCALAR:
+            scalar = other.scalar;
+            break;
+        default:
+            index = other.index;
+        }
+        return *this;
+    }
+    this->~G2Element();
+    new (this) G2Element(other);
+    return *this;
+}
+
+G2Element::~G2Element() {
+    switch (type) {
+    case ELEMENT_CONST_VALUE:
+        el.~G2();
+        return;
+    case ELEMENT_PAIR:
+        pair.~PairG2();
+        return;
+    case ELEMENT_SCALAR:
+        scalar.~ScalarG2();
+        return;
+    default:
+        return;
+    }
+}
+
+GTElement::GTElement(const GTElement &other) : type(other.type) {
+    switch (type) {
+    case ELEMENT_CONST_VALUE:
+        new (&el) GT(other.el);
+        return;
+    case ELEMENT_PAIR:
+        new (&pair) PairGT(other.pair);
+        return;
+    case ELEMENT_SCALAR:
+        new (&scalar) ScalarGT(other.scalar);
+        return;
+    case ELEMENT_PAIRING:
+        new (&pring) PairingGT(other.pring);
+        return;
+    default:
+        index = other.index;
+    }
+}
+
+GTElement &GTElement::operator=(const GTElement &other) {
+    if (type == other.type) {
+        switch (type) {
+        case ELEMENT_CONST_VALUE:
+            el = other.el;
+            break;
+        case ELEMENT_PAIR:
+            pair = other.pair;
+            break;
+        case ELEMENT_SCALAR:
+            scalar = other.scalar;
+            break;
+        case ELEMENT_PAIRING:
+            pring = other.pring;
+            break;
+        default:
+            index = other.index;
+        }
+        return *this;
+    }
+    this->~GTElement();
+    new (this) GTElement(other);
+    return *this;
+}
+
+GTElement::~GTElement() {
+    switch (type) {
+    case ELEMENT_CONST_VALUE:
+        el.~GT();
+        return;
+    case ELEMENT_PAIR:
+        pair.~PairGT();
+        return;
+    case ELEMENT_SCALAR:
+        scalar.~ScalarGT();
+        return;
+    case ELEMENT_PAIRING:
+        pring.~PairingGT();
         return;
     default:
         return;

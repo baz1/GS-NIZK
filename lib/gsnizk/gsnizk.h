@@ -31,10 +31,22 @@ enum ElementType {
     ELEMENT_VARIABLE,
     ELEMENT_CONST_INDEX,
     ELEMENT_CONST_VALUE,
-    ELEMENT_PAIR
+    ELEMENT_PAIR,
+    ELEMENT_SCALAR,
+    ELEMENT_PAIRING
 };
 class FpElement;
-typedef std::shared_ptr< std::pair<FpElement,FpElement> > SharedPtrFp;
+class G1Element;
+class G2Element;
+class GTElement;
+typedef std::shared_ptr< std::pair<FpElement,FpElement> > PairFp;
+typedef std::shared_ptr< std::pair<G1Element,G1Element> > PairG1;
+typedef std::shared_ptr< std::pair<FpElement,G1Element> > ScalarG1;
+typedef std::shared_ptr< std::pair<G2Element,G2Element> > PairG2;
+typedef std::shared_ptr< std::pair<FpElement,G2Element> > ScalarG2;
+typedef std::shared_ptr< std::pair<GTElement,GTElement> > PairGT;
+typedef std::shared_ptr< std::pair<FpElement,GTElement> > ScalarGT;
+typedef std::shared_ptr< std::pair<G1Element,G2Element> > PairingGT;
 /**
  * @endcond
  */
@@ -59,6 +71,12 @@ public:
      * @brief Destructs the element.
      */
     ~FpElement();
+    /**
+     * @brief Multiplies two elements in @f$\mathbb{F}_p@f$.
+     * @param other Second element in @f$\mathbb{F}_p@f$.
+     * @return Reference to the modified element.
+     */
+    inline FpElement &operator*=(const FpElement &other);
     /**
      * @brief Multiplies two elements in @f$\mathbb{F}_p@f$.
      * @param other Second element in @f$\mathbb{F}_p@f$.
@@ -91,7 +109,7 @@ private:
     union {
         int index;
         Fp el;
-        SharedPtrFp ptr;
+        PairFp pair;
     };
 };
 
@@ -140,6 +158,8 @@ private:
     union {
         int index;
         G1 el;
+        PairG1 pair;
+        ScalarG1 scalar;
     };
 };
 
@@ -188,6 +208,8 @@ private:
     union {
         int index;
         G2 el;
+        PairG2 pair;
+        ScalarG2 scalar;
     };
 };
 
@@ -236,6 +258,9 @@ private:
     union {
         int index;
         GT el;
+        PairGT pair;
+        ScalarGT scalar;
+        PairingGT pring;
     };
 };
 
@@ -245,9 +270,9 @@ private:
 
 /* Inline definitions: */
 
-FpElement FpElement::operator*(const FpElement &other) const {
+inline FpElement FpElement::operator*(const FpElement &other) const {
     FpElement el(ELEMENT_PAIR);
-    new (&el.ptr) SharedPtrFp(
+    new (&el.pair) PairFp(
             new (std::pair<FpElement,FpElement>)(*this, other));
     return el;
 }
@@ -272,37 +297,6 @@ inline FpElement FpConst(Fp value) {
     return el;
 }
 
-inline G1Element::G1Element(const G1Element &other) : type(other.type) {
-    if (type == ELEMENT_CONST_VALUE)
-        new (&el) G1(other.el);
-    else
-        index = other.index;
-}
-
-inline G1Element &G1Element::operator=(const G1Element &other) {
-    if (type == ELEMENT_CONST_VALUE) {
-        if (other.type == ELEMENT_CONST_VALUE) {
-            el = other.el;
-        } else {
-            el.~G1();
-            index = other.index;
-        }
-    } else {
-        if (other.type == ELEMENT_CONST_VALUE) {
-            new (&el) G1(other.el);
-        } else {
-            index = other.index;
-        }
-    }
-    type = other.type;
-    return *this;
-}
-
-inline G1Element::~G1Element() {
-    if (type == ELEMENT_CONST_VALUE)
-        el.~G1();
-}
-
 inline G1Element::G1Element(ElementType type) : type(type) {}
 
 inline G1Element G1Var(int index) {
@@ -323,37 +317,6 @@ inline G1Element G1Const(G1 value) {
     return el;
 }
 
-inline G2Element::G2Element(const G2Element &other) : type(other.type) {
-    if (type == ELEMENT_CONST_VALUE)
-        new (&el) G2(other.el);
-    else
-        index = other.index;
-}
-
-inline G2Element &G2Element::operator=(const G2Element &other) {
-    if (type == ELEMENT_CONST_VALUE) {
-        if (other.type == ELEMENT_CONST_VALUE) {
-            el = other.el;
-        } else {
-            el.~G2();
-            index = other.index;
-        }
-    } else {
-        if (other.type == ELEMENT_CONST_VALUE) {
-            new (&el) G2(other.el);
-        } else {
-            index = other.index;
-        }
-    }
-    type = other.type;
-    return *this;
-}
-
-inline G2Element::~G2Element() {
-    if (type == ELEMENT_CONST_VALUE)
-        el.~G2();
-}
-
 inline G2Element::G2Element(ElementType type) : type(type) {}
 
 inline G2Element G2Var(int index) {
@@ -372,37 +335,6 @@ inline G2Element G2Const(G2 value) {
     G2Element el(ELEMENT_CONST_VALUE);
     new (&el.el) G2(value);
     return el;
-}
-
-inline GTElement::GTElement(const GTElement &other) : type(other.type) {
-    if (type == ELEMENT_CONST_VALUE)
-        new (&el) GT(other.el);
-    else
-        index = other.index;
-}
-
-inline GTElement &GTElement::operator=(const GTElement &other) {
-    if (type == ELEMENT_CONST_VALUE) {
-        if (other.type == ELEMENT_CONST_VALUE) {
-            el = other.el;
-        } else {
-            el.~GT();
-            index = other.index;
-        }
-    } else {
-        if (other.type == ELEMENT_CONST_VALUE) {
-            new (&el) GT(other.el);
-        } else {
-            index = other.index;
-        }
-    }
-    type = other.type;
-    return *this;
-}
-
-inline GTElement::~GTElement() {
-    if (type == ELEMENT_CONST_VALUE)
-        el.~GT();
 }
 
 inline GTElement::GTElement(ElementType type) : type(type) {}
