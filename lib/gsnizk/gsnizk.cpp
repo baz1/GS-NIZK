@@ -2,39 +2,7 @@
 
 namespace gsnizk {
 
-FpElement::FpElement(const FpElement &other) : type(other.type) {
-    switch (type) {
-    case ELEMENT_CONST_VALUE:
-        new (&el) Fp(other.el);
-        return;
-    case ELEMENT_PAIR:
-        new (&pair) PairFp(other.pair);
-        return;
-    default:
-        index = other.index;
-    }
-}
-
-FpElement &FpElement::operator=(const FpElement &other) {
-    if (type == other.type) {
-        switch (type) {
-        case ELEMENT_CONST_VALUE:
-            el = other.el;
-            break;
-        case ELEMENT_PAIR:
-            pair = other.pair;
-            break;
-        default:
-            index = other.index;
-        }
-        return *this;
-    }
-    this->~FpElement();
-    new (this) FpElement(other);
-    return *this;
-}
-
-FpElement::~FpElement() {
+FpData::~FpData() {
     switch (type) {
     case ELEMENT_CONST_VALUE:
         el.~Fp();
@@ -47,57 +15,7 @@ FpElement::~FpElement() {
     }
 }
 
-FpElement &FpElement::operator*=(const FpElement &other) {
-    PairFp tmp = PairFp(new (std::pair<FpElement,FpElement>)(*this, other));
-    if (type == ELEMENT_PAIR) {
-        pair = tmp;
-    } else {
-        this->~FpElement();
-        type = ELEMENT_PAIR;
-        new (&pair) PairFp(tmp);
-    }
-    return *this;
-}
-
-G1Element::G1Element(const G1Element &other) : type(other.type) {
-    switch (type) {
-    case ELEMENT_CONST_VALUE:
-        new (&el) G1(other.el);
-        return;
-    case ELEMENT_PAIR:
-        new (&pair) PairG1(other.pair);
-        return;
-    case ELEMENT_SCALAR:
-        new (&scalar) ScalarG1(other.scalar);
-        return;
-    default:
-        index = other.index;
-    }
-}
-
-G1Element &G1Element::operator=(const G1Element &other) {
-    if (type == other.type) {
-        switch (type) {
-        case ELEMENT_CONST_VALUE:
-            el = other.el;
-            break;
-        case ELEMENT_PAIR:
-            pair = other.pair;
-            break;
-        case ELEMENT_SCALAR:
-            scalar = other.scalar;
-            break;
-        default:
-            index = other.index;
-        }
-        return *this;
-    }
-    this->~G1Element();
-    new (this) G1Element(other);
-    return *this;
-}
-
-G1Element::~G1Element() {
+G1Data::~G1Data() {
     switch (type) {
     case ELEMENT_CONST_VALUE:
         el.~G1();
@@ -113,57 +31,7 @@ G1Element::~G1Element() {
     }
 }
 
-G1Element &G1Element::operator+=(const G1Element &other) {
-    PairG1 tmp = PairG1(new (std::pair<G1Element,G1Element>)(*this, other));
-    if (type == ELEMENT_PAIR) {
-        pair = tmp;
-    } else {
-        this->~G1Element();
-        type = ELEMENT_PAIR;
-        new (&pair) PairG1(tmp);
-    }
-    return *this;
-}
-
-G2Element::G2Element(const G2Element &other) : type(other.type) {
-    switch (type) {
-    case ELEMENT_CONST_VALUE:
-        new (&el) G2(other.el);
-        return;
-    case ELEMENT_PAIR:
-        new (&pair) PairG2(other.pair);
-        return;
-    case ELEMENT_SCALAR:
-        new (&scalar) ScalarG2(other.scalar);
-        return;
-    default:
-        index = other.index;
-    }
-}
-
-G2Element &G2Element::operator=(const G2Element &other) {
-    if (type == other.type) {
-        switch (type) {
-        case ELEMENT_CONST_VALUE:
-            el = other.el;
-            break;
-        case ELEMENT_PAIR:
-            pair = other.pair;
-            break;
-        case ELEMENT_SCALAR:
-            scalar = other.scalar;
-            break;
-        default:
-            index = other.index;
-        }
-        return *this;
-    }
-    this->~G2Element();
-    new (this) G2Element(other);
-    return *this;
-}
-
-G2Element::~G2Element() {
+G2Data::~G2Data() {
     switch (type) {
     case ELEMENT_CONST_VALUE:
         el.~G2();
@@ -179,63 +47,7 @@ G2Element::~G2Element() {
     }
 }
 
-G2Element &G2Element::operator+=(const G2Element &other) {
-    PairG2 tmp = PairG2(new (std::pair<G2Element,G2Element>)(*this, other));
-    if (type == ELEMENT_PAIR) {
-        pair = tmp;
-    } else {
-        this->~G2Element();
-        type = ELEMENT_PAIR;
-        new (&pair) PairG2(tmp);
-    }
-    return *this;
-}
-
-GTElement::GTElement(const GTElement &other) : type(other.type) {
-    switch (type) {
-    case ELEMENT_CONST_VALUE:
-        new (&el) GT(other.el);
-        return;
-    case ELEMENT_PAIR:
-        new (&pair) PairGT(other.pair);
-        return;
-    case ELEMENT_SCALAR:
-        new (&scalar) ScalarGT(other.scalar);
-        return;
-    case ELEMENT_PAIRING:
-        new (&pring) PairingGT(other.pring);
-        return;
-    default:
-        index = other.index;
-    }
-}
-
-GTElement &GTElement::operator=(const GTElement &other) {
-    if (type == other.type) {
-        switch (type) {
-        case ELEMENT_CONST_VALUE:
-            el = other.el;
-            break;
-        case ELEMENT_PAIR:
-            pair = other.pair;
-            break;
-        case ELEMENT_SCALAR:
-            scalar = other.scalar;
-            break;
-        case ELEMENT_PAIRING:
-            pring = other.pring;
-            break;
-        default:
-            index = other.index;
-        }
-        return *this;
-    }
-    this->~GTElement();
-    new (this) GTElement(other);
-    return *this;
-}
-
-GTElement::~GTElement() {
+GTData::~GTData() {
     switch (type) {
     case ELEMENT_CONST_VALUE:
         el.~GT();
@@ -254,16 +66,35 @@ GTElement::~GTElement() {
     }
 }
 
-GTElement &GTElement::operator*=(const GTElement &other) {
-    PairGT tmp = PairGT(new (std::pair<GTElement,GTElement>)(*this, other));
-    if (type == ELEMENT_PAIR) {
-        pair = tmp;
-    } else {
-        this->~GTElement();
-        type = ELEMENT_PAIR;
-        new (&pair) PairGT(tmp);
-    }
+FpElement &FpElement::operator*=(const FpElement &other) {
+    FpData *d = new FpData(ELEMENT_PAIR);
+    new (&d->pair) PairFp(data, other.data);
+    data = std::shared_ptr<FpData>(d);
     return *this;
+}
+
+FpElement FpElement::operator*(const FpElement &other) const {
+    FpData *d = new FpData(ELEMENT_PAIR);
+    new (&d->pair) PairFp(data, other.data);
+    return FpElement(std::shared_ptr<FpData>(d));
+}
+
+FpElement FpVar(int index) {
+    FpData *d = new FpData(ELEMENT_VARIABLE);
+    d->index = index;
+    return FpElement(std::shared_ptr<FpData>(d));
+}
+
+FpElement FpConst(int index) {
+    FpData *d = new FpData(ELEMENT_CONST_INDEX);
+    d->index = index;
+    return FpElement(std::shared_ptr<FpData>(d));
+}
+
+FpElement FpConst(Fp value) {
+    FpData *d = new FpData(ELEMENT_CONST_VALUE);
+    new (&d->el) Fp(value);
+    return FpElement(std::shared_ptr<FpData>(d));
 }
 
 } /* End of namespace nizk */
