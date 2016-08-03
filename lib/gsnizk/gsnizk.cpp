@@ -216,22 +216,33 @@ GTElement GTConst(GT value) {
 
 void NIZKProof::addEquation(const FpElement &leftHandSide,
                             const FpElement &rightHandSide) {
+    if (fixed) throw "Unexpected use of gsnizk::addEquation";
     eqsFp.push_back(PairFp(leftHandSide.data, rightHandSide.data));
 }
 
 void NIZKProof::addEquation(const G1Element &leftHandSide,
                             const G1Element &rightHandSide) {
+    if (fixed) throw "Unexpected use of gsnizk::addEquation";
     eqsG1.push_back(PairG1(leftHandSide.data, rightHandSide.data));
 }
 
 void NIZKProof::addEquation(const G2Element &leftHandSide,
                             const G2Element &rightHandSide) {
+    if (fixed) throw "Unexpected use of gsnizk::addEquation";
     eqsG2.push_back(PairG2(leftHandSide.data, rightHandSide.data));
 }
 
 void NIZKProof::addEquation(const GTElement &leftHandSide,
                             const GTElement &rightHandSide) {
+    if (fixed) throw "Unexpected use of gsnizk::addEquation";
     eqsGT.push_back(PairGT(leftHandSide.data, rightHandSide.data));
+}
+
+void NIZKProof::endEquations() {
+    /* Subsequent calls are ignored. */
+    if (fixed) return;
+    // TODO
+    fixed = true;
 }
 
 } /* End of namespace nizk */

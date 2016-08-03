@@ -97,6 +97,23 @@ class FpElement;
 class G1Element;
 class G2Element;
 class GTElement;
+/* Pre-definitions for visibility inside the scope: */
+FpElement FpVar(int index);
+FpElement FpConst(int index);
+FpElement FpConst(Fp value);
+G1Element G1Var(int index);
+G1Element G1Const(int index);
+G1Element G1Const(G1 value);
+G2Element G2Var(int index);
+G2Element G2Const(int index);
+G2Element G2Const(G2 value);
+GTElement GTVar(int index);
+GTElement GTConst(int index);
+GTElement GTConst(GT value);
+G1Element operator*(const FpElement &s, const G1Element &e);
+G2Element operator*(const FpElement &s, const G2Element &e);
+GTElement operator^(const GTElement &e, const FpElement &s);
+GTElement e(const G1Element &a, const G2Element &b);
 /**
  * @endcond
  */
@@ -129,12 +146,16 @@ public:
     /**
      * @brief Creates a variable in @f$\mathbb{F}_p@f$ with index @a index.
      * @param index Index of the variable in @f$\mathbb{F}_p@f$.
+     * @note Indexes start at 0, are group and variable/constant dependent,
+     *   and should not skip any value.
      * @return The variable element.
      */
     friend FpElement FpVar(int index);
     /**
      * @brief Creates a constant in @f$\mathbb{F}_p@f$ with index @a index.
      * @param index Index of the constant in @f$\mathbb{F}_p@f$.
+     * @note Indexes start at 0, are group and variable/constant dependent,
+     *   and should not skip any value.
      * @return The constant element.
      */
     friend FpElement FpConst(int index);
@@ -187,12 +208,16 @@ public:
     /**
      * @brief Creates a variable in @f$\mathbb{G}_1@f$ with index @a index.
      * @param index Index of the variable in @f$\mathbb{G}_1@f$.
+     * @note Indexes start at 0, are group and variable/constant dependent,
+     *   and should not skip any value.
      * @return The variable element.
      */
     friend G1Element G1Var(int index);
     /**
      * @brief Creates a constant in @f$\mathbb{G}_1@f$ with index @a index.
      * @param index Index of the constant in @f$\mathbb{G}_1@f$.
+     * @note Indexes start at 0, are group and variable/constant dependent,
+     *   and should not skip any value.
      * @return The constant element.
      */
     friend G1Element G1Const(int index);
@@ -243,12 +268,16 @@ public:
     /**
      * @brief Creates a variable in @f$\mathbb{G}_2@f$ with index @a index.
      * @param index Index of the variable in @f$\mathbb{G}_2@f$.
+     * @note Indexes start at 0, are group and variable/constant dependent,
+     *   and should not skip any value.
      * @return The variable element.
      */
     friend G2Element G2Var(int index);
     /**
      * @brief Creates a constant in @f$\mathbb{G}_2@f$ with index @a index.
      * @param index Index of the constant in @f$\mathbb{G}_2@f$.
+     * @note Indexes start at 0, are group and variable/constant dependent,
+     *   and should not skip any value.
      * @return The constant element.
      */
     friend G2Element G2Const(int index);
@@ -306,12 +335,16 @@ public:
     /**
      * @brief Creates a variable in @f$\mathbb{G}_T@f$ with index @a index.
      * @param index Index of the variable in @f$\mathbb{G}_T@f$.
+     * @note Indexes start at 0, are group and variable/constant dependent,
+     *   and should not skip any value.
      * @return The variable element.
      */
     friend GTElement GTVar(int index);
     /**
      * @brief Creates a constant in @f$\mathbb{G}_T@f$ with index @a index.
      * @param index Index of the constant in @f$\mathbb{G}_T@f$.
+     * @note Indexes start at 0, are group and variable/constant dependent,
+     *   and should not skip any value.
      * @return The constant element.
      */
     friend GTElement GTConst(int index);
@@ -333,21 +366,64 @@ public:
         AllEncrypted
     };
 public:
+    /**
+     * @brief Contructs a new NIZKProof object ready to accept equations.
+     * @param type The desired type of commitments.
+     */
     inline NIZKProof(CommitType type);
+    /**
+     * @brief Appends an equation in @f$\mathbb{F}_p@f$ to the proof.
+     * @param leftHandSide Left hand side of the equation.
+     * @param rightHandSide Right hand side of the equation,
+     *   0 by default.
+     */
     void addEquation(const FpElement &leftHandSide,
-                     const FpElement &rightHandSide);
+                     const FpElement &rightHandSide = FpElement());
+    /**
+     * @brief Appends an equation in @f$\mathbb{G}_1@f$ to the proof.
+     * @param leftHandSide Left hand side of the equation.
+     * @param rightHandSide Right hand side of the equation,
+     *   @f$\mathcal{O}@f$ by default.
+     */
     void addEquation(const G1Element &leftHandSide,
-                     const G1Element &rightHandSide);
+                     const G1Element &rightHandSide = G1Element());
+    /**
+     * @brief Appends an equation in @f$\mathbb{G}_2@f$ to the proof.
+     * @param leftHandSide Left hand side of the equation.
+     * @param rightHandSide Right hand side of the equation,
+     *   @f$\mathcal{O}@f$ by default.
+     */
     void addEquation(const G2Element &leftHandSide,
-                     const G2Element &rightHandSide);
+                     const G2Element &rightHandSide = G2Element());
+    /**
+     * @brief Appends an equation in @f$\mathbb{G}_T@f$ to the proof.
+     * @param leftHandSide Left hand side of the equation.
+     * @param rightHandSide Right hand side of the equation,
+     *   1 by default.
+     */
     void addEquation(const GTElement &leftHandSide,
-                     const GTElement &rightHandSide);
+                     const GTElement &rightHandSide = GTElement());
+    /**
+     * @brief Ends the equation listing step.
+     *
+     * After calling this function, no more equations can be appended
+     * to the future proof.
+     * It will calculate the number of constants and variables in each
+     * group, and check that there is no index gap.
+     * If the selected encryption mode has been selected,
+     * this function will also calculate the set of variables to encrypt.
+     *
+     * @return `true` if the indexes are consistent, `false` otherwise.
+     */
+    bool endEquations();
 private:
     CommitType type;
     std::vector<PairFp> eqsFp;
     std::vector<PairG1> eqsG1;
     std::vector<PairG2> eqsG2;
     std::vector<PairGT> eqsGT;
+    bool fixed;
+    int varFp, cstFp, varG1, cstG1, varG2, cstG2, varGT, cstGT;
 };
 
 /**
@@ -372,7 +448,7 @@ inline GTElement::GTElement() {}
 
 inline GTElement::GTElement(std::shared_ptr<GTData> d) : data(d) {}
 
-inline NIZKProof::NIZKProof(CommitType type) : type(type) {}
+inline NIZKProof::NIZKProof(CommitType type) : type(type), fixed(false) {}
 
 } /* End of namespace nizk */
 
