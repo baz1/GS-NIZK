@@ -5,6 +5,7 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
 
 /**
  * @file gsnizk.h
@@ -104,6 +105,7 @@ class GTElement;
  * @brief A @f$\mathbb{F}_p@f$ element inside an equation.
  */
 class FpElement {
+    friend class NIZKProof;
 public:
     /**
      * @brief Constructs an invalid element of @f$\mathbb{F}_p@f$.
@@ -154,6 +156,7 @@ private:
  * @brief A @f$\mathbb{G}_1@f$ element inside an equation.
  */
 class G1Element {
+    friend class NIZKProof;
 public:
     /**
      * @brief Constructs an invalid element of @f$\mathbb{G}_1@f$.
@@ -209,6 +212,7 @@ private:
  * @brief A @f$\mathbb{G}_2@f$ element inside an equation.
  */
 class G2Element {
+    friend class NIZKProof;
 public:
     /**
      * @brief Constructs an invalid element of @f$\mathbb{G}_2@f$.
@@ -264,6 +268,7 @@ private:
  * @brief A @f$\mathbb{G}_T@f$ element inside an equation.
  */
 class GTElement {
+    friend class NIZKProof;
 public:
     /**
      * @brief Constructs an invalid element of @f$\mathbb{G}_T@f$.
@@ -320,6 +325,31 @@ private:
     std::shared_ptr<GTData> data;
 };
 
+class NIZKProof {
+public:
+    enum CommitType {
+        NormalCommit,
+        SelectedEncryption,
+        AllEncrypted
+    };
+public:
+    inline NIZKProof(CommitType type);
+    void addEquation(const FpElement &leftHandSide,
+                     const FpElement &rightHandSide);
+    void addEquation(const G1Element &leftHandSide,
+                     const G1Element &rightHandSide);
+    void addEquation(const G2Element &leftHandSide,
+                     const G2Element &rightHandSide);
+    void addEquation(const GTElement &leftHandSide,
+                     const GTElement &rightHandSide);
+private:
+    CommitType type;
+    std::vector<PairFp> eqsFp;
+    std::vector<PairG1> eqsG1;
+    std::vector<PairG2> eqsG2;
+    std::vector<PairGT> eqsGT;
+};
+
 /**
  * @todo Continue and finish the proof system.
  */
@@ -341,6 +371,8 @@ inline G2Element::G2Element(std::shared_ptr<G2Data> d) : data(d) {}
 inline GTElement::GTElement() {}
 
 inline GTElement::GTElement(std::shared_ptr<GTData> d) : data(d) {}
+
+inline NIZKProof::NIZKProof(CommitType type) : type(type) {}
 
 } /* End of namespace nizk */
 

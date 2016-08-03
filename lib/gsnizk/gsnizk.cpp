@@ -214,4 +214,24 @@ GTElement GTConst(GT value) {
     return GTElement(std::shared_ptr<GTData>(d));
 }
 
+void NIZKProof::addEquation(const FpElement &leftHandSide,
+                            const FpElement &rightHandSide) {
+    eqsFp.push_back(PairFp(leftHandSide.data, rightHandSide.data));
+}
+
+void NIZKProof::addEquation(const G1Element &leftHandSide,
+                            const G1Element &rightHandSide) {
+    eqsG1.push_back(PairG1(leftHandSide.data, rightHandSide.data));
+}
+
+void NIZKProof::addEquation(const G2Element &leftHandSide,
+                            const G2Element &rightHandSide) {
+    eqsG2.push_back(PairG2(leftHandSide.data, rightHandSide.data));
+}
+
+void NIZKProof::addEquation(const GTElement &leftHandSide,
+                            const GTElement &rightHandSide) {
+    eqsGT.push_back(PairGT(leftHandSide.data, rightHandSide.data));
+}
+
 } /* End of namespace nizk */
