@@ -76,7 +76,7 @@ public:
      * @param other Second element in @f$\mathbb{F}_p@f$.
      * @return Reference to the modified element.
      */
-    inline FpElement &operator*=(const FpElement &other);
+    FpElement &operator*=(const FpElement &other);
     /**
      * @brief Multiplies two elements in @f$\mathbb{F}_p@f$.
      * @param other Second element in @f$\mathbb{F}_p@f$.
@@ -117,21 +117,41 @@ private:
  * @brief A @f$\mathbb{G}_1@f$ element inside an equation.
  */
 class G1Element {
+public:
     /**
      * @brief Contructs a copy of an element.
      * @param other The element to copy.
      */
-    inline G1Element(const G1Element &other);
+    G1Element(const G1Element &other);
     /**
      * @brief Sets this element to be equal to @a other.
      * @param The new value for this element.
      * @return Reference to the current element.
      */
-    inline G1Element &operator=(const G1Element &other);
+    G1Element &operator=(const G1Element &other);
     /**
      * @brief Destructs the element.
      */
-    inline ~G1Element();
+    ~G1Element();
+    /**
+     * @brief Adds two elements in @f$\mathbb{G}_1@f$.
+     * @param other Second element in @f$\mathbb{G}_1@f$.
+     * @return Reference to the modified element.
+     */
+    G1Element &operator+=(const G1Element &other);
+    /**
+     * @brief Adds two elements in @f$\mathbb{G}_1@f$.
+     * @param other Second element in @f$\mathbb{G}_1@f$.
+     * @return Product element, in @f$\mathbb{G}_1@f$.
+     */
+    inline G1Element operator+(const G1Element &other) const;
+    /**
+     * @brief Multiplies an element of @f$\mathbb{G}_1@f$ with a scalar.
+     * @param s Scalar used in the multiplication.
+     * @param e Element to multiply the scalar.
+     * @return Result of the multiplication.
+     */
+    inline friend G1Element operator*(const FpElement &s, const G1Element &e);
 private:
     inline G1Element(ElementType type);
 public:
@@ -167,21 +187,41 @@ private:
  * @brief A @f$\mathbb{G}_2@f$ element inside an equation.
  */
 class G2Element {
+public:
     /**
      * @brief Contructs a copy of an element.
      * @param other The element to copy.
      */
-    inline G2Element(const G2Element &other);
+    G2Element(const G2Element &other);
     /**
      * @brief Sets this element to be equal to @a other.
      * @param The new value for this element.
      * @return Reference to the current element.
      */
-    inline G2Element &operator=(const G2Element &other);
+    G2Element &operator=(const G2Element &other);
     /**
      * @brief Destructs the element.
      */
-    inline ~G2Element();
+    ~G2Element();
+    /**
+     * @brief Adds two elements in @f$\mathbb{G}_2@f$.
+     * @param other Second element in @f$\mathbb{G}_2@f$.
+     * @return Reference to the modified element.
+     */
+    G2Element &operator+=(const G2Element &other);
+    /**
+     * @brief Adds two elements in @f$\mathbb{G}_2@f$.
+     * @param other Second element in @f$\mathbb{G}_2@f$.
+     * @return Product element, in @f$\mathbb{G}_2@f$.
+     */
+    inline G2Element operator+(const G2Element &other) const;
+    /**
+     * @brief Multiplies an element of @f$\mathbb{G}_2@f$ with a scalar.
+     * @param s Scalar used in the multiplication.
+     * @param e Element to multiply the scalar.
+     * @return Result of the multiplication.
+     */
+    inline friend G2Element operator*(const FpElement &s, const G2Element &e);
 private:
     inline G2Element(ElementType type);
 public:
@@ -217,21 +257,48 @@ private:
  * @brief A @f$\mathbb{G}_T@f$ element inside an equation.
  */
 class GTElement {
+public:
     /**
      * @brief Contructs a copy of an element.
      * @param other The element to copy.
      */
-    inline GTElement(const GTElement &other);
+    GTElement(const GTElement &other);
     /**
      * @brief Sets this element to be equal to @a other.
      * @param The new value for this element.
      * @return Reference to the current element.
      */
-    inline GTElement &operator=(const GTElement &other);
+    GTElement &operator=(const GTElement &other);
     /**
      * @brief Destructs the element.
      */
-    inline ~GTElement();
+    ~GTElement();
+    /**
+     * @brief Multiplies two elements in @f$\mathbb{G}_T@f$.
+     * @param other Second element in @f$\mathbb{G}_T@f$.
+     * @return Reference to the modified element.
+     */
+    GTElement &operator*=(const GTElement &other);
+    /**
+     * @brief Multiplies two elements in @f$\mathbb{G}_T@f$.
+     * @param other Second element in @f$\mathbb{G}_T@f$.
+     * @return Product element, in @f$\mathbb{G}_T@f$.
+     */
+    inline GTElement operator*(const GTElement &other) const;
+    /**
+     * @brief Puts an element of @f$\mathbb{G}_T@f$ to a certain power.
+     * @param s Exponent used in the power.
+     * @param e Element to raise to a certain power.
+     * @return Result of the power.
+     */
+    inline friend GTElement operator^(const GTElement &e, const FpElement &s);
+    /**
+     * @brief Computes a pairing (bilinear map).
+     * @param a Element of @f$\mathbb{G}_1@f$.
+     * @param b Element of @f$\mathbb{G}_2@f$.
+     * @return Result of the pairing @f$e(a,b)@f$ in @f$\mathbb{G}_T@f$.
+     */
+    inline friend GTElement e(const G1Element &a, const G2Element &b);
 private:
     inline GTElement(ElementType type);
 public:
@@ -297,6 +364,20 @@ inline FpElement FpConst(Fp value) {
     return el;
 }
 
+inline G1Element G1Element::operator+(const G1Element &other) const {
+    G1Element el(ELEMENT_PAIR);
+    new (&el.pair) PairG1(
+            new (std::pair<G1Element,G1Element>)(*this, other));
+    return el;
+}
+
+inline G1Element operator*(const FpElement &s, const G1Element &e) {
+    G1Element el(ELEMENT_SCALAR);
+    new (&el.scalar) ScalarG1(
+            new (std::pair<FpElement,G1Element>)(s, e));
+    return el;
+}
+
 inline G1Element::G1Element(ElementType type) : type(type) {}
 
 inline G1Element G1Var(int index) {
@@ -317,6 +398,20 @@ inline G1Element G1Const(G1 value) {
     return el;
 }
 
+inline G2Element G2Element::operator+(const G2Element &other) const {
+    G2Element el(ELEMENT_PAIR);
+    new (&el.pair) PairG2(
+            new (std::pair<G2Element,G2Element>)(*this, other));
+    return el;
+}
+
+inline G2Element operator*(const FpElement &s, const G2Element &e) {
+    G2Element el(ELEMENT_SCALAR);
+    new (&el.scalar) ScalarG2(
+            new (std::pair<FpElement,G2Element>)(s, e));
+    return el;
+}
+
 inline G2Element::G2Element(ElementType type) : type(type) {}
 
 inline G2Element G2Var(int index) {
@@ -334,6 +429,27 @@ inline G2Element G2Const(int index) {
 inline G2Element G2Const(G2 value) {
     G2Element el(ELEMENT_CONST_VALUE);
     new (&el.el) G2(value);
+    return el;
+}
+
+inline GTElement GTElement::operator*(const GTElement &other) const {
+    GTElement el(ELEMENT_PAIR);
+    new (&el.pair) PairGT(
+            new (std::pair<GTElement,GTElement>)(*this, other));
+    return el;
+}
+
+inline GTElement operator^(const GTElement &e, const FpElement &s) {
+    GTElement el(ELEMENT_SCALAR);
+    new (&el.scalar) ScalarGT(
+            new (std::pair<FpElement,GTElement>)(s, e));
+    return el;
+}
+
+inline GTElement e(const G1Element &a, const G2Element &b) {
+    GTElement el(ELEMENT_PAIRING);
+    new (&el.pring) PairingGT(
+            new (std::pair<G1Element,G2Element>)(a, b));
     return el;
 }
 

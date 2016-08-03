@@ -113,6 +113,18 @@ G1Element::~G1Element() {
     }
 }
 
+G1Element &G1Element::operator+=(const G1Element &other) {
+    PairG1 tmp = PairG1(new (std::pair<G1Element,G1Element>)(*this, other));
+    if (type == ELEMENT_PAIR) {
+        pair = tmp;
+    } else {
+        this->~G1Element();
+        type = ELEMENT_PAIR;
+        new (&pair) PairG1(tmp);
+    }
+    return *this;
+}
+
 G2Element::G2Element(const G2Element &other) : type(other.type) {
     switch (type) {
     case ELEMENT_CONST_VALUE:
@@ -165,6 +177,18 @@ G2Element::~G2Element() {
     default:
         return;
     }
+}
+
+G2Element &G2Element::operator+=(const G2Element &other) {
+    PairG2 tmp = PairG2(new (std::pair<G2Element,G2Element>)(*this, other));
+    if (type == ELEMENT_PAIR) {
+        pair = tmp;
+    } else {
+        this->~G2Element();
+        type = ELEMENT_PAIR;
+        new (&pair) PairG2(tmp);
+    }
+    return *this;
 }
 
 GTElement::GTElement(const GTElement &other) : type(other.type) {
@@ -228,6 +252,18 @@ GTElement::~GTElement() {
     default:
         return;
     }
+}
+
+GTElement &GTElement::operator*=(const GTElement &other) {
+    PairGT tmp = PairGT(new (std::pair<GTElement,GTElement>)(*this, other));
+    if (type == ELEMENT_PAIR) {
+        pair = tmp;
+    } else {
+        this->~GTElement();
+        type = ELEMENT_PAIR;
+        new (&pair) PairGT(tmp);
+    }
+    return *this;
 }
 
 } /* End of namespace nizk */
