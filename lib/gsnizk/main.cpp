@@ -7,7 +7,8 @@
 using namespace std;
 using namespace pairings;
 
-#define ASSERT(X) if (!(X)) (cerr << "Error: Assert of " << #X << " at line " << __LINE__ << " failed!" << endl, ++n_err)
+#define ASSERT(X) if (!(X)) (cerr << "Error: Assert of " << #X << " at line " \
+    << __LINE__ << " failed!" << endl, ++n_err)
 
 #define TRANSFER_TESTS 10
 #define PAIRING_TESTS 10
@@ -17,7 +18,8 @@ using namespace pairings;
 
 bool checkDataSize(int size, int line) {
     if (size > DATA_SIZE) {
-        cerr << "Error: Please increase DATA_SIZE for the tests (size " << size << " required at line " << line << ")." << endl;
+        cerr << "Error: Please increase DATA_SIZE for the tests (size " << size
+             << " required at line " << line << ")." << endl;
         terminate_pairings();
         return false;
     }
@@ -186,7 +188,8 @@ int main() {
     for (int i = 0; i < PAIRING_TESTS; ++i) {
         v1 = Fp::getRand();
         v2 = Fp::getRand();
-        ASSERT(GT::pairing(v1 * g1, v2 * h1) == (GT::pairing(g1, h1) ^ (v1 * v2)));
+        ASSERT(GT::pairing(v1 * g1, v2 * h1) ==
+               (GT::pairing(g1, h1) ^ (v1 * v2)));
     }
     cout << "Testing multiple pairings..." << endl;
     for (int i = 0; i < PAIRING_TESTS; ++i) {
