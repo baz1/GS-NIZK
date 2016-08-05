@@ -615,7 +615,7 @@ void simplify(SAT_NODE *node) {
     }
 }
 
-void countIndexes(SAT_NODE *node, std::vector<int> &cnt[4]) {
+void countIndexes(SAT_NODE *node, std::vector<int> cnt[4]) {
     switch (node->type) {
     case SAT_NODE_AND:
     case SAT_NODE_OR:
@@ -643,6 +643,82 @@ SAT_NODE *duplicateNode(const SAT_NODE *node) {
         *result = *node;
     }
     return result;
+}
+
+void instanciateIndex(SAT_NODE *node, int i_type, int i_value,
+                      SAT_NODE_TYPE value) {
+    switch (node->type) {
+    case SAT_NODE_AND:
+    case SAT_NODE_OR:
+        instanciateIndex(node->pair.left, i_type, i_value, value);
+        instanciateIndex(node->pair.right, i_type, i_value, value);
+        return;
+    case SAT_NODE_INDEX:
+        if ((node->idx.index_type == i_type) && (node->idx.index == i_value))
+            node->type = value;
+        return;
+    default:
+        return;
+    }
+}
+
+#define SAT_VALUE_UNSET 0
+#define SAT_VALUE_TRUE  1
+#define SAT_VALUE_FALSE 2
+
+int tryPermutation(SAT_NODE *root, std::vector<int> val[4],
+        std::vector<int> cnt[4]) {
+    simplify(root);
+    cnt[0].clear();
+    cnt[0].resize(val[0].size(), 0);
+    cnt[1].clear();
+    cnt[1].resize(val[1].size(), 0);
+    cnt[2].clear();
+    cnt[2].resize(val[2].size(), 0);
+    cnt[3].clear();
+    cnt[3].resize(val[3].size(), 0);
+    countIndexes(root, cnt);
+    int max = 0, mi, mj;
+    for (int i = 4; i--;) {
+        for (int j = val[i].size(); j--;) {
+            if (val[i][j]) continue;
+            if (!cnt[i][j]) {
+                val[i][j] = SAT_VALUE_FALSE;
+            } else if (cnt[i][j] > max) {
+                max = cnt[i][j];
+                mi = i;
+                mj = j;
+            }
+        }
+    }
+    if (!max) {
+        switch (root->type) {
+        case SAT_NODE_FALSE:
+            return -1;
+        case SAT_NODE_TRUE:
+            return 0;
+        default:
+            throw "Unexpected error";
+        }
+    }
+    std::vector<int> valcp[4];
+    valcp[0] = val[0];
+    valcp[1] = val[1];
+    valcp[2] = val[2];
+    valcp[3] = val[3];
+    SAT_NODE *rootcp = duplicateNode(root);
+    instanciateIndex(rootcp, mi, mj, SAT_NODE_FALSE);
+    valcp[mi][mj] = SAT_VALUE_FALSE;
+    int r1 = tryPermutation(rootcp, valcp, cnt);
+    instanciateIndex(root, mi, mj, SAT_NODE_TRUE);
+    val[mi][mj] = SAT_VALUE_TRUE;
+    int r2 = tryPermutation(root, val, cnt);
+    if ((r1 < 0) || (r2 <= r1)) return r2;
+    val[0] = valcp[0];
+    val[1] = valcp[1];
+    val[2] = valcp[2];
+    val[3] = valcp[3];
+    return r1;
 }
 
 bool NIZKProof::endEquations() {
@@ -739,8 +815,6 @@ bool NIZKProof::endEquations() {
                        G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
                        current);
         }
-        if (type == SelectedEncryption)
-            nodes.push_back(current);
         varFp = checkIndexesSet(FpVars);
         if (varFp < 0) return false;
         cstFp = checkIndexesSet(FpConsts);
@@ -760,11 +834,16 @@ bool NIZKProof::endEquations() {
     }
     if (type == SelectedEncryption) {
         std::vector<int> cnt[4];
-        cnt[0].resize(varFp, SAT_VALUE_UNSET);
-        cnt[1].resize(varG1, SAT_VALUE_UNSET);
-        cnt[2].resize(varG2, SAT_VALUE_UNSET);
-        cnt[3].resize(varGT, SAT_VALUE_UNSET);
-        // TODO selected commitments precomputation
+        val[0].resize(varFp, SAT_VALUE_UNSET);
+        cnt[0].reserve(varFp);
+        val[1].resize(varG1, SAT_VALUE_UNSET);
+        cnt[1].reserve(varG1);
+        val[2].resize(varG2, SAT_VALUE_UNSET);
+        cnt[2].reserve(varG2);
+        val[3].resize(varGT, SAT_VALUE_UNSET);
+        cnt[3].reserve(varGT);
+        if (tryPermutation(root, val, cnt) < 0)
+            throw "Cannot use ZK with the provided equations in gsnizk";
     }
     fixed = true;
     return true;

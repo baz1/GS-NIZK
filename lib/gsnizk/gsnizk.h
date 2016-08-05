@@ -436,6 +436,7 @@ private:
     std::vector<PairGT> eqsGT;
     bool fixed;
     int varFp, cstFp, varG1, cstG1, varG2, cstG2, varGT, cstGT;
+    std::vector<int> val[4];
 };
 
 /**
