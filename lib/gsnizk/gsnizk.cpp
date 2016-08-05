@@ -2,6 +2,16 @@
 
 #include <set>
 
+#ifdef DEBUG
+#define ASSERT(X) if (!(X)) { \
+    std::cerr << "Error: Assert of " << #X << " at line " \
+    << __LINE__ << " failed in gsnizk.cpp!" << endl; \
+    throw "FATAL ERROR"; \
+    }
+#else
+#define ASSERT(X) /* noop */
+#endif
+
 namespace gsnizk {
 
 FpData::~FpData() {
@@ -315,7 +325,8 @@ void getIndexes(const FpData &d,
             node->type = SAT_NODE_OR;
         break;
     default:
-        throw "Unexpected data type in gsnizk::endEquations";
+        ASSERT(false /* Unexpected data type */);
+        return;
     }
     if (node) {
         node->pair.left = new SAT_NODE;
@@ -392,7 +403,8 @@ void getIndexes(const G1Data &d,
         }
         return;
     default:
-        throw "Unexpected data type in gsnizk::endEquations";
+        ASSERT(false /* Unexpected data type */);
+        return;
     }
 }
 
@@ -454,7 +466,8 @@ void getIndexes(const G2Data &d,
         }
         return;
     default:
-        throw "Unexpected data type in gsnizk::endEquations";
+        ASSERT(false /* Unexpected data type */);
+        return;
     }
 }
 
@@ -534,7 +547,8 @@ void getIndexes(const GTData &d,
         }
         return;
     default:
-        throw "Unexpected data type in gsnizk::endEquations";
+        ASSERT(false /* Unexpected data type */);
+        return;
     }
 }
 
@@ -626,7 +640,8 @@ void countIndexes(SAT_NODE *node, std::vector<int> cnt[4]) {
         ++cnt[node->idx.index_type][node->idx.index];
         return;
     default:
-        throw "Unexpected error";
+        ASSERT(false /* Unexpected data type */);
+        return;
     }
 }
 
@@ -647,6 +662,7 @@ SAT_NODE *duplicateNode(const SAT_NODE *node) {
 
 void instanciateIndex(SAT_NODE *node, int i_type, int i_value,
                       SAT_NODE_TYPE value) {
+    ASSERT((value == SAT_NODE_TRUE) || (value == SAT_NODE_FALSE));
     switch (node->type) {
     case SAT_NODE_AND:
     case SAT_NODE_OR:
@@ -698,7 +714,8 @@ int tryPermutation(SAT_NODE *root, std::vector<int> val[4],
         case SAT_NODE_TRUE:
             return 0;
         default:
-            throw "Unexpected error";
+            ASSERT(false /* Unexpected error */);
+            return;
         }
     }
     std::vector<int> valcp[4];
@@ -843,7 +860,7 @@ bool NIZKProof::endEquations() {
         val[3].resize(varGT, SAT_VALUE_UNSET);
         cnt[3].reserve(varGT);
         if (tryPermutation(root, val, cnt) < 0)
-            throw "Cannot use ZK with the provided equations in gsnizk";
+            throw "Cannot use ZK with the equations provided (in gsnizk)";
     }
     fixed = true;
     return true;

@@ -6,6 +6,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <iostream>
 
 /**
  * @file gsnizk.h
