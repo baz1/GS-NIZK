@@ -615,22 +615,6 @@ void simplify(SAT_NODE *node) {
     }
 }
 
-void simplify(std::vector<SAT_NODE*> &nodes) {
-    std::vector<SAT_NODE*>::iterator it = nodes.begin();
-    while (it != nodes.end()) {
-        simplify(*it);
-        switch ((*it)->type) {
-        case SAT_NODE_FALSE:
-            throw "Cannot use ZK with the provided equations in gsnizk";
-        case SAT_NODE_TRUE:
-            it = nodes.erase(it);
-            break;
-        default:
-            ++it;
-        }
-    }
-}
-
 void countIndexes(SAT_NODE *node, std::vector<int> &cnt[4]) {
     switch (node->type) {
     case SAT_NODE_AND:
@@ -646,77 +630,99 @@ void countIndexes(SAT_NODE *node, std::vector<int> &cnt[4]) {
     }
 }
 
-void countIndexes(std::vector<SAT_NODE*> &nodes, std::vector<int> &cnt[4]) {
-    for (const SAT_NODE *node : nodes)
-        countIndexes(node, cnt);
-}
-
 bool NIZKProof::endEquations() {
     /* Subsequent calls are ignored. */
     if (fixed) return true;
-    std::vector<SAT_NODE*> nodes;
-    SAT_NODE *current = NULL;
+    SAT_NODE *current = NULL, *root;
     {
         std::set<int> FpVars, FpConsts, G1Vars, G1Consts;
         std::set<int> G2Vars, G2Consts, GTVars, GTConsts;
         if (type == SelectedEncryption)
-            current = new SAT_NODE;
+            root = (current = new SAT_NODE);
         for (const PairFp &p : eqsFp) {
             getIndexes(*p.first, FpVars, FpConsts,
                        G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
                        current);
             if (!p.second) continue;
             if (type == SelectedEncryption) {
-                nodes.push_back(current);
                 current = new SAT_NODE;
+                current->type = SAT_NODE_AND;
+                current->pair.left = root;
+                root = current;
+                root->pair.right = (current = new SAT_NODE);
             }
             getIndexes(*p.second, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
+                       current);
         }
         if (type == SelectedEncryption) {
-            nodes.push_back(current);
             current = new SAT_NODE;
+            current->type = SAT_NODE_AND;
+            current->pair.left = root;
+            root = current;
+            root->pair.right = (current = new SAT_NODE);
         }
         for (const PairG1 &p : eqsG1) {
             getIndexes(*p.first, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
+                       current);
             if (!p.second) continue;
             if (type == SelectedEncryption) {
-                nodes.push_back(current);
                 current = new SAT_NODE;
+                current->type = SAT_NODE_AND;
+                current->pair.left = root;
+                root = current;
+                root->pair.right = (current = new SAT_NODE);
             }
             getIndexes(*p.second, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
+                       current);
         }
         if (type == SelectedEncryption) {
-            nodes.push_back(current);
             current = new SAT_NODE;
+            current->type = SAT_NODE_AND;
+            current->pair.left = root;
+            root = current;
+            root->pair.right = (current = new SAT_NODE);
         }
         for (const PairG2 &p : eqsG2) {
             getIndexes(*p.first, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
+                       current);
             if (!p.second) continue;
             if (type == SelectedEncryption) {
-                nodes.push_back(current);
                 current = new SAT_NODE;
+                current->type = SAT_NODE_AND;
+                current->pair.left = root;
+                root = current;
+                root->pair.right = (current = new SAT_NODE);
             }
             getIndexes(*p.second, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
+                       current);
         }
         if (type == SelectedEncryption) {
-            nodes.push_back(current);
             current = new SAT_NODE;
+            current->type = SAT_NODE_AND;
+            current->pair.left = root;
+            root = current;
+            root->pair.right = (current = new SAT_NODE);
         }
         for (const PairGT &p : eqsGT) {
             getIndexes(*p.first, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
+                       current);
             if (!p.second) continue;
             if (type == SelectedEncryption) {
-                nodes.push_back(current);
                 current = new SAT_NODE;
+                current->type = SAT_NODE_AND;
+                current->pair.left = root;
+                root = current;
+                root->pair.right = (current = new SAT_NODE);
             }
             getIndexes(*p.second, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
+                       current);
         }
         if (type == SelectedEncryption)
             nodes.push_back(current);
@@ -738,7 +744,11 @@ bool NIZKProof::endEquations() {
         if (cstGT < 0) return false;
     }
     if (type == SelectedEncryption) {
-
+        std::vector<int> cnt[4];
+        cnt[0].resize(varFp, SAT_VALUE_UNSET);
+        cnt[1].resize(varG1, SAT_VALUE_UNSET);
+        cnt[2].resize(varG2, SAT_VALUE_UNSET);
+        cnt[3].resize(varGT, SAT_VALUE_UNSET);
         // TODO selected commitments precomputation
     }
     fixed = true;
