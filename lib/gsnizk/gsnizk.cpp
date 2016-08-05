@@ -550,6 +550,107 @@ int checkIndexesSet(const std::set<int> &s) {
     return s.size();
 }
 
+void delNode(SAT_NODE *node) {
+    switch (node->type) {
+    case SAT_NODE_AND:
+        delNode(node->pair.left);
+        delNode(node->pair.right);
+        break;
+    case SAT_NODE_OR:
+        delNode(node->pair.left);
+        delNode(node->pair.right);
+        break;
+    default:
+        break;
+    }
+    delete node;
+}
+
+void simplify(SAT_NODE *node) {
+    switch (node->type) {
+    case SAT_NODE_AND:
+        simplify(node->pair.left);
+        simplify(node->pair.right);
+        switch (node->pair.left->type) {
+        case SAT_NODE_FALSE:
+            delete node->pair.left;
+            delNode(node->pair.right);
+            node->type = SAT_NODE_FALSE;
+            return;
+        case SAT_NODE_TRUE:
+        {
+            delete node->pair.left;
+            SAT_NODE *tmp = node->pair.right;
+            *node = *tmp;
+            delete tmp;
+            return;
+        }
+        default:
+            break;
+        }
+        switch (node->pair.right->type) {
+        case SAT_NODE_FALSE:
+            delNode(node->pair.left);
+            delete node->pair.right;
+            node->type = SAT_NODE_FALSE;
+            return;
+        case SAT_NODE_TRUE:
+        {
+            delete node->pair.right;
+            SAT_NODE *tmp = node->pair.left;
+            *node = *tmp;
+            delete tmp;
+            return;
+        }
+        default:
+            break;
+        }
+        return;
+    case SAT_NODE_OR:
+        simplify(node->pair.left);
+        simplify(node->pair.right);
+        return;
+    default:
+        return;
+    }
+}
+
+void simplify(std::vector<SAT_NODE*> &nodes) {
+    std::vector<SAT_NODE*>::iterator it = nodes.begin();
+    while (it != nodes.end()) {
+        simplify(*it);
+        switch ((*it)->type) {
+        case SAT_NODE_FALSE:
+            throw "Cannot use ZK with the provided equations in gsnizk";
+        case SAT_NODE_TRUE:
+            it = nodes.erase(it);
+            break;
+        default:
+            ++it;
+        }
+    }
+}
+
+void countIndexes(SAT_NODE *node, std::vector<int> &cnt[4]) {
+    switch (node->type) {
+    case SAT_NODE_AND:
+    case SAT_NODE_OR:
+        countIndexes(node->pair.left, cnt);
+        countIndexes(node->pair.right, cnt);
+        return;
+    case SAT_NODE_INDEX:
+        ++cnt[node->idx.index_type][node->idx.index];
+        return;
+    default:
+        throw "Unexpected error";
+    }
+}
+
+void countIndexes(std::vector<SAT_NODE*> &nodes, std::vector<int> &cnt[4]) {
+    for (const SAT_NODE *node : nodes)
+        countIndexes(node, cnt);
+}
+
 bool NIZKProof::endEquations() {
     /* Subsequent calls are ignored. */
     if (fixed) return true;
@@ -637,6 +738,7 @@ bool NIZKProof::endEquations() {
         if (cstGT < 0) return false;
     }
     if (type == SelectedEncryption) {
+
         // TODO selected commitments precomputation
     }
     fixed = true;
