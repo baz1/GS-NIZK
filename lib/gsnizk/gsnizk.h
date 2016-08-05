@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2016, Remi Bazin <bazin.remi@gmail.com>
+ * See LICENSE for licensing details.
+ */
+
 #ifndef GSNIZK_H
 #define GSNIZK_H
 
@@ -437,7 +442,7 @@ private:
     std::vector<PairGT> eqsGT;
     bool fixed;
     int varFp, cstFp, varG1, cstG1, varG2, cstG2, varGT, cstGT;
-    std::vector<int> val[4];
+    std::vector<int> sEnc[4];
 };
 
 /**

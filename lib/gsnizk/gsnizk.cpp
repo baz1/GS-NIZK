@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2016, Remi Bazin <bazin.remi@gmail.com>
+ * See LICENSE for licensing details.
+ */
+
 #include "gsnizk.h"
 
 #include <set>
@@ -715,7 +720,7 @@ int tryPermutation(SAT_NODE *root, std::vector<int> val[4],
             return 0;
         default:
             ASSERT(false /* Unexpected error */);
-            return;
+            return -1;
         }
     }
     std::vector<int> valcp[4];
@@ -851,20 +856,20 @@ bool NIZKProof::endEquations() {
     }
     if (type == SelectedEncryption) {
         std::vector<int> cnt[4];
-        val[0].resize(varFp, SAT_VALUE_UNSET);
+        sEnc[0].resize(varFp, SAT_VALUE_UNSET);
         cnt[0].reserve(varFp);
-        val[1].resize(varG1, SAT_VALUE_UNSET);
+        sEnc[1].resize(varG1, SAT_VALUE_UNSET);
         cnt[1].reserve(varG1);
-        val[2].resize(varG2, SAT_VALUE_UNSET);
+        sEnc[2].resize(varG2, SAT_VALUE_UNSET);
         cnt[2].reserve(varG2);
-        val[3].resize(varGT, SAT_VALUE_UNSET);
+        sEnc[3].resize(varGT, SAT_VALUE_UNSET);
         cnt[3].reserve(varGT);
-        if (tryPermutation(root, val, cnt) < 0)
+        if (tryPermutation(root, sEnc, cnt) < 0)
             throw "Cannot use ZK with the equations provided (in gsnizk)";
         /* Converting to 0/1 (boolean) values; 1 for encrypted */
         for (int i = 4; i--;) {
-            for (int j = val[i].size(); j--;)
-                --val[i][j];
+            for (int j = sEnc[i].size(); j--;)
+                --sEnc[i][j];
         }
     }
     fixed = true;
