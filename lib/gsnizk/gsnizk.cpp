@@ -630,6 +630,21 @@ void countIndexes(SAT_NODE *node, std::vector<int> &cnt[4]) {
     }
 }
 
+SAT_NODE *duplicateNode(const SAT_NODE *node) {
+    SAT_NODE *result = new SAT_NODE;
+    switch (node->type) {
+    case SAT_NODE_AND:
+    case SAT_NODE_OR:
+        result->type = node->type;
+        result->pair.left = duplicateNode(node->pair.left);
+        result->pair.right = duplicateNode(node->pair.right);
+        break;
+    default:
+        *result = *node;
+    }
+    return result;
+}
+
 bool NIZKProof::endEquations() {
     /* Subsequent calls are ignored. */
     if (fixed) return true;
