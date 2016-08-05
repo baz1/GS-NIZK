@@ -861,6 +861,11 @@ bool NIZKProof::endEquations() {
         cnt[3].reserve(varGT);
         if (tryPermutation(root, val, cnt) < 0)
             throw "Cannot use ZK with the equations provided (in gsnizk)";
+        /* Converting to 0/1 (boolean) values; 1 for encrypted */
+        for (int i = 4; i--;) {
+            for (int j = val[i].size(); j--;)
+                --val[i][j];
+        }
     }
     fixed = true;
     return true;
