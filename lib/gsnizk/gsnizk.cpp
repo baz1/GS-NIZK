@@ -128,6 +128,11 @@ FpElement FpConst(Fp value) {
     return FpElement(std::shared_ptr<FpData>(d));
 }
 
+FpElement FpUnit() {
+    FpData *d = new FpData(ELEMENT_BASE);
+    return FpElement(std::shared_ptr<FpData>(d));
+}
+
 G1Element &G1Element::operator+=(const G1Element &other) {
     G1Data *d = new G1Data(ELEMENT_PAIR);
     new (&d->pair) PairG1(data, other.data);
@@ -165,6 +170,11 @@ G1Element G1Const(G1 value) {
     return G1Element(std::shared_ptr<G1Data>(d));
 }
 
+G1Element G1Base() {
+    G1Data *d = new G1Data(ELEMENT_BASE);
+    return G1Element(std::shared_ptr<G1Data>(d));
+}
+
 G2Element &G2Element::operator+=(const G2Element &other) {
     G2Data *d = new G2Data(ELEMENT_PAIR);
     new (&d->pair) PairG2(data, other.data);
@@ -199,6 +209,11 @@ G2Element G2Const(int index) {
 G2Element G2Const(G2 value) {
     G2Data *d = new G2Data(ELEMENT_CONST_VALUE);
     new (&d->el) G2(value);
+    return G2Element(std::shared_ptr<G2Data>(d));
+}
+
+G2Element G2Base() {
+    G2Data *d = new G2Data(ELEMENT_BASE);
     return G2Element(std::shared_ptr<G2Data>(d));
 }
 
@@ -329,6 +344,10 @@ void getIndexes(const FpData &d,
         if (node)
             node->type = SAT_NODE_OR;
         break;
+    case ELEMENT_BASE:
+        if (node)
+            node->type = SAT_NODE_TRUE;
+        return;
     default:
         ASSERT(false /* Unexpected data type */);
         return;
@@ -407,6 +426,10 @@ void getIndexes(const G1Data &d,
                        G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
         }
         return;
+    case ELEMENT_BASE:
+        if (node)
+            node->type = SAT_NODE_TRUE;
+        return;
     default:
         ASSERT(false /* Unexpected data type */);
         return;
@@ -469,6 +492,10 @@ void getIndexes(const G2Data &d,
             getIndexes(*d.scalar.second, FpVars, FpConsts,
                        G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
         }
+        return;
+    case ELEMENT_BASE:
+        if (node)
+            node->type = SAT_NODE_TRUE;
         return;
     default:
         ASSERT(false /* Unexpected data type */);
@@ -872,8 +899,13 @@ bool NIZKProof::endEquations() {
                 --sEnc[i][j];
         }
     }
+    // TODO fill the equation proof types
     fixed = true;
     return true;
+}
+
+void NIZKProof::writeProof(std::ostream &stream, const CRS &crs) {
+    // TODO
 }
 
 } /* End of namespace nizk */

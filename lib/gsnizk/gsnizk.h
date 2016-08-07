@@ -36,12 +36,13 @@ namespace gsnizk {
  * @cond INTERNAL_DATA_STRUCT
  */
 enum ElementType {
-    ELEMENT_VARIABLE,
-    ELEMENT_CONST_INDEX,
-    ELEMENT_CONST_VALUE,
-    ELEMENT_PAIR,
-    ELEMENT_SCALAR,
-    ELEMENT_PAIRING
+    ELEMENT_VARIABLE    = 0,
+    ELEMENT_CONST_INDEX = 1,
+    ELEMENT_CONST_VALUE = 2,
+    ELEMENT_PAIR        = 3,
+    ELEMENT_SCALAR      = 4,
+    ELEMENT_PAIRING     = 5,
+    ELEMENT_BASE        = 6
 };
 struct FpData;
 struct G1Data;
@@ -107,12 +108,15 @@ class GTElement;
 FpElement FpVar(int index);
 FpElement FpConst(int index);
 FpElement FpConst(Fp value);
+FpElement FpUnit();
 G1Element G1Var(int index);
 G1Element G1Const(int index);
 G1Element G1Const(G1 value);
+G1Element G1Base();
 G2Element G2Var(int index);
 G2Element G2Const(int index);
 G2Element G2Const(G2 value);
+G2Element G2Base();
 GTElement GTVar(int index);
 GTElement GTConst(int index);
 GTElement GTConst(GT value);
@@ -120,6 +124,14 @@ G1Element operator*(const FpElement &s, const G1Element &e);
 G2Element operator*(const FpElement &s, const G2Element &e);
 GTElement operator^(const GTElement &e, const FpElement &s);
 GTElement e(const G1Element &a, const G2Element &b);
+struct EqProofType {
+    enum {
+        TYPE_NORMAL = 0,
+        TYPE_SINGLE = 1,
+        TYPE_ZP     = 2
+    } tv1, tw1, tv2, tw2;
+};
+
 /**
  * @endcond
  */
@@ -183,6 +195,11 @@ public:
      * @return The constant element.
      */
     friend FpElement FpConst(Fp value);
+    /**
+     * @brief Creates a unit element of @f$\mathbb{F}_p@f$.
+     * @return The unit element.
+     */
+    friend FpElement FpUnit();
     /* Pre-definition */
     friend G1Element operator*(const FpElement &s, const G1Element &e);
     friend G2Element operator*(const FpElement &s, const G2Element &e);
@@ -245,6 +262,12 @@ public:
      * @return The constant element.
      */
     friend G1Element G1Const(G1 value);
+    /**
+     * @brief Creates the special constant that is the base element of
+     *   @f$\mathbb{G}_1@f$.
+     * @return The base element.
+     */
+    friend G1Element G1Base();
     /* Pre-definition */
     friend GTElement e(const G1Element &a, const G2Element &b);
 private:
@@ -305,6 +328,12 @@ public:
      * @return The constant element.
      */
     friend G2Element G2Const(G2 value);
+    /**
+     * @brief Creates the special constant that is the base element of
+     *   @f$\mathbb{G}_2@f$.
+     * @return The base element.
+     */
+    friend G2Element G2Base();
     /* Pre-definition */
     friend GTElement e(const G1Element &a, const G2Element &b);
 private:
@@ -434,6 +463,15 @@ public:
      * @return `true` if the indexes are consistent, `false` otherwise.
      */
     bool endEquations();
+    /**
+     * @brief Write a NIZK proof to a stream.
+     * @note The user should call the function @ref endEquations()
+     *   before calling this function.
+     * @param stream Output stream to which the NIZK proof shall be written.
+     * @param crs Common Reference String to use for this proof.
+     * @sa NIZKProof::endEquations()
+     */
+    void writeProof(std::ostream &stream, const CRS &crs);
 private:
     CommitType type;
     std::vector<PairFp> eqsFp;
@@ -443,6 +481,7 @@ private:
     bool fixed;
     int varFp, cstFp, varG1, cstG1, varG2, cstG2, varGT, cstGT;
     std::vector<int> sEnc[4];
+    std::vector<EqProofType> tFp, tG1, tG2, tGT;
 };
 
 /**
