@@ -143,10 +143,6 @@ struct AdditionalG2 {
     std::shared_ptr<G2Data> formula;
     mutable G2 value;
 };
-struct AdditionalGT {
-    std::shared_ptr<GTData> formula;
-    mutable GT value;
-};
 /**
  * @endcond
  */
@@ -530,11 +526,15 @@ public:
      *   before calling this function.
      * @param instantiation Instantiation values for the constants and
      *   variables.
+     * @param crs The Common Reference String that is used for the
+     *   base elements. A dummy CRS may be used in cases where no
+     *   base element is used (excluding @f$\mathbb{F}_p@f$'s base element).
      * @return `true` if the values are a solution to the equations,
      *   `false` otherwise.
      * @sa NIZKProof::endEquations()
      */
-    bool verifySolution(const ProofData &instantiation) const;
+    bool verifySolution(const ProofData &instantiation,
+                        const CRS &crs = CRS()) const;
     /**
      * @brief Write a NIZK proof to a stream.
      * @note The user should call the function @ref endEquations()
@@ -551,10 +551,14 @@ public:
     void writeProof(std::ostream &stream, const CRS &crs,
                     const ProofData &instantiation) const;
 private:
-    Fp real_eval(const FpData &d, const ProofData &instantiation) const;
-    G1 real_eval(const G1Data &d, const ProofData &instantiation) const;
-    G2 real_eval(const G2Data &d, const ProofData &instantiation) const;
-    GT real_eval(const GTData &d, const ProofData &instantiation) const;
+    Fp real_eval(const FpData &d, const ProofData &instantiation,
+                 const CRS &crs) const;
+    G1 real_eval(const G1Data &d, const ProofData &instantiation,
+                 const CRS &crs) const;
+    G2 real_eval(const G2Data &d, const ProofData &instantiation,
+                 const CRS &crs) const;
+    GT real_eval(const GTData &d, const ProofData &instantiation,
+                 const CRS &crs) const;
 private:
     CommitType type;
     std::vector<PairFp> eqsFp;
@@ -568,7 +572,6 @@ private:
     std::vector<AdditionalFp> additionalFp;
     std::vector<AdditionalG1> additionalG1;
     std::vector<AdditionalG2> additionalG2;
-    std::vector<AdditionalGT> additionalGT;
 };
 
 /**

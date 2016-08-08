@@ -513,6 +513,21 @@ public:
      * @sa operator<<(std::istream&,const CRS&)
      */
     friend std::istream &operator>>(std::istream &stream, CRS &crs);
+    /**
+     * @brief Gets the base element of this CRS in @f$\mathbb{G}_1@f$.
+     * @return The base element.
+     */
+    inline G1 getG1Base() const;
+    /**
+     * @brief Gets the base element of this CRS in @f$\mathbb{G}_2@f$.
+     * @return The base element.
+     */
+    inline G2 getG2Base() const;
+    /**
+     * @brief Gets the base element of this CRS in @f$\mathbb{G}_T@f$.
+     * @return The base element.
+     */
+    inline GT getGTBase() const;
 private:
     void computeElements();
 private:
@@ -731,6 +746,13 @@ inline std::istream &operator>>(std::istream &stream, BT &el) {
 }
 
 inline CRS::CRS() {}
+
+inline G1 CRS::getG1Base() const { return v1._2; }
+
+inline G2 CRS::getG2Base() const { return v2._2; }
+
+// TODO: optimize by pre-computing?
+inline GT CRS::getGTBase() const { return GT::pairing(v1._2, v2._2); }
 
 } /* End of namespace nizk */
 

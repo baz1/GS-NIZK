@@ -904,33 +904,32 @@ bool NIZKProof::endEquations() {
     return true;
 }
 
-bool NIZKProof::verifySolution(const ProofData &instantiation) const {
+bool NIZKProof::verifySolution(const ProofData &instantiation,
+                               const CRS &crs) const {
     for (const AdditionalFp &aFp : additionalFp)
-        aFp.value = real_eval(*aFp.formula, instantiation);
+        aFp.value = real_eval(*aFp.formula, instantiation, crs);
     for (const AdditionalG1 &aG1 : additionalG1)
-        aG1.value = real_eval(*aG1.formula, instantiation);
+        aG1.value = real_eval(*aG1.formula, instantiation, crs);
     for (const AdditionalG2 &aG2 : additionalG2)
-        aG2.value = real_eval(*aG2.formula, instantiation);
-    for (const AdditionalGT &aGT : additionalGT)
-        aGT.value = real_eval(*aGT.formula, instantiation);
+        aG2.value = real_eval(*aG2.formula, instantiation, crs);
     for (const PairFp &p : eqsFp) {
-        if (real_eval(*p.first, instantiation) !=
-                real_eval(*p.second, instantiation))
+        if (real_eval(*p.first, instantiation, crs) !=
+                real_eval(*p.second, instantiation, crs))
             return false;
     }
     for (const PairG1 &p : eqsG1) {
-        if (real_eval(*p.first, instantiation) !=
-                real_eval(*p.second, instantiation))
+        if (real_eval(*p.first, instantiation, crs) !=
+                real_eval(*p.second, instantiation, crs))
             return false;
     }
     for (const PairG2 &p : eqsG2) {
-        if (real_eval(*p.first, instantiation) !=
-                real_eval(*p.second, instantiation))
+        if (real_eval(*p.first, instantiation, crs) !=
+                real_eval(*p.second, instantiation, crs))
             return false;
     }
     for (const PairGT &p : eqsGT) {
-        if (real_eval(*p.first, instantiation) !=
-                real_eval(*p.second, instantiation))
+        if (real_eval(*p.first, instantiation, crs) !=
+                real_eval(*p.second, instantiation, crs))
             return false;
     }
     return true;
@@ -938,7 +937,111 @@ bool NIZKProof::verifySolution(const ProofData &instantiation) const {
 
 void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
                            const ProofData &instantiation) const {
+    (void) stream;
+    (void) crs;
+    (void) instantiation;
     // TODO
+}
+
+Fp NIZKProof::real_eval(const FpData &d, const ProofData &instantiation,
+                        const CRS &crs) const {
+    switch (d.type) {
+    case ELEMENT_VARIABLE:
+        if (static_cast<size_t>(d.index) < instantiation.privFp.size())
+            return instantiation.privFp[d.index];
+        return additionalFp[d.index - instantiation.privFp.size()].value;
+    case ELEMENT_CONST_INDEX:
+        return instantiation.pubFp[d.index];
+    case ELEMENT_CONST_VALUE:
+        return d.el;
+    case ELEMENT_PAIR:
+        return real_eval(*d.pair.first, instantiation, crs) +
+                real_eval(*d.pair.second, instantiation, crs);
+    case ELEMENT_SCALAR:
+        return real_eval(*d.pair.first, instantiation, crs) *
+                real_eval(*d.pair.second, instantiation, crs);
+    case ELEMENT_BASE:
+        return Fp::getUnit();
+    default:
+        ASSERT(false /* Unexpected data type */);
+        return Fp();
+    }
+}
+
+G1 NIZKProof::real_eval(const G1Data &d, const ProofData &instantiation,
+                        const CRS &crs) const {
+    switch (d.type) {
+    case ELEMENT_VARIABLE:
+        if (static_cast<size_t>(d.index) < instantiation.privG1.size())
+            return instantiation.privG1[d.index];
+        return additionalG1[d.index - instantiation.privG1.size()].value;
+    case ELEMENT_CONST_INDEX:
+        return instantiation.pubG1[d.index];
+    case ELEMENT_CONST_VALUE:
+        return d.el;
+    case ELEMENT_PAIR:
+        return real_eval(*d.pair.first, instantiation, crs) +
+                real_eval(*d.pair.second, instantiation, crs);
+    case ELEMENT_SCALAR:
+        return real_eval(*d.scalar.first, instantiation, crs) *
+                real_eval(*d.scalar.second, instantiation, crs);
+    case ELEMENT_BASE:
+        return crs.getG1Base();
+    default:
+        ASSERT(false /* Unexpected data type */);
+        return G1();
+    }
+}
+
+G2 NIZKProof::real_eval(const G2Data &d, const ProofData &instantiation,
+                        const CRS &crs) const {
+    switch (d.type) {
+    case ELEMENT_VARIABLE:
+        if (static_cast<size_t>(d.index) < instantiation.privG2.size())
+            return instantiation.privG2[d.index];
+        return additionalG2[d.index - instantiation.privG2.size()].value;
+    case ELEMENT_CONST_INDEX:
+        return instantiation.pubG2[d.index];
+    case ELEMENT_CONST_VALUE:
+        return d.el;
+    case ELEMENT_PAIR:
+        return real_eval(*d.pair.first, instantiation, crs) +
+                real_eval(*d.pair.second, instantiation, crs);
+    case ELEMENT_SCALAR:
+        return real_eval(*d.scalar.first, instantiation, crs) *
+                real_eval(*d.scalar.second, instantiation, crs);
+    case ELEMENT_BASE:
+        return crs.getG2Base();
+    default:
+        ASSERT(false /* Unexpected data type */);
+        return G2();
+    }
+}
+
+GT NIZKProof::real_eval(const GTData &d, const ProofData &instantiation,
+                        const CRS &crs) const {
+    switch (d.type) {
+    case ELEMENT_VARIABLE:
+        return instantiation.privGT[d.index];
+    case ELEMENT_CONST_INDEX:
+        return instantiation.pubGT[d.index];
+    case ELEMENT_CONST_VALUE:
+        return d.el;
+    case ELEMENT_PAIR:
+        return real_eval(*d.pair.first, instantiation, crs) *
+                real_eval(*d.pair.second, instantiation, crs);
+    case ELEMENT_SCALAR:
+        return real_eval(*d.scalar.second, instantiation, crs) ^
+                real_eval(*d.scalar.first, instantiation, crs);
+    case ELEMENT_PAIRING:
+        return GT::pairing(real_eval(*d.pring.first, instantiation, crs),
+                real_eval(*d.pring.second, instantiation, crs));
+    case ELEMENT_BASE:
+        return crs.getGTBase();
+    default:
+        ASSERT(false /* Unexpected data type */);
+        return GT();
+    }
 }
 
 } /* End of namespace nizk */
