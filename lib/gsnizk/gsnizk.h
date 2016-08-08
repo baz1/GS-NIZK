@@ -133,19 +133,19 @@ struct EqProofType {
 };
 struct AdditionalFp {
     std::shared_ptr<FpData> formula;
-    Fp value;
+    mutable Fp value;
 };
 struct AdditionalG1 {
     std::shared_ptr<G1Data> formula;
-    G1 value;
+    mutable G1 value;
 };
 struct AdditionalG2 {
     std::shared_ptr<G2Data> formula;
-    G2 value;
+    mutable G2 value;
 };
 struct AdditionalGT {
     std::shared_ptr<GTData> formula;
-    GT value;
+    mutable GT value;
 };
 /**
  * @endcond

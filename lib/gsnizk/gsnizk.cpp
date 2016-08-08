@@ -905,7 +905,27 @@ bool NIZKProof::endEquations() {
 }
 
 bool NIZKProof::verifySolution(const ProofData &instantiation) const {
-    // TODO
+    for (const AdditionalFp &aFp : additionalFp)
+        aFp.value = real_eval(*aFp.formula, instantiation);
+    for (const AdditionalG1 &aG1 : additionalG1)
+        aG1.value = real_eval(*aG1.formula, instantiation);
+    for (const AdditionalG2 &aG2 : additionalG2)
+        aG2.value = real_eval(*aG2.formula, instantiation);
+    for (const AdditionalGT &aGT : additionalGT)
+        aGT.value = real_eval(*aGT.formula, instantiation);
+    for (const PairFp &p : eqsFp)
+        if (real_eval(*p.first, instantiation) != real_eval(*p.second, instantiation))
+            return false;
+    for (const PairG1 &p : eqsG1)
+        if (real_eval(*p.first, instantiation) != real_eval(*p.second, instantiation))
+            return false;
+    for (const PairG2 &p : eqsG2)
+        if (real_eval(*p.first, instantiation) != real_eval(*p.second, instantiation))
+            return false;
+    for (const PairGT &p : eqsGT)
+        if (real_eval(*p.first, instantiation) != real_eval(*p.second, instantiation))
+            return false;
+    return true;
 }
 
 void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
