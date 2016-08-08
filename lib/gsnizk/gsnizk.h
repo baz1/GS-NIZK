@@ -131,7 +131,22 @@ struct EqProofType {
         TYPE_ZP     = 2
     } tv1, tw1, tv2, tw2;
 };
-
+struct AdditionalFp {
+    std::shared_ptr<FpData> formula;
+    Fp value;
+};
+struct AdditionalG1 {
+    std::shared_ptr<G1Data> formula;
+    G1 value;
+};
+struct AdditionalG2 {
+    std::shared_ptr<G2Data> formula;
+    G2 value;
+};
+struct AdditionalGT {
+    std::shared_ptr<GTData> formula;
+    GT value;
+};
 /**
  * @endcond
  */
@@ -405,6 +420,51 @@ private:
     std::shared_ptr<GTData> data;
 };
 
+/**
+ * @brief The ProofData structure.
+ *
+ * This structure holds the values of public constants and
+ * private variables in the equations, in order to either
+ * check a solution of generate a NIZK proof.
+ */
+struct ProofData {
+    /**
+     * @brief The public constant values in @f$\mathbb{F}_p@f$.
+     */
+    std::vector<Fp> pubFp;
+    /**
+     * @brief The private variable values in @f$\mathbb{F}_p@f$.
+     */
+    std::vector<Fp> privFp;
+    /**
+     * @brief The public constant values in @f$\mathbb{G}_1@f$.
+     */
+    std::vector<G1> pubG1;
+    /**
+     * @brief The private variable values in @f$\mathbb{G}_1@f$.
+     */
+    std::vector<G1> privG1;
+    /**
+     * @brief The public constant values in @f$\mathbb{G}_2@f$.
+     */
+    std::vector<G2> pubG2;
+    /**
+     * @brief The private variable values in @f$\mathbb{G}_2@f$.
+     */
+    std::vector<G2> privG2;
+    /**
+     * @brief The public constant values in @f$\mathbb{G}_T@f$.
+     */
+    std::vector<GT> pubGT;
+    /**
+     * @brief The private variable values in @f$\mathbb{G}_T@f$.
+     */
+    std::vector<GT> privGT;
+};
+
+/**
+ * @brief The main class that generates and verifies NIZK proofs.
+ */
 class NIZKProof {
 public:
     enum CommitType {
@@ -464,14 +524,37 @@ public:
      */
     bool endEquations();
     /**
+     * @brief Verifies that a given couple of values are solution of the
+     *   equations.
+     * @note The user should call the function @ref endEquations()
+     *   before calling this function.
+     * @param instantiation Instantiation values for the constants and
+     *   variables.
+     * @return `true` if the values are a solution to the equations,
+     *   `false` otherwise.
+     * @sa NIZKProof::endEquations()
+     */
+    bool verifySolution(const ProofData &instantiation) const;
+    /**
      * @brief Write a NIZK proof to a stream.
      * @note The user should call the function @ref endEquations()
      *   before calling this function.
+     * @warning It is assumed that the given values are a solution of the
+     *   equations for the proof to be correct. This can be checked with
+     *   the method @ref verifySolution().
      * @param stream Output stream to which the NIZK proof shall be written.
      * @param crs Common Reference String to use for this proof.
+     * @param instantiation Instantiation values for the constants and
+     *   variables.
      * @sa NIZKProof::endEquations()
      */
-    void writeProof(std::ostream &stream, const CRS &crs);
+    void writeProof(std::ostream &stream, const CRS &crs,
+                    const ProofData &instantiation) const;
+private:
+    Fp real_eval(const FpData &d, const ProofData &instantiation) const;
+    G1 real_eval(const G1Data &d, const ProofData &instantiation) const;
+    G2 real_eval(const G2Data &d, const ProofData &instantiation) const;
+    GT real_eval(const GTData &d, const ProofData &instantiation) const;
 private:
     CommitType type;
     std::vector<PairFp> eqsFp;
@@ -482,6 +565,10 @@ private:
     int varFp, cstFp, varG1, cstG1, varG2, cstG2, varGT, cstGT;
     std::vector<int> sEnc[4];
     std::vector<EqProofType> tFp, tG1, tG2, tGT;
+    std::vector<AdditionalFp> additionalFp;
+    std::vector<AdditionalG1> additionalG1;
+    std::vector<AdditionalG2> additionalG2;
+    std::vector<AdditionalGT> additionalGT;
 };
 
 /**

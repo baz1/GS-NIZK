@@ -904,7 +904,12 @@ bool NIZKProof::endEquations() {
     return true;
 }
 
-void NIZKProof::writeProof(std::ostream &stream, const CRS &crs) {
+bool NIZKProof::verifySolution(const ProofData &instantiation) const {
+    // TODO
+}
+
+void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
+                           const ProofData &instantiation) const {
     // TODO
 }
 
