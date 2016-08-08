@@ -319,120 +319,120 @@ void getIndexes(const FpData &d,
                 std::set<int> &FpVars, std::set<int> &FpConsts,
                 std::set<int> &G1Vars, std::set<int> &G1Consts,
                 std::set<int> &G2Vars, std::set<int> &G2Consts,
-                std::set<int> &GTVars, std::set<int> &GTConsts,
-                SAT_NODE *node = NULL) {
+                std::set<int> &GTVars, std::set<int> &GTConsts) {
     switch (d.type) {
     case ELEMENT_VARIABLE:
         FpVars.insert(d.index);
-        if (node) {
-            node->type = SAT_NODE_INDEX;
-            node->idx.index_type = INDEX_TYPE_Fp;
-            node->idx.index = d.index;
-        }
         return;
     case ELEMENT_CONST_INDEX:
-        FpConsts.insert(d.index);
     case ELEMENT_CONST_VALUE:
-        if (node)
-            node->type = SAT_NODE_FALSE;
         return;
     case ELEMENT_PAIR:
-        if (node)
-            node->type = SAT_NODE_AND;
-        break;
     case ELEMENT_SCALAR:
-        if (node)
-            node->type = SAT_NODE_OR;
-        break;
+        getIndexes(*d.pair.first, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        getIndexes(*d.pair.second, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
     case ELEMENT_BASE:
-        if (node)
-            node->type = SAT_NODE_TRUE;
         return;
     default:
         ASSERT(false /* Unexpected data type */);
         return;
     }
-    if (node) {
-        node->pair.left = new SAT_NODE;
-        getIndexes(*d.pair.first, FpVars, FpConsts,
-                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
-                   node->pair.left);
-        node->pair.right = new SAT_NODE;
-        getIndexes(*d.pair.second, FpVars, FpConsts,
-                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
-                   node->pair.right);
-    } else {
-        getIndexes(*d.pair.first, FpVars, FpConsts,
-                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
-        getIndexes(*d.pair.second, FpVars, FpConsts,
-                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+}
+
+SAT_NODE *getSAT(const FpData &d) {
+    SAT_NODE *node = new SAT_NODE;
+    switch (d.type) {
+    case ELEMENT_VARIABLE:
+        node->type = SAT_NODE_INDEX;
+        node->idx.index_type = INDEX_TYPE_Fp;
+        node->idx.index = d.index;
+        return node;
+    case ELEMENT_CONST_INDEX:
+    case ELEMENT_CONST_VALUE:
+        node->type = SAT_NODE_FALSE;
+        return node;
+    case ELEMENT_PAIR:
+        node->type = SAT_NODE_AND;
+        break;
+    case ELEMENT_SCALAR:
+        node->type = SAT_NODE_OR;
+        break;
+    case ELEMENT_BASE:
+        node->type = SAT_NODE_TRUE;
+        return node;
+    default:
+        ASSERT(false /* Unexpected data type */);
+        return node;
     }
+    node->pair.left = getSAT(*d.pair.first);
+    node->pair.right = getSAT(*d.pair.second);
+    return node;
 }
 
 void getIndexes(const G1Data &d,
                 std::set<int> &FpVars, std::set<int> &FpConsts,
                 std::set<int> &G1Vars, std::set<int> &G1Consts,
                 std::set<int> &G2Vars, std::set<int> &G2Consts,
-                std::set<int> &GTVars, std::set<int> &GTConsts,
-                SAT_NODE *node = NULL) {
+                std::set<int> &GTVars, std::set<int> &GTConsts) {
     switch (d.type) {
     case ELEMENT_VARIABLE:
         G1Vars.insert(d.index);
-        if (node) {
-            node->type = SAT_NODE_INDEX;
-            node->idx.index_type = INDEX_TYPE_G1;
-            node->idx.index = d.index;
-        }
         return;
     case ELEMENT_CONST_INDEX:
         G1Consts.insert(d.index);
+        return;
     case ELEMENT_CONST_VALUE:
-        if (node)
-            node->type = SAT_NODE_FALSE;
         return;
     case ELEMENT_PAIR:
-        if (node) {
-            node->type = SAT_NODE_AND;
-            node->pair.left = new SAT_NODE;
-            getIndexes(*d.pair.first, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
-                       node->pair.left);
-            node->pair.right = new SAT_NODE;
-            getIndexes(*d.pair.second, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
-                       node->pair.right);
-        } else {
-            getIndexes(*d.pair.first, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
-            getIndexes(*d.pair.second, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
-        }
+        getIndexes(*d.pair.first, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        getIndexes(*d.pair.second, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
         return;
     case ELEMENT_SCALAR:
-        if (node) {
-            node->type = SAT_NODE_OR;
-            node->pair.left = new SAT_NODE;
-            getIndexes(*d.scalar.first, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
-                       node->pair.left);
-            node->pair.right = new SAT_NODE;
-            getIndexes(*d.scalar.second, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
-                       node->pair.right);
-        } else {
-            getIndexes(*d.scalar.first, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
-            getIndexes(*d.scalar.second, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
-        }
+        getIndexes(*d.scalar.first, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        getIndexes(*d.scalar.second, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
         return;
     case ELEMENT_BASE:
-        if (node)
-            node->type = SAT_NODE_TRUE;
         return;
     default:
         ASSERT(false /* Unexpected data type */);
         return;
+    }
+}
+
+SAT_NODE *getSAT(const G1Data &d) {
+    SAT_NODE *node = new SAT_NODE;
+    switch (d.type) {
+    case ELEMENT_VARIABLE:
+        node->type = SAT_NODE_INDEX;
+        node->idx.index_type = INDEX_TYPE_G1;
+        node->idx.index = d.index;
+        return node;
+    case ELEMENT_CONST_INDEX:
+    case ELEMENT_CONST_VALUE:
+        node->type = SAT_NODE_FALSE;
+        return node;
+    case ELEMENT_PAIR:
+        node->type = SAT_NODE_AND;
+        node->pair.left = getSAT(*d.pair.first);
+        node->pair.right = getSAT(*d.pair.second);
+        return node;
+    case ELEMENT_SCALAR:
+        node->type = SAT_NODE_OR;
+        node->pair.left = getSAT(*d.scalar.first);
+        node->pair.right = getSAT(*d.scalar.second);
+        return node;
+    case ELEMENT_BASE:
+        node->type = SAT_NODE_TRUE;
+        return node;
+    default:
+        ASSERT(false /* Unexpected data type */);
+        return node;
     }
 }
 
@@ -440,62 +440,29 @@ void getIndexes(const G2Data &d,
                 std::set<int> &FpVars, std::set<int> &FpConsts,
                 std::set<int> &G1Vars, std::set<int> &G1Consts,
                 std::set<int> &G2Vars, std::set<int> &G2Consts,
-                std::set<int> &GTVars, std::set<int> &GTConsts,
-                SAT_NODE *node = NULL) {
+                std::set<int> &GTVars, std::set<int> &GTConsts) {
     switch (d.type) {
     case ELEMENT_VARIABLE:
         G2Vars.insert(d.index);
-        if (node) {
-            node->type = SAT_NODE_INDEX;
-            node->idx.index_type = INDEX_TYPE_G2;
-            node->idx.index = d.index;
-        }
         return;
     case ELEMENT_CONST_INDEX:
         G2Consts.insert(d.index);
+        return;
     case ELEMENT_CONST_VALUE:
-        if (node)
-            node->type = SAT_NODE_FALSE;
         return;
     case ELEMENT_PAIR:
-        if (node) {
-            node->type = SAT_NODE_AND;
-            node->pair.left = new SAT_NODE;
-            getIndexes(*d.pair.first, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
-                       node->pair.left);
-            node->pair.right = new SAT_NODE;
-            getIndexes(*d.pair.second, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
-                       node->pair.right);
-        } else {
-            getIndexes(*d.pair.first, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
-            getIndexes(*d.pair.second, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
-        }
+        getIndexes(*d.pair.first, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        getIndexes(*d.pair.second, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
         return;
     case ELEMENT_SCALAR:
-        if (node) {
-            node->type = SAT_NODE_OR;
-            node->pair.left = new SAT_NODE;
-            getIndexes(*d.scalar.first, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
-                       node->pair.left);
-            node->pair.right = new SAT_NODE;
-            getIndexes(*d.scalar.second, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
-                       node->pair.right);
-        } else {
-            getIndexes(*d.scalar.first, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
-            getIndexes(*d.scalar.second, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
-        }
+        getIndexes(*d.scalar.first, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        getIndexes(*d.scalar.second, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
         return;
     case ELEMENT_BASE:
-        if (node)
-            node->type = SAT_NODE_TRUE;
         return;
     default:
         ASSERT(false /* Unexpected data type */);
@@ -503,84 +470,105 @@ void getIndexes(const G2Data &d,
     }
 }
 
+SAT_NODE *getSAT(const G2Data &d) {
+    SAT_NODE *node = new SAT_NODE;
+    switch (d.type) {
+    case ELEMENT_VARIABLE:
+        node->type = SAT_NODE_INDEX;
+        node->idx.index_type = INDEX_TYPE_G2;
+        node->idx.index = d.index;
+        return node;
+    case ELEMENT_CONST_INDEX:
+    case ELEMENT_CONST_VALUE:
+        node->type = SAT_NODE_FALSE;
+        return node;
+    case ELEMENT_PAIR:
+        node->type = SAT_NODE_AND;
+        node->pair.left = getSAT(*d.pair.first);
+        node->pair.right = getSAT(*d.pair.second);
+        return node;
+    case ELEMENT_SCALAR:
+        node->type = SAT_NODE_OR;
+        node->pair.left = getSAT(*d.scalar.first);
+        node->pair.right = getSAT(*d.scalar.second);
+        return node;
+    case ELEMENT_BASE:
+        node->type = SAT_NODE_TRUE;
+        return node;
+    default:
+        ASSERT(false /* Unexpected data type */);
+        return node;
+    }
+}
+
 void getIndexes(const GTData &d,
                 std::set<int> &FpVars, std::set<int> &FpConsts,
                 std::set<int> &G1Vars, std::set<int> &G1Consts,
                 std::set<int> &G2Vars, std::set<int> &G2Consts,
-                std::set<int> &GTVars, std::set<int> &GTConsts,
-                SAT_NODE *node = NULL) {
+                std::set<int> &GTVars, std::set<int> &GTConsts) {
     switch (d.type) {
     case ELEMENT_VARIABLE:
         GTVars.insert(d.index);
-        if (node) {
-            node->type = SAT_NODE_INDEX;
-            node->idx.index_type = INDEX_TYPE_GT;
-            node->idx.index = d.index;
-        }
         return;
     case ELEMENT_CONST_INDEX:
         GTConsts.insert(d.index);
+        return;
     case ELEMENT_CONST_VALUE:
-        if (node)
-            node->type = SAT_NODE_FALSE;
         return;
     case ELEMENT_PAIR:
-        if (node) {
-            node->type = SAT_NODE_AND;
-            node->pair.left = new SAT_NODE;
-            getIndexes(*d.pair.first, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
-                       node->pair.left);
-            node->pair.right = new SAT_NODE;
-            getIndexes(*d.pair.second, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
-                       node->pair.right);
-        } else {
-            getIndexes(*d.pair.first, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
-            getIndexes(*d.pair.second, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
-        }
+        getIndexes(*d.pair.first, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        getIndexes(*d.pair.second, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
         return;
     case ELEMENT_SCALAR:
-        if (node) {
-            node->type = SAT_NODE_OR;
-            node->pair.left = new SAT_NODE;
-            getIndexes(*d.scalar.first, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
-                       node->pair.left);
-            node->pair.right = new SAT_NODE;
-            getIndexes(*d.scalar.second, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
-                       node->pair.right);
-        } else {
-            getIndexes(*d.scalar.first, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
-            getIndexes(*d.scalar.second, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
-        }
+        getIndexes(*d.scalar.first, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        getIndexes(*d.scalar.second, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
         return;
     case ELEMENT_PAIRING:
-        if (node) {
-            node->type = SAT_NODE_OR;
-            node->pair.left = new SAT_NODE;
-            getIndexes(*d.pring.first, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
-                       node->pair.left);
-            node->pair.right = new SAT_NODE;
-            getIndexes(*d.pring.second, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
-                       node->pair.right);
-        } else {
-            getIndexes(*d.pring.first, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
-            getIndexes(*d.pring.second, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
-        }
+        getIndexes(*d.pring.first, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        getIndexes(*d.pring.second, FpVars, FpConsts,
+                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
         return;
     default:
         ASSERT(false /* Unexpected data type */);
         return;
+    }
+}
+
+SAT_NODE *getSAT(const GTData &d) {
+    SAT_NODE *node = new SAT_NODE;
+    switch (d.type) {
+    case ELEMENT_VARIABLE:
+        node->type = SAT_NODE_INDEX;
+        node->idx.index_type = INDEX_TYPE_GT;
+        node->idx.index = d.index;
+        return node;
+    case ELEMENT_CONST_INDEX:
+    case ELEMENT_CONST_VALUE:
+        node->type = SAT_NODE_FALSE;
+        return node;
+    case ELEMENT_PAIR:
+        node->type = SAT_NODE_AND;
+        node->pair.left = getSAT(*d.pair.first);
+        node->pair.right = getSAT(*d.pair.second);
+        return node;
+    case ELEMENT_SCALAR:
+        node->type = SAT_NODE_OR;
+        node->pair.left = getSAT(*d.scalar.first);
+        node->pair.right = getSAT(*d.scalar.second);
+        return node;
+    case ELEMENT_PAIRING:
+        node->type = SAT_NODE_OR;
+        node->pair.left = getSAT(*d.pring.first);
+        node->pair.right = getSAT(*d.pring.second);
+        return node;
+    default:
+        ASSERT(false /* Unexpected data type */);
+        return node;
     }
 }
 
@@ -770,99 +758,47 @@ int tryPermutation(SAT_NODE *root, std::vector<int> val[4],
     return r1;
 }
 
+void joinSAT(SAT_NODE *&main, SAT_NODE *other) {
+    SAT_NODE *tmp = new SAT_NODE;
+    tmp->type = SAT_NODE_AND;
+    tmp->pair.left = main;
+    tmp->pair.right = other;
+    main = tmp;
+}
+
 bool NIZKProof::endEquations() {
     /* Subsequent calls are ignored. */
     if (fixed) return true;
-    SAT_NODE *current = NULL, *root;
     {
         std::set<int> FpVars, FpConsts, G1Vars, G1Consts;
         std::set<int> G2Vars, G2Consts, GTVars, GTConsts;
-        if (type == SelectedEncryption)
-            root = (current = new SAT_NODE);
         for (const PairFp &p : eqsFp) {
             getIndexes(*p.first, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
-                       current);
+                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
             if (!p.second) continue;
-            if (type == SelectedEncryption) {
-                current = new SAT_NODE;
-                current->type = SAT_NODE_AND;
-                current->pair.left = root;
-                root = current;
-                root->pair.right = (current = new SAT_NODE);
-            }
             getIndexes(*p.second, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
-                       current);
-        }
-        if (type == SelectedEncryption) {
-            current = new SAT_NODE;
-            current->type = SAT_NODE_AND;
-            current->pair.left = root;
-            root = current;
-            root->pair.right = (current = new SAT_NODE);
+                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
         }
         for (const PairG1 &p : eqsG1) {
             getIndexes(*p.first, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
-                       current);
+                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
             if (!p.second) continue;
-            if (type == SelectedEncryption) {
-                current = new SAT_NODE;
-                current->type = SAT_NODE_AND;
-                current->pair.left = root;
-                root = current;
-                root->pair.right = (current = new SAT_NODE);
-            }
             getIndexes(*p.second, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
-                       current);
-        }
-        if (type == SelectedEncryption) {
-            current = new SAT_NODE;
-            current->type = SAT_NODE_AND;
-            current->pair.left = root;
-            root = current;
-            root->pair.right = (current = new SAT_NODE);
+                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
         }
         for (const PairG2 &p : eqsG2) {
             getIndexes(*p.first, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
-                       current);
+                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
             if (!p.second) continue;
-            if (type == SelectedEncryption) {
-                current = new SAT_NODE;
-                current->type = SAT_NODE_AND;
-                current->pair.left = root;
-                root = current;
-                root->pair.right = (current = new SAT_NODE);
-            }
             getIndexes(*p.second, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
-                       current);
-        }
-        if (type == SelectedEncryption) {
-            current = new SAT_NODE;
-            current->type = SAT_NODE_AND;
-            current->pair.left = root;
-            root = current;
-            root->pair.right = (current = new SAT_NODE);
+                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
         }
         for (const PairGT &p : eqsGT) {
             getIndexes(*p.first, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
-                       current);
+                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
             if (!p.second) continue;
-            if (type == SelectedEncryption) {
-                current = new SAT_NODE;
-                current->type = SAT_NODE_AND;
-                current->pair.left = root;
-                root = current;
-                root->pair.right = (current = new SAT_NODE);
-            }
             getIndexes(*p.second, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts,
-                       current);
+                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
         }
         varFp = checkIndexesSet(FpVars);
         if (varFp < 0) return false;
@@ -881,7 +817,30 @@ bool NIZKProof::endEquations() {
         cstGT = checkIndexesSet(GTConsts);
         if (cstGT < 0) return false;
     }
+    // TODO rewrite equations
     if (type == SelectedEncryption) {
+        SAT_NODE *root = new SAT_NODE;
+        root->type = SAT_NODE_TRUE;
+        for (const PairFp &p : eqsFp) {
+            joinSAT(root, getSAT(*p.first));
+            if (!p.second) continue;
+            joinSAT(root, getSAT(*p.second));
+        }
+        for (const PairG1 &p : eqsG1) {
+            joinSAT(root, getSAT(*p.first));
+            if (!p.second) continue;
+            joinSAT(root, getSAT(*p.second));
+        }
+        for (const PairG2 &p : eqsG2) {
+            joinSAT(root, getSAT(*p.first));
+            if (!p.second) continue;
+            joinSAT(root, getSAT(*p.second));
+        }
+        for (const PairGT &p : eqsGT) {
+            joinSAT(root, getSAT(*p.first));
+            if (!p.second) continue;
+            joinSAT(root, getSAT(*p.second));
+        }
         std::vector<int> cnt[4];
         sEnc[0].resize(varFp, SAT_VALUE_UNSET);
         cnt[0].reserve(varFp);
@@ -937,9 +896,13 @@ bool NIZKProof::verifySolution(const ProofData &instantiation,
 
 void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
                            const ProofData &instantiation) const {
+    for (const AdditionalFp &aFp : additionalFp)
+        aFp.value = real_eval(*aFp.formula, instantiation, crs);
+    for (const AdditionalG1 &aG1 : additionalG1)
+        aG1.value = real_eval(*aG1.formula, instantiation, crs);
+    for (const AdditionalG2 &aG2 : additionalG2)
+        aG2.value = real_eval(*aG2.formula, instantiation, crs);
     (void) stream;
-    (void) crs;
-    (void) instantiation;
     // TODO
 }
 

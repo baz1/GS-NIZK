@@ -143,6 +143,14 @@ struct AdditionalG2 {
     std::shared_ptr<G2Data> formula;
     mutable G2 value;
 };
+struct G1Commit {
+    G1 c;
+    Fp r, s;
+};
+struct G2Commit {
+    G2 c;
+    Fp r, s;
+};
 /**
  * @endcond
  */
