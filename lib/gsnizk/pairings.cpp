@@ -47,15 +47,21 @@ SharedData *Fp::zero = 0, *Fp::one = 0;
 static char *iostream_nothreads_buffer;
 #endif
 
-template <typename T> inline const T &min(const T &a, const T &b) { return (a < b) ? a : b; }
-template <typename T> inline const T &max(const T &a, const T &b) { return (a < b) ? b : a; }
+template <typename T> inline const T &min(const T &a, const T &b) {
+    return (a < b) ? a : b;
+}
+
+template <typename T> inline const T &max(const T &a, const T &b) {
+    return (a < b) ? b : a;
+}
 
 // Note: The following is used more for an indication and hint for the readers
 // rather than an efficiency improvement.
 #ifdef __GNUC__
 #define LIKELY(x)       __builtin_expect(!!(x), 1)
 #define UNLIKELY(x)     __builtin_expect(!!(x), 0)
-#define NB_BITS(x)      ((sizeof(unsigned long) * 8) - __builtin_clzl((unsigned long) (x)))
+#define NB_BITS(x)      ((sizeof(unsigned long) * 8) - \
+                            __builtin_clzl((unsigned long) (x)))
 #else
 #define LIKELY(x)       (x)
 #define UNLIKELY(x)     (x)
@@ -81,7 +87,8 @@ static ::GT *rndSeed = 0;
 
 void initialize_pairings(int len, const char *rndData) {
     csprng *rnd = new csprng;
-    // Note: Sorry about the following const_cast, const keyword simply missing in strong_init
+    // Note: Sorry about the following const_cast,
+    // const keyword simply missing in strong_init
     strong_init(rnd, len, const_cast<char*>(rndData), (unsigned int) clock());
     pfc = new PFC(AES_SECURITY, rnd);
     Fp::zero = new SharedData(reinterpret_cast<void*>(new ::Big()));
@@ -179,10 +186,11 @@ void hashToZZn(const char *data, int len, const ::Big &n, ::Big &result) {
     hashToZZn(s, n, result);
 }
 
-Fp::Fp(int i) : d(new SharedData(reinterpret_cast<void*>(i >= 0 ? (new ::Big(i)) :
-        (new ::Big(*pfc->ord + Big(i)))))) {}
+Fp::Fp(int i) : d(new SharedData(reinterpret_cast<void*>(i >= 0 ?
+        (new ::Big(i)) : (new ::Big(*pfc->ord + Big(i)))))) {}
 
-Fp::Fp(unsigned long i) : d(new SharedData(reinterpret_cast<void*>(new ::Big(i)))) {}
+Fp::Fp(unsigned long i)
+    : d(new SharedData(reinterpret_cast<void*>(new ::Big(i)))) {}
 
 Fp Fp::operator-() const {
     const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
@@ -194,13 +202,15 @@ Fp Fp::operator-() const {
 Fp Fp::operator+(const Fp &other) const {
     const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
     const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
-    return Fp(reinterpret_cast<void*>(new ::Big((_this + _other) % (*pfc->ord))));
+    return Fp(reinterpret_cast<void*>(
+        new ::Big((_this + _other) % (*pfc->ord))));
 }
 
 Fp Fp::operator-(const Fp &other) const {
     const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
     const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
-    return Fp(reinterpret_cast<void*>(new ::Big(((*pfc->ord + _this) - _other) % (*pfc->ord))));
+    return Fp(reinterpret_cast<void*>(
+        new ::Big(((*pfc->ord + _this) - _other) % (*pfc->ord))));
 }
 
 Fp &Fp::operator+=(const Fp &other) {
@@ -208,7 +218,8 @@ Fp &Fp::operator+=(const Fp &other) {
     if (d->c) {
         --d->c;
         const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
-        d = new SharedData(reinterpret_cast<void*>(new ::Big((_this + _other) % (*pfc->ord))));
+        d = new SharedData(reinterpret_cast<void*>(
+            new ::Big((_this + _other) % (*pfc->ord))));
     } else {
         ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
         _this += _other;
@@ -222,7 +233,8 @@ Fp &Fp::operator-=(const Fp &other) {
     if (d->c) {
         --d->c;
         const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
-        d = new SharedData(reinterpret_cast<void*>(new ::Big(((*pfc->ord + _this) - _other) % (*pfc->ord))));
+        d = new SharedData(reinterpret_cast<void*>(
+            new ::Big(((*pfc->ord + _this) - _other) % (*pfc->ord))));
     } else {
         ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
         _this += *pfc->ord;
@@ -235,13 +247,15 @@ Fp &Fp::operator-=(const Fp &other) {
 Fp Fp::operator*(const Fp &other) const {
     const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
     const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
-    return Fp(reinterpret_cast<void*>(new ::Big(modmult(_this, _other, *pfc->ord))));
+    return Fp(reinterpret_cast<void*>(new ::Big(modmult(_this, _other,
+                                                        *pfc->ord))));
 }
 
 Fp Fp::operator/(const Fp &other) const {
     const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
     const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
-    return Fp(reinterpret_cast<void*>(new ::Big(moddiv(_this, _other, *pfc->ord))));
+    return Fp(reinterpret_cast<void*>(new ::Big(moddiv(_this, _other,
+                                                       *pfc->ord))));
 }
 
 Fp &Fp::operator*=(const Fp &other) {
@@ -249,7 +263,8 @@ Fp &Fp::operator*=(const Fp &other) {
     if (d->c) {
         --d->c;
         const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
-        d = new SharedData(reinterpret_cast<void*>(new ::Big(modmult(_this, _other, *pfc->ord))));
+        d = new SharedData(reinterpret_cast<void*>(
+            new ::Big(modmult(_this, _other, *pfc->ord))));
     } else {
         ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
         _this = modmult(_this, _other, *pfc->ord);
@@ -262,7 +277,8 @@ Fp &Fp::operator/=(const Fp &other) {
     if (d->c) {
         --d->c;
         const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
-        d = new SharedData(reinterpret_cast<void*>(new ::Big(moddiv(_this, _other, *pfc->ord))));
+        d = new SharedData(reinterpret_cast<void*>(
+            new ::Big(moddiv(_this, _other, *pfc->ord))));
     } else {
         ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
         _this = moddiv(_this, _other, *pfc->ord);
@@ -337,12 +353,15 @@ Fp Fp::getUnit() {
 }
 
 Fp Fp::getRand() {
-    return Fp(reinterpret_cast<void*>(new ::Big(strong_rand(pfc->RNG, *pfc->ord))));
+    return Fp(reinterpret_cast<void*>(
+        new ::Big(strong_rand(pfc->RNG, *pfc->ord))));
 }
 
 Fp Fp::getValue(const char *data, int len) {
-    // Note: Sorry about the following const_cast, const keyword simply missing in from_binary
-    return Fp(reinterpret_cast<void*>(new ::Big(from_binary(len, const_cast<char*>(data)))));
+    // Note: Sorry about the following const_cast,
+    // const keyword simply missing in from_binary
+    return Fp(reinterpret_cast<void*>(
+        new ::Big(from_binary(len, const_cast<char*>(data)))));
 }
 
 Fp Fp::fromHash(const char *data, int len) {
@@ -617,7 +636,8 @@ G1 G1::getRand() {
 G1 G1::getValue(const char *data, int len, bool compressed) {
     if (!len) return G1();
     ::G1 *el = new ::G1();
-    // Note: Sorry about the following const_cast-s, const keyword simply missing in from_binary
+    // Note: Sorry about the following const_cast-s,
+    // const keyword simply missing in from_binary
     if (compressed) {
         int lsb = (int) *(data++);
         el->g.set(from_binary(len - 1, const_cast<char*>(data)), lsb);
@@ -625,7 +645,8 @@ G1 G1::getValue(const char *data, int len, bool compressed) {
         if (len & 1)
             throw "pairings::G1::getValue: Unexpected data length";
         len >>= 1;
-        el->g.set(from_binary(len, const_cast<char*>(data)), from_binary(len, const_cast<char*>(data + len)));
+        el->g.set(from_binary(len, const_cast<char*>(data)),
+                  from_binary(len, const_cast<char*>(data + len)));
     }
     return G1(reinterpret_cast<void*>(el));
 }
@@ -674,9 +695,11 @@ G2 G2::operator-() const {
 /* Replacement for "::G2 operator+(const ::G2& x,const ::G2& y)" */
 ::G2 *addG2(const ::G2 &a, const ::G2 &b) {
     ::G2 *result;
-    // Note: Sorry about the following const_cast-s, const keyword simply missing in ECn2::type
+    // Note: Sorry about the following const_cast-s,
+    // const keyword simply missing in ECn2::type
     if (const_cast< ::ECn2& >(b.g).type() == MR_EPOINT_GENERAL) {
-        if ((const_cast< ::ECn2& >(a.g).type() != MR_EPOINT_GENERAL) || (&a == &b)) {
+        if ((const_cast< ::ECn2& >(a.g).type() != MR_EPOINT_GENERAL)
+                || (&a == &b)) {
             result = new ::G2(b);
             result->g += a.g;
             return result;
@@ -813,7 +836,8 @@ bool G2::operator==(const G2 &other) const {
     if (!other.d) return false;
     const ::G2 &_this = *reinterpret_cast< ::G2* >(d->p);
     const ::G2 &_other = *reinterpret_cast< ::G2* >(other.d->p);
-    // Note: Sorry about the following const_cast-s, const keyword simply missing in ::G2::operator==
+    // Note: Sorry about the following const_cast-s,
+    // const keyword simply missing in ::G2::operator==
     return (const_cast< ::G2&>(_this) == const_cast< ::G2&>(_other));
 }
 
@@ -985,7 +1009,8 @@ G2 G2::getRand() {
 G2 G2::getValue(const char *data, int len, bool compressed) {
     if (!len) return G2();
     ::G2 *el = new ::G2();
-    // Note: Sorry about the following const_cast-s, const keyword simply missing in from_binary
+    // Note: Sorry about the following const_cast-s,
+    // const keyword simply missing in from_binary
     if (compressed) {
         int lsb = (int) *(data++);
         if ((--len) & 1)
@@ -1488,7 +1513,8 @@ GT GT::getRand() {
 GT GT::getValue(const char *data, int len) {
     if (!len) return GT();
     ::GT *el = new ::GT();
-    // Note: Sorry about the following const_cast-s, const keyword simply missing in from_binary
+    // Note: Sorry about the following const_cast-s,
+    // const keyword simply missing in from_binary
     if (len % 12)
         throw "pairings::GT::getValue: Unexpected data length";
     len /= 12;
