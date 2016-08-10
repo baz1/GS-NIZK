@@ -559,6 +559,10 @@ public:
     void writeProof(std::ostream &stream, const CRS &crs,
                     const ProofData &instantiation) const;
 private:
+    void getIndexes(std::shared_ptr<FpData> &d);
+    void getIndexes(std::shared_ptr<G1Data> &d);
+    void getIndexes(std::shared_ptr<G2Data> &d);
+    void getIndexes(std::shared_ptr<GTData> &d);
     Fp real_eval(const FpData &d, const ProofData &instantiation,
                  const CRS &crs) const;
     G1 real_eval(const G1Data &d, const ProofData &instantiation,
@@ -574,7 +578,10 @@ private:
     std::vector<PairG2> eqsG2;
     std::vector<PairGT> eqsGT;
     bool fixed;
-    int varFp, cstFp, varG1, cstG1, varG2, cstG2, varGT, cstGT;
+    std::vector< std::shared_ptr<FpData> > varsFp, cstsFp;
+    std::vector< std::shared_ptr<G1Data> > varsG1, cstsG1;
+    std::vector< std::shared_ptr<G2Data> > varsG2, cstsG2;
+    std::vector< std::shared_ptr<GTData> > varsGT, cstsGT;
     std::vector<int> sEnc[4];
     std::vector<EqProofType> tFp, tG1, tG2, tGT;
     std::vector<AdditionalFp> additionalFp;

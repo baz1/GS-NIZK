@@ -315,24 +315,35 @@ struct SAT_NODE {
     };
 };
 
-void getIndexes(const FpData &d,
-                std::set<int> &FpVars, std::set<int> &FpConsts,
-                std::set<int> &G1Vars, std::set<int> &G1Consts,
-                std::set<int> &G2Vars, std::set<int> &G2Consts,
-                std::set<int> &GTVars, std::set<int> &GTConsts) {
-    switch (d.type) {
+void NIZKProof::getIndexes(std::shared_ptr<FpData> &d) {
+    switch (d->type) {
     case ELEMENT_VARIABLE:
-        FpVars.insert(d.index);
+        if (varsFp.size() <= static_cast<size_t>(d->index)) {
+            varsFp.resize(d->index + 1);
+            varsFp[d->index] = d;
+        } else if (varsFp[d->index]) {
+            d = varsFp[d->index];
+        } else {
+            varsFp[d->index] = d;
+        }
         return;
     case ELEMENT_CONST_INDEX:
+        if (cstsFp.size() <= static_cast<size_t>(d->index)) {
+            cstsFp.resize(d->index + 1);
+            cstsFp[d->index] = d;
+        } else if (cstsFp[d->index]) {
+            d = cstsFp[d->index];
+        } else {
+            cstsFp[d->index] = d;
+        }
+        return;
     case ELEMENT_CONST_VALUE:
         return;
     case ELEMENT_PAIR:
     case ELEMENT_SCALAR:
-        getIndexes(*d.pair.first, FpVars, FpConsts,
-                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
-        getIndexes(*d.pair.second, FpVars, FpConsts,
-                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        getIndexes(d->pair.first);
+        getIndexes(d->pair.second);
+        return;
     case ELEMENT_BASE:
         return;
     default:
@@ -371,31 +382,37 @@ SAT_NODE *getSAT(const FpData &d) {
     return node;
 }
 
-void getIndexes(const G1Data &d,
-                std::set<int> &FpVars, std::set<int> &FpConsts,
-                std::set<int> &G1Vars, std::set<int> &G1Consts,
-                std::set<int> &G2Vars, std::set<int> &G2Consts,
-                std::set<int> &GTVars, std::set<int> &GTConsts) {
-    switch (d.type) {
+void NIZKProof::getIndexes(std::shared_ptr<G1Data> &d) {
+    switch (d->type) {
     case ELEMENT_VARIABLE:
-        G1Vars.insert(d.index);
+        if (varsG1.size() <= static_cast<size_t>(d->index)) {
+            varsG1.resize(d->index + 1);
+            varsG1[d->index] = d;
+        } else if (varsG1[d->index]) {
+            d = varsG1[d->index];
+        } else {
+            varsG1[d->index] = d;
+        }
         return;
     case ELEMENT_CONST_INDEX:
-        G1Consts.insert(d.index);
+        if (cstsG1.size() <= static_cast<size_t>(d->index)) {
+            cstsG1.resize(d->index + 1);
+            cstsG1[d->index] = d;
+        } else if (cstsG1[d->index]) {
+            d = cstsG1[d->index];
+        } else {
+            cstsG1[d->index] = d;
+        }
         return;
     case ELEMENT_CONST_VALUE:
         return;
     case ELEMENT_PAIR:
-        getIndexes(*d.pair.first, FpVars, FpConsts,
-                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
-        getIndexes(*d.pair.second, FpVars, FpConsts,
-                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        getIndexes(d->pair.first);
+        getIndexes(d->pair.second);
         return;
     case ELEMENT_SCALAR:
-        getIndexes(*d.scalar.first, FpVars, FpConsts,
-                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
-        getIndexes(*d.scalar.second, FpVars, FpConsts,
-                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        getIndexes(d->scalar.first);
+        getIndexes(d->scalar.second);
         return;
     case ELEMENT_BASE:
         return;
@@ -436,31 +453,37 @@ SAT_NODE *getSAT(const G1Data &d) {
     }
 }
 
-void getIndexes(const G2Data &d,
-                std::set<int> &FpVars, std::set<int> &FpConsts,
-                std::set<int> &G1Vars, std::set<int> &G1Consts,
-                std::set<int> &G2Vars, std::set<int> &G2Consts,
-                std::set<int> &GTVars, std::set<int> &GTConsts) {
-    switch (d.type) {
+void NIZKProof::getIndexes(std::shared_ptr<G2Data> &d) {
+    switch (d->type) {
     case ELEMENT_VARIABLE:
-        G2Vars.insert(d.index);
+        if (varsG2.size() <= static_cast<size_t>(d->index)) {
+            varsG2.resize(d->index + 1);
+            varsG2[d->index] = d;
+        } else if (varsG2[d->index]) {
+            d = varsG2[d->index];
+        } else {
+            varsG2[d->index] = d;
+        }
         return;
     case ELEMENT_CONST_INDEX:
-        G2Consts.insert(d.index);
+        if (cstsG2.size() <= static_cast<size_t>(d->index)) {
+            cstsG2.resize(d->index + 1);
+            cstsG2[d->index] = d;
+        } else if (cstsG2[d->index]) {
+            d = cstsG2[d->index];
+        } else {
+            cstsG2[d->index] = d;
+        }
         return;
     case ELEMENT_CONST_VALUE:
         return;
     case ELEMENT_PAIR:
-        getIndexes(*d.pair.first, FpVars, FpConsts,
-                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
-        getIndexes(*d.pair.second, FpVars, FpConsts,
-                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        getIndexes(d->pair.first);
+        getIndexes(d->pair.second);
         return;
     case ELEMENT_SCALAR:
-        getIndexes(*d.scalar.first, FpVars, FpConsts,
-                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
-        getIndexes(*d.scalar.second, FpVars, FpConsts,
-                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        getIndexes(d->scalar.first);
+        getIndexes(d->scalar.second);
         return;
     case ELEMENT_BASE:
         return;
@@ -501,37 +524,41 @@ SAT_NODE *getSAT(const G2Data &d) {
     }
 }
 
-void getIndexes(const GTData &d,
-                std::set<int> &FpVars, std::set<int> &FpConsts,
-                std::set<int> &G1Vars, std::set<int> &G1Consts,
-                std::set<int> &G2Vars, std::set<int> &G2Consts,
-                std::set<int> &GTVars, std::set<int> &GTConsts) {
-    switch (d.type) {
+void NIZKProof::getIndexes(std::shared_ptr<GTData> &d) {
+    switch (d->type) {
     case ELEMENT_VARIABLE:
-        GTVars.insert(d.index);
+        if (varsGT.size() <= static_cast<size_t>(d->index)) {
+            varsGT.resize(d->index + 1);
+            varsGT[d->index] = d;
+        } else if (varsGT[d->index]) {
+            d = varsGT[d->index];
+        } else {
+            varsGT[d->index] = d;
+        }
         return;
     case ELEMENT_CONST_INDEX:
-        GTConsts.insert(d.index);
+        if (cstsGT.size() <= static_cast<size_t>(d->index)) {
+            cstsGT.resize(d->index + 1);
+            cstsGT[d->index] = d;
+        } else if (cstsGT[d->index]) {
+            d = cstsGT[d->index];
+        } else {
+            cstsGT[d->index] = d;
+        }
         return;
     case ELEMENT_CONST_VALUE:
         return;
     case ELEMENT_PAIR:
-        getIndexes(*d.pair.first, FpVars, FpConsts,
-                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
-        getIndexes(*d.pair.second, FpVars, FpConsts,
-                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        getIndexes(d->pair.first);
+        getIndexes(d->pair.second);
         return;
     case ELEMENT_SCALAR:
-        getIndexes(*d.scalar.first, FpVars, FpConsts,
-                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
-        getIndexes(*d.scalar.second, FpVars, FpConsts,
-                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        getIndexes(d->scalar.first);
+        getIndexes(d->scalar.second);
         return;
     case ELEMENT_PAIRING:
-        getIndexes(*d.pring.first, FpVars, FpConsts,
-                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
-        getIndexes(*d.pring.second, FpVars, FpConsts,
-                   G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        getIndexes(d->pring.first);
+        getIndexes(d->pring.second);
         return;
     default:
         ASSERT(false /* Unexpected data type */);
@@ -572,17 +599,14 @@ SAT_NODE *getSAT(const GTData &d) {
     }
 }
 
-int checkIndexesSet(const std::set<int> &s) {
-    std::set<int>::const_iterator it = s.cbegin();
-    int expect = 0;
-    while (it != s.cend()) {
-        if (*it != expect)
-            return -1;
-        ++expect;
-        ++it;
+template <typename T> bool checkIndexesSet(
+        const std::vector< std::shared_ptr<T> > &v) {
+    for (const std::shared_ptr<T> &el : v) {
+        if (!el) return false;
     }
-    return s.size();
+    return true;
 }
+
 
 void delNode(SAT_NODE *node) {
     switch (node->type) {
@@ -770,52 +794,40 @@ bool NIZKProof::endEquations() {
     /* Subsequent calls are ignored. */
     if (fixed) return true;
     {
-        std::set<int> FpVars, FpConsts, G1Vars, G1Consts;
-        std::set<int> G2Vars, G2Consts, GTVars, GTConsts;
-        for (const PairFp &p : eqsFp) {
-            getIndexes(*p.first, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        for (PairFp &p : eqsFp) {
+            getIndexes(p.first);
             if (!p.second) continue;
-            getIndexes(*p.second, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+            getIndexes(p.second);
         }
-        for (const PairG1 &p : eqsG1) {
-            getIndexes(*p.first, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        for (PairG1 &p : eqsG1) {
+            getIndexes(p.first);
             if (!p.second) continue;
-            getIndexes(*p.second, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+            getIndexes(p.second);
         }
-        for (const PairG2 &p : eqsG2) {
-            getIndexes(*p.first, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        for (PairG2 &p : eqsG2) {
+            getIndexes(p.first);
             if (!p.second) continue;
-            getIndexes(*p.second, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+            getIndexes(p.second);
         }
-        for (const PairGT &p : eqsGT) {
-            getIndexes(*p.first, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+        for (PairGT &p : eqsGT) {
+            getIndexes(p.first);
             if (!p.second) continue;
-            getIndexes(*p.second, FpVars, FpConsts,
-                       G1Vars, G1Consts, G2Vars, G2Consts, GTVars, GTConsts);
+            getIndexes(p.second);
         }
-        varFp = checkIndexesSet(FpVars);
-        if (varFp < 0) return false;
-        cstFp = checkIndexesSet(FpConsts);
-        if (cstFp < 0) return false;
-        varG1 = checkIndexesSet(G1Vars);
-        if (varG1 < 0) return false;
-        cstG1 = checkIndexesSet(G1Consts);
-        if (cstG1 < 0) return false;
-        varG2 = checkIndexesSet(G2Vars);
-        if (varG2 < 0) return false;
-        cstG2 = checkIndexesSet(G2Consts);
-        if (cstG2 < 0) return false;
-        varGT = checkIndexesSet(GTVars);
-        if (varGT < 0) return false;
-        cstGT = checkIndexesSet(GTConsts);
-        if (cstGT < 0) return false;
+        if (!(checkIndexesSet(varsFp) && checkIndexesSet(cstsFp) &&
+              checkIndexesSet(varsG1) && checkIndexesSet(cstsG1) &&
+              checkIndexesSet(varsG2) && checkIndexesSet(cstsG2) &&
+              checkIndexesSet(varsGT) && checkIndexesSet(cstsGT))) {
+            varsFp.clear();
+            cstsFp.clear();
+            varsG1.clear();
+            cstsG1.clear();
+            varsG2.clear();
+            cstsG2.clear();
+            varsGT.clear();
+            cstsGT.clear();
+            return false;
+        }
     }
     // TODO rewrite equations
     if (type == SelectedEncryption) {
@@ -842,14 +854,14 @@ bool NIZKProof::endEquations() {
             joinSAT(root, getSAT(*p.second));
         }
         std::vector<int> cnt[4];
-        sEnc[0].resize(varFp, SAT_VALUE_UNSET);
-        cnt[0].reserve(varFp);
-        sEnc[1].resize(varG1, SAT_VALUE_UNSET);
-        cnt[1].reserve(varG1);
-        sEnc[2].resize(varG2, SAT_VALUE_UNSET);
-        cnt[2].reserve(varG2);
-        sEnc[3].resize(varGT, SAT_VALUE_UNSET);
-        cnt[3].reserve(varGT);
+        sEnc[0].resize(varsFp.size(), SAT_VALUE_UNSET);
+        cnt[0].reserve(varsFp.size());
+        sEnc[1].resize(varsG1.size(), SAT_VALUE_UNSET);
+        cnt[1].reserve(varsG1.size());
+        sEnc[2].resize(varsG2.size(), SAT_VALUE_UNSET);
+        cnt[2].reserve(varsG2.size());
+        sEnc[3].resize(varsGT.size(), SAT_VALUE_UNSET);
+        cnt[3].reserve(varsGT.size());
         if (tryPermutation(root, sEnc, cnt) < 0)
             throw "Cannot use ZK with the equations provided (in gsnizk)";
         /* Converting to 0/1 (boolean) values; 1 for encrypted */
