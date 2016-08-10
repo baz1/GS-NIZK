@@ -808,7 +808,8 @@ RightG2::~RightG2() {
 
 void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
                            const ProofData &instantiation) const {
-    ASSERT(checkInstantiation(instantiation) /* Wrong instantiation! */);
+    if (!checkInstantiation(instantiation))
+        throw "Wrong instantiation in NIZKProof::writeProof!";
     for (const AdditionalFp &aFp : additionalFp)
         aFp.value = real_eval(*aFp.formula, instantiation, crs);
     for (const AdditionalG1 &aG1 : additionalG1)
