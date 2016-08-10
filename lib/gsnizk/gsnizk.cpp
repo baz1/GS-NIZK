@@ -716,8 +716,11 @@ bool NIZKProof::endEquations() {
     return true;
 }
 
+
 bool NIZKProof::verifySolution(const ProofData &instantiation,
                                const CRS &crs) const {
+    if (!checkInstantiation(instantiation))
+        return false;
     for (const AdditionalFp &aFp : additionalFp)
         aFp.value = real_eval(*aFp.formula, instantiation, crs);
     for (const AdditionalG1 &aG1 : additionalG1)
@@ -805,6 +808,7 @@ RightG2::~RightG2() {
 
 void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
                            const ProofData &instantiation) const {
+    ASSERT(checkInstantiation(instantiation) /* Wrong instantiation! */);
     for (const AdditionalFp &aFp : additionalFp)
         aFp.value = real_eval(*aFp.formula, instantiation, crs);
     for (const AdditionalG1 &aG1 : additionalG1)
@@ -813,6 +817,17 @@ void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
         aG2.value = real_eval(*aG2.formula, instantiation, crs);
     (void) stream;
     // TODO
+}
+
+bool NIZKProof::checkInstantiation(const ProofData &instantiation) const {
+    return (instantiation.pubFp.size() != cstsFp.size()) &&
+        (instantiation.pubG1.size() != cstsG1.size()) &&
+        (instantiation.pubG2.size() != cstsG2.size()) &&
+        (instantiation.pubGT.size() != cstsGT.size()) &&
+        (instantiation.privFp.size() + additionalFp.size() == varsFp.size()) &&
+        (instantiation.privG1.size() + additionalG1.size() == varsG1.size()) &&
+        (instantiation.privG2.size() + additionalG2.size() == varsG2.size()) &&
+        (instantiation.privGT.size() == varsGT.size());
 }
 
 void NIZKProof::getIndexes(std::shared_ptr<FpData> &d) {

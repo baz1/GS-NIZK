@@ -533,6 +533,8 @@ public:
      * @param crs The Common Reference String that is used for the
      *   base elements. A dummy CRS may be used in cases where no
      *   base element is used (excluding @f$\mathbb{F}_p@f$'s base element).
+     * @note This function returns false if the instantiation vectors do
+     *   not have the required size.
      * @return `true` if the values are a solution to the equations,
      *   `false` otherwise.
      * @sa NIZKProof::endEquations()
@@ -545,7 +547,8 @@ public:
      *   before calling this function.
      * @warning It is assumed that the given values are a solution of the
      *   equations for the proof to be correct. This can be checked with
-     *   the method @ref verifySolution().
+     *   the method @ref verifySolution(). If the instantiation size is not
+     *   correct, the function leads to undefined behavior.
      * @param stream Output stream to which the NIZK proof shall be written.
      * @param crs Common Reference String to use for this proof.
      * @param instantiation Instantiation values for the constants and
@@ -555,6 +558,7 @@ public:
     void writeProof(std::ostream &stream, const CRS &crs,
                     const ProofData &instantiation) const;
 private:
+    bool checkInstantiation(const ProofData &instantiation) const;
     void getIndexes(std::shared_ptr<FpData> &d);
     void getIndexes(std::shared_ptr<G1Data> &d);
     void getIndexes(std::shared_ptr<G2Data> &d);
