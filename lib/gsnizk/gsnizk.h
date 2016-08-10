@@ -63,7 +63,8 @@ struct FpData {
         Fp el;
         PairFp pair;
     };
-    inline FpData(ElementType type) : type(type) {}
+    void *d;
+    inline FpData(ElementType type) : type(type), d(NULL) {}
     ~FpData();
 };
 struct G1Data {
@@ -74,7 +75,8 @@ struct G1Data {
         PairG1 pair;
         ScalarG1 scalar;
     };
-    inline G1Data(ElementType type) : type(type) {}
+    void *d;
+    inline G1Data(ElementType type) : type(type), d(NULL) {}
     ~G1Data();
 };
 struct G2Data {
@@ -85,7 +87,8 @@ struct G2Data {
         PairG2 pair;
         ScalarG2 scalar;
     };
-    inline G2Data(ElementType type) : type(type) {}
+    void *d;
+    inline G2Data(ElementType type) : type(type), d(NULL) {}
     ~G2Data();
 };
 struct GTData {
@@ -97,7 +100,8 @@ struct GTData {
         ScalarGT scalar;
         PairingGT pring;
     };
-    inline GTData(ElementType type) : type(type) {}
+    void *d;
+    inline GTData(ElementType type) : type(type), d(NULL) {}
     ~GTData();
 };
 class FpElement;
@@ -142,14 +146,6 @@ struct AdditionalG1 {
 struct AdditionalG2 {
     std::shared_ptr<G2Data> formula;
     mutable G2 value;
-};
-struct G1Commit {
-    G1 c;
-    Fp r, s;
-};
-struct G2Commit {
-    G2 c;
-    Fp r, s;
 };
 /**
  * @endcond

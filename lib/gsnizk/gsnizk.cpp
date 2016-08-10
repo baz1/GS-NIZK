@@ -315,43 +315,6 @@ struct SAT_NODE {
     };
 };
 
-void NIZKProof::getIndexes(std::shared_ptr<FpData> &d) {
-    switch (d->type) {
-    case ELEMENT_VARIABLE:
-        if (varsFp.size() <= static_cast<size_t>(d->index)) {
-            varsFp.resize(d->index + 1);
-            varsFp[d->index] = d;
-        } else if (varsFp[d->index]) {
-            d = varsFp[d->index];
-        } else {
-            varsFp[d->index] = d;
-        }
-        return;
-    case ELEMENT_CONST_INDEX:
-        if (cstsFp.size() <= static_cast<size_t>(d->index)) {
-            cstsFp.resize(d->index + 1);
-            cstsFp[d->index] = d;
-        } else if (cstsFp[d->index]) {
-            d = cstsFp[d->index];
-        } else {
-            cstsFp[d->index] = d;
-        }
-        return;
-    case ELEMENT_CONST_VALUE:
-        return;
-    case ELEMENT_PAIR:
-    case ELEMENT_SCALAR:
-        getIndexes(d->pair.first);
-        getIndexes(d->pair.second);
-        return;
-    case ELEMENT_BASE:
-        return;
-    default:
-        ASSERT(false /* Unexpected data type */);
-        return;
-    }
-}
-
 SAT_NODE *getSAT(const FpData &d) {
     SAT_NODE *node = new SAT_NODE;
     switch (d.type) {
@@ -380,46 +343,6 @@ SAT_NODE *getSAT(const FpData &d) {
     node->pair.left = getSAT(*d.pair.first);
     node->pair.right = getSAT(*d.pair.second);
     return node;
-}
-
-void NIZKProof::getIndexes(std::shared_ptr<G1Data> &d) {
-    switch (d->type) {
-    case ELEMENT_VARIABLE:
-        if (varsG1.size() <= static_cast<size_t>(d->index)) {
-            varsG1.resize(d->index + 1);
-            varsG1[d->index] = d;
-        } else if (varsG1[d->index]) {
-            d = varsG1[d->index];
-        } else {
-            varsG1[d->index] = d;
-        }
-        return;
-    case ELEMENT_CONST_INDEX:
-        if (cstsG1.size() <= static_cast<size_t>(d->index)) {
-            cstsG1.resize(d->index + 1);
-            cstsG1[d->index] = d;
-        } else if (cstsG1[d->index]) {
-            d = cstsG1[d->index];
-        } else {
-            cstsG1[d->index] = d;
-        }
-        return;
-    case ELEMENT_CONST_VALUE:
-        return;
-    case ELEMENT_PAIR:
-        getIndexes(d->pair.first);
-        getIndexes(d->pair.second);
-        return;
-    case ELEMENT_SCALAR:
-        getIndexes(d->scalar.first);
-        getIndexes(d->scalar.second);
-        return;
-    case ELEMENT_BASE:
-        return;
-    default:
-        ASSERT(false /* Unexpected data type */);
-        return;
-    }
 }
 
 SAT_NODE *getSAT(const G1Data &d) {
@@ -453,46 +376,6 @@ SAT_NODE *getSAT(const G1Data &d) {
     }
 }
 
-void NIZKProof::getIndexes(std::shared_ptr<G2Data> &d) {
-    switch (d->type) {
-    case ELEMENT_VARIABLE:
-        if (varsG2.size() <= static_cast<size_t>(d->index)) {
-            varsG2.resize(d->index + 1);
-            varsG2[d->index] = d;
-        } else if (varsG2[d->index]) {
-            d = varsG2[d->index];
-        } else {
-            varsG2[d->index] = d;
-        }
-        return;
-    case ELEMENT_CONST_INDEX:
-        if (cstsG2.size() <= static_cast<size_t>(d->index)) {
-            cstsG2.resize(d->index + 1);
-            cstsG2[d->index] = d;
-        } else if (cstsG2[d->index]) {
-            d = cstsG2[d->index];
-        } else {
-            cstsG2[d->index] = d;
-        }
-        return;
-    case ELEMENT_CONST_VALUE:
-        return;
-    case ELEMENT_PAIR:
-        getIndexes(d->pair.first);
-        getIndexes(d->pair.second);
-        return;
-    case ELEMENT_SCALAR:
-        getIndexes(d->scalar.first);
-        getIndexes(d->scalar.second);
-        return;
-    case ELEMENT_BASE:
-        return;
-    default:
-        ASSERT(false /* Unexpected data type */);
-        return;
-    }
-}
-
 SAT_NODE *getSAT(const G2Data &d) {
     SAT_NODE *node = new SAT_NODE;
     switch (d.type) {
@@ -521,48 +404,6 @@ SAT_NODE *getSAT(const G2Data &d) {
     default:
         ASSERT(false /* Unexpected data type */);
         return node;
-    }
-}
-
-void NIZKProof::getIndexes(std::shared_ptr<GTData> &d) {
-    switch (d->type) {
-    case ELEMENT_VARIABLE:
-        if (varsGT.size() <= static_cast<size_t>(d->index)) {
-            varsGT.resize(d->index + 1);
-            varsGT[d->index] = d;
-        } else if (varsGT[d->index]) {
-            d = varsGT[d->index];
-        } else {
-            varsGT[d->index] = d;
-        }
-        return;
-    case ELEMENT_CONST_INDEX:
-        if (cstsGT.size() <= static_cast<size_t>(d->index)) {
-            cstsGT.resize(d->index + 1);
-            cstsGT[d->index] = d;
-        } else if (cstsGT[d->index]) {
-            d = cstsGT[d->index];
-        } else {
-            cstsGT[d->index] = d;
-        }
-        return;
-    case ELEMENT_CONST_VALUE:
-        return;
-    case ELEMENT_PAIR:
-        getIndexes(d->pair.first);
-        getIndexes(d->pair.second);
-        return;
-    case ELEMENT_SCALAR:
-        getIndexes(d->scalar.first);
-        getIndexes(d->scalar.second);
-        return;
-    case ELEMENT_PAIRING:
-        getIndexes(d->pring.first);
-        getIndexes(d->pring.second);
-        return;
-    default:
-        ASSERT(false /* Unexpected data type */);
-        return;
     }
 }
 
@@ -906,6 +747,62 @@ bool NIZKProof::verifySolution(const ProofData &instantiation,
     return true;
 }
 
+enum VALUE_TYPE {
+    VALUE_Fp,
+    VALUE_G,
+    VALUE_B
+};
+
+struct LeftG1 {
+    VALUE_TYPE type;
+    union {
+        Fp fpValue;
+        G1 g1Value;
+        B1 b1Value;
+    };
+    inline LeftG1(VALUE_TYPE type) : type(type) {}
+    ~LeftG1();
+};
+
+LeftG1::~LeftG1() {
+    switch (type) {
+    case VALUE_Fp:
+        fpValue.~Fp();
+        break;
+    case VALUE_G:
+        g1Value.~G1();
+        break;
+    case VALUE_B:
+        b1Value.~B1();
+        break;
+    }
+}
+
+struct RightG2 {
+    VALUE_TYPE type;
+    union {
+        Fp fpValue;
+        G2 g2Value;
+        B2 b2Value;
+    };
+    inline RightG2(VALUE_TYPE type) : type(type) {}
+    ~RightG2();
+};
+
+RightG2::~RightG2() {
+    switch (type) {
+    case VALUE_Fp:
+        fpValue.~Fp();
+        break;
+    case VALUE_G:
+        g2Value.~G2();
+        break;
+    case VALUE_B:
+        b2Value.~B2();
+        break;
+    }
+}
+
 void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
                            const ProofData &instantiation) const {
     for (const AdditionalFp &aFp : additionalFp)
@@ -916,6 +813,165 @@ void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
         aG2.value = real_eval(*aG2.formula, instantiation, crs);
     (void) stream;
     // TODO
+}
+
+void NIZKProof::getIndexes(std::shared_ptr<FpData> &d) {
+    switch (d->type) {
+    case ELEMENT_VARIABLE:
+        if (varsFp.size() <= static_cast<size_t>(d->index)) {
+            varsFp.resize(d->index + 1);
+            varsFp[d->index] = d;
+        } else if (varsFp[d->index]) {
+            d = varsFp[d->index];
+        } else {
+            varsFp[d->index] = d;
+        }
+        return;
+    case ELEMENT_CONST_INDEX:
+        if (cstsFp.size() <= static_cast<size_t>(d->index)) {
+            cstsFp.resize(d->index + 1);
+            cstsFp[d->index] = d;
+        } else if (cstsFp[d->index]) {
+            d = cstsFp[d->index];
+        } else {
+            cstsFp[d->index] = d;
+        }
+        return;
+    case ELEMENT_CONST_VALUE:
+        return;
+    case ELEMENT_PAIR:
+    case ELEMENT_SCALAR:
+        getIndexes(d->pair.first);
+        getIndexes(d->pair.second);
+        return;
+    case ELEMENT_BASE:
+        return;
+    default:
+        ASSERT(false /* Unexpected data type */);
+        return;
+    }
+}
+
+void NIZKProof::getIndexes(std::shared_ptr<G1Data> &d) {
+    switch (d->type) {
+    case ELEMENT_VARIABLE:
+        if (varsG1.size() <= static_cast<size_t>(d->index)) {
+            varsG1.resize(d->index + 1);
+            varsG1[d->index] = d;
+        } else if (varsG1[d->index]) {
+            d = varsG1[d->index];
+        } else {
+            varsG1[d->index] = d;
+        }
+        return;
+    case ELEMENT_CONST_INDEX:
+        if (cstsG1.size() <= static_cast<size_t>(d->index)) {
+            cstsG1.resize(d->index + 1);
+            cstsG1[d->index] = d;
+        } else if (cstsG1[d->index]) {
+            d = cstsG1[d->index];
+        } else {
+            cstsG1[d->index] = d;
+        }
+        return;
+    case ELEMENT_CONST_VALUE:
+        return;
+    case ELEMENT_PAIR:
+        getIndexes(d->pair.first);
+        getIndexes(d->pair.second);
+        return;
+    case ELEMENT_SCALAR:
+        getIndexes(d->scalar.first);
+        getIndexes(d->scalar.second);
+        return;
+    case ELEMENT_BASE:
+        return;
+    default:
+        ASSERT(false /* Unexpected data type */);
+        return;
+    }
+}
+
+void NIZKProof::getIndexes(std::shared_ptr<G2Data> &d) {
+    switch (d->type) {
+    case ELEMENT_VARIABLE:
+        if (varsG2.size() <= static_cast<size_t>(d->index)) {
+            varsG2.resize(d->index + 1);
+            varsG2[d->index] = d;
+        } else if (varsG2[d->index]) {
+            d = varsG2[d->index];
+        } else {
+            varsG2[d->index] = d;
+        }
+        return;
+    case ELEMENT_CONST_INDEX:
+        if (cstsG2.size() <= static_cast<size_t>(d->index)) {
+            cstsG2.resize(d->index + 1);
+            cstsG2[d->index] = d;
+        } else if (cstsG2[d->index]) {
+            d = cstsG2[d->index];
+        } else {
+            cstsG2[d->index] = d;
+        }
+        return;
+    case ELEMENT_CONST_VALUE:
+        return;
+    case ELEMENT_PAIR:
+        getIndexes(d->pair.first);
+        getIndexes(d->pair.second);
+        return;
+    case ELEMENT_SCALAR:
+        getIndexes(d->scalar.first);
+        getIndexes(d->scalar.second);
+        return;
+    case ELEMENT_BASE:
+        return;
+    default:
+        ASSERT(false /* Unexpected data type */);
+        return;
+    }
+}
+
+void NIZKProof::getIndexes(std::shared_ptr<GTData> &d) {
+    switch (d->type) {
+    case ELEMENT_VARIABLE:
+        if (varsGT.size() <= static_cast<size_t>(d->index)) {
+            varsGT.resize(d->index + 1);
+            varsGT[d->index] = d;
+        } else if (varsGT[d->index]) {
+            d = varsGT[d->index];
+        } else {
+            varsGT[d->index] = d;
+        }
+        return;
+    case ELEMENT_CONST_INDEX:
+        if (cstsGT.size() <= static_cast<size_t>(d->index)) {
+            cstsGT.resize(d->index + 1);
+            cstsGT[d->index] = d;
+        } else if (cstsGT[d->index]) {
+            d = cstsGT[d->index];
+        } else {
+            cstsGT[d->index] = d;
+        }
+        return;
+    case ELEMENT_CONST_VALUE:
+        return;
+    case ELEMENT_PAIR:
+        getIndexes(d->pair.first);
+        getIndexes(d->pair.second);
+        return;
+    case ELEMENT_SCALAR:
+        getIndexes(d->scalar.first);
+        getIndexes(d->scalar.second);
+        return;
+    case ELEMENT_PAIRING:
+        getIndexes(d->pring.first);
+        getIndexes(d->pring.second);
+        return;
+    default:
+        ASSERT(false /* Unexpected data type */);
+        return;
+    }
 }
 
 Fp NIZKProof::real_eval(const FpData &d, const ProofData &instantiation,
