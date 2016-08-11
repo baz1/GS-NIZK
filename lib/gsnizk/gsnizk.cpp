@@ -690,6 +690,8 @@ bool NIZKProof::endEquations() {
 
 bool NIZKProof::verifySolution(const ProofData &instantiation,
                                const CRS &crs) const {
+    if (!fixed)
+        throw "Equations not fixed yet! (in NIZKProof::verifySolution)";
     if (!checkInstantiation(instantiation))
         return false;
     for (const AdditionalFp &aFp : additionalFp)
@@ -753,6 +755,8 @@ struct RightG2 {
 
 void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
                            const ProofData &instantiation) const {
+    if (!fixed)
+        throw "Equations not fixed yet! (in NIZKProof::writeProof)";
     if (!checkInstantiation(instantiation))
         throw "Wrong instantiation in NIZKProof::writeProof!";
     for (const AdditionalFp &aFp : additionalFp)
