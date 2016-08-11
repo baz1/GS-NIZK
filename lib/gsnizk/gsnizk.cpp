@@ -242,12 +242,6 @@ GTElement e(const G1Element &a, const G2Element &b) {
     return GTElement(std::shared_ptr<GTData>(d));
 }
 
-GTElement GTVar(int index) {
-    GTData *d = new GTData(ELEMENT_VARIABLE);
-    d->index = index;
-    return GTElement(std::shared_ptr<GTData>(d));
-}
-
 GTElement GTConst(int index) {
     GTData *d = new GTData(ELEMENT_CONST_INDEX);
     d->index = index;
@@ -292,10 +286,8 @@ enum SAT_NODE_TYPE {
     SAT_NODE_FALSE
 };
 
-#define INDEX_TYPE_Fp   0
-#define INDEX_TYPE_G1   1
-#define INDEX_TYPE_G2   2
-#define INDEX_TYPE_GT   3
+#define INDEX_TYPE_G1   0
+#define INDEX_TYPE_G2   1
 
 struct SAT_NODE;
 
@@ -319,9 +311,8 @@ SAT_NODE *getSAT(const FpData &d) {
     SAT_NODE *node = new SAT_NODE;
     switch (d.type) {
     case ELEMENT_VARIABLE:
-        node->type = SAT_NODE_INDEX;
-        node->idx.index_type = INDEX_TYPE_Fp;
-        node->idx.index = d.index;
+    case ELEMENT_BASE:
+        node->type = SAT_NODE_TRUE;
         return node;
     case ELEMENT_CONST_INDEX:
     case ELEMENT_CONST_VALUE:
@@ -333,9 +324,6 @@ SAT_NODE *getSAT(const FpData &d) {
     case ELEMENT_SCALAR:
         node->type = SAT_NODE_OR;
         break;
-    case ELEMENT_BASE:
-        node->type = SAT_NODE_TRUE;
-        return node;
     default:
         ASSERT(false /* Unexpected data type */);
         return node;
@@ -410,11 +398,6 @@ SAT_NODE *getSAT(const G2Data &d) {
 SAT_NODE *getSAT(const GTData &d) {
     SAT_NODE *node = new SAT_NODE;
     switch (d.type) {
-    case ELEMENT_VARIABLE:
-        node->type = SAT_NODE_INDEX;
-        node->idx.index_type = INDEX_TYPE_GT;
-        node->idx.index = d.index;
-        return node;
     case ELEMENT_CONST_INDEX:
     case ELEMENT_CONST_VALUE:
         node->type = SAT_NODE_FALSE;
@@ -514,7 +497,7 @@ void simplify(SAT_NODE *node) {
     }
 }
 
-void countIndexes(SAT_NODE *node, std::vector<int> cnt[4]) {
+void countIndexes(SAT_NODE *node, std::vector<int> cnt[2]) {
     switch (node->type) {
     case SAT_NODE_AND:
     case SAT_NODE_OR:
@@ -574,13 +557,9 @@ int tryPermutation(SAT_NODE *root, std::vector<int> val[4],
     cnt[0].resize(val[0].size(), 0);
     cnt[1].clear();
     cnt[1].resize(val[1].size(), 0);
-    cnt[2].clear();
-    cnt[2].resize(val[2].size(), 0);
-    cnt[3].clear();
-    cnt[3].resize(val[3].size(), 0);
     countIndexes(root, cnt);
     int max = 0, mi, mj;
-    for (int i = 4; i--;) {
+    for (int i = 2; i--;) {
         for (int j = val[i].size(); j--;) {
             if (val[i][j]) continue;
             if (!cnt[i][j]) {
@@ -603,11 +582,9 @@ int tryPermutation(SAT_NODE *root, std::vector<int> val[4],
             return -1;
         }
     }
-    std::vector<int> valcp[4];
+    std::vector<int> valcp[2];
     valcp[0] = val[0];
     valcp[1] = val[1];
-    valcp[2] = val[2];
-    valcp[3] = val[3];
     SAT_NODE *rootcp = duplicateNode(root);
     instanciateIndex(rootcp, mi, mj, SAT_NODE_FALSE);
     valcp[mi][mj] = SAT_VALUE_FALSE;
@@ -618,8 +595,6 @@ int tryPermutation(SAT_NODE *root, std::vector<int> val[4],
     if ((r1 < 0) || (r2 <= r1)) return r2;
     val[0] = valcp[0];
     val[1] = valcp[1];
-    val[2] = valcp[2];
-    val[3] = valcp[3];
     return r1;
 }
 
@@ -658,7 +633,7 @@ bool NIZKProof::endEquations() {
         if (!(checkIndexesSet(varsFp) && checkIndexesSet(cstsFp) &&
               checkIndexesSet(varsG1) && checkIndexesSet(cstsG1) &&
               checkIndexesSet(varsG2) && checkIndexesSet(cstsG2) &&
-              checkIndexesSet(varsGT) && checkIndexesSet(cstsGT))) {
+              checkIndexesSet(cstsGT))) {
             varsFp.clear();
             cstsFp.clear();
             varsG1.clear();
@@ -694,19 +669,15 @@ bool NIZKProof::endEquations() {
             if (!p.second) continue;
             joinSAT(root, getSAT(*p.second));
         }
-        std::vector<int> cnt[4];
-        sEnc[0].resize(varsFp.size(), SAT_VALUE_UNSET);
-        cnt[0].reserve(varsFp.size());
-        sEnc[1].resize(varsG1.size(), SAT_VALUE_UNSET);
-        cnt[1].reserve(varsG1.size());
-        sEnc[2].resize(varsG2.size(), SAT_VALUE_UNSET);
-        cnt[2].reserve(varsG2.size());
-        sEnc[3].resize(varsGT.size(), SAT_VALUE_UNSET);
-        cnt[3].reserve(varsGT.size());
+        std::vector<int> cnt[2];
+        sEnc[INDEX_TYPE_G1].resize(varsG1.size(), SAT_VALUE_UNSET);
+        cnt[INDEX_TYPE_G1].reserve(varsG1.size());
+        sEnc[INDEX_TYPE_G2].resize(varsG2.size(), SAT_VALUE_UNSET);
+        cnt[INDEX_TYPE_G2].reserve(varsG2.size());
         if (tryPermutation(root, sEnc, cnt) < 0)
             throw "Cannot use ZK with the equations provided (in gsnizk)";
         /* Converting to 0/1 (boolean) values; 1 for encrypted */
-        for (int i = 4; i--;) {
+        for (int i = 2; i--;) {
             for (int j = sEnc[i].size(); j--;)
                 --sEnc[i][j];
         }
@@ -882,8 +853,7 @@ bool NIZKProof::checkInstantiation(const ProofData &instantiation) const {
         (instantiation.pubGT.size() != cstsGT.size()) &&
         (instantiation.privFp.size() + additionalFp.size() == varsFp.size()) &&
         (instantiation.privG1.size() + additionalG1.size() == varsG1.size()) &&
-        (instantiation.privG2.size() + additionalG2.size() == varsG2.size()) &&
-        (instantiation.privGT.size() == varsGT.size());
+        (instantiation.privG2.size() + additionalG2.size() == varsG2.size());
 }
 
 void NIZKProof::getIndexes(std::shared_ptr<FpData> &d) {
@@ -1005,16 +975,6 @@ void NIZKProof::getIndexes(std::shared_ptr<G2Data> &d) {
 
 void NIZKProof::getIndexes(std::shared_ptr<GTData> &d) {
     switch (d->type) {
-    case ELEMENT_VARIABLE:
-        if (varsGT.size() <= static_cast<size_t>(d->index)) {
-            varsGT.resize(d->index + 1);
-            varsGT[d->index] = d;
-        } else if (varsGT[d->index]) {
-            d = varsGT[d->index];
-        } else {
-            varsGT[d->index] = d;
-        }
-        return;
     case ELEMENT_CONST_INDEX:
         if (cstsGT.size() <= static_cast<size_t>(d->index)) {
             cstsGT.resize(d->index + 1);
@@ -1123,8 +1083,6 @@ G2 NIZKProof::real_eval(const G2Data &d, const ProofData &instantiation,
 GT NIZKProof::real_eval(const GTData &d, const ProofData &instantiation,
                         const CRS &crs) const {
     switch (d.type) {
-    case ELEMENT_VARIABLE:
-        return instantiation.privGT[d.index];
     case ELEMENT_CONST_INDEX:
         return instantiation.pubGT[d.index];
     case ELEMENT_CONST_VALUE:

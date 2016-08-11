@@ -121,7 +121,6 @@ G2Element G2Var(int index);
 G2Element G2Const(int index);
 G2Element G2Const(G2 value);
 G2Element G2Base();
-GTElement GTVar(int index);
 GTElement GTConst(int index);
 GTElement GTConst(GT value);
 G1Element operator*(const FpElement &s, const G1Element &e);
@@ -456,10 +455,6 @@ struct ProofData {
      * @brief The public constant values in @f$\mathbb{G}_T@f$.
      */
     std::vector<GT> pubGT;
-    /**
-     * @brief The private variable values in @f$\mathbb{G}_T@f$.
-     */
-    std::vector<GT> privGT;
 };
 
 /**
@@ -581,7 +576,7 @@ private:
     std::vector< std::shared_ptr<FpData> > varsFp, cstsFp;
     std::vector< std::shared_ptr<G1Data> > varsG1, cstsG1;
     std::vector< std::shared_ptr<G2Data> > varsG2, cstsG2;
-    std::vector< std::shared_ptr<GTData> > varsGT, cstsGT;
+    std::vector< std::shared_ptr<GTData> > cstsGT;
     std::vector<bool> varsFpInB1;
     std::vector<int> sEnc[4];
     std::vector<EqProofType> tFp, tG1, tG2, tGT;
