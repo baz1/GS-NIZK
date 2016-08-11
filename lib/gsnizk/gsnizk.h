@@ -582,6 +582,7 @@ private:
     std::vector< std::shared_ptr<G1Data> > varsG1, cstsG1;
     std::vector< std::shared_ptr<G2Data> > varsG2, cstsG2;
     std::vector< std::shared_ptr<GTData> > varsGT, cstsGT;
+    std::vector<bool> varsFpInB1;
     std::vector<int> sEnc[4];
     std::vector<EqProofType> tFp, tG1, tG2, tGT;
     std::vector<AdditionalFp> additionalFp;

@@ -711,7 +711,7 @@ bool NIZKProof::endEquations() {
                 --sEnc[i][j];
         }
     }
-    // TODO fill the equation proof types
+    // TODO fill the equation proof types and varsFpInB1
     fixed = true;
     return true;
 }
@@ -750,6 +750,16 @@ bool NIZKProof::verifySolution(const ProofData &instantiation,
     return true;
 }
 
+struct G1Commit {
+    B1 c;
+    Fp r, s;
+};
+
+struct G2Commit {
+    B2 c;
+    Fp r, s;
+};
+
 enum VALUE_TYPE {
     VALUE_Fp,
     VALUE_G,
@@ -758,53 +768,17 @@ enum VALUE_TYPE {
 
 struct LeftG1 {
     VALUE_TYPE type;
-    union {
-        Fp fpValue;
-        G1 g1Value;
-        B1 b1Value;
-    };
+    Fp fpValue;
+    B1 b1Value;
     inline LeftG1(VALUE_TYPE type) : type(type) {}
-    ~LeftG1();
 };
-
-LeftG1::~LeftG1() {
-    switch (type) {
-    case VALUE_Fp:
-        fpValue.~Fp();
-        break;
-    case VALUE_G:
-        g1Value.~G1();
-        break;
-    case VALUE_B:
-        b1Value.~B1();
-        break;
-    }
-}
 
 struct RightG2 {
     VALUE_TYPE type;
-    union {
-        Fp fpValue;
-        G2 g2Value;
-        B2 b2Value;
-    };
+    Fp fpValue;
+    B2 b2Value;
     inline RightG2(VALUE_TYPE type) : type(type) {}
-    ~RightG2();
 };
-
-RightG2::~RightG2() {
-    switch (type) {
-    case VALUE_Fp:
-        fpValue.~Fp();
-        break;
-    case VALUE_G:
-        g2Value.~G2();
-        break;
-    case VALUE_B:
-        b2Value.~B2();
-        break;
-    }
-}
 
 void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
                            const ProofData &instantiation) const {
@@ -816,7 +790,88 @@ void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
         aG1.value = real_eval(*aG1.formula, instantiation, crs);
     for (const AdditionalG2 &aG2 : additionalG2)
         aG2.value = real_eval(*aG2.formula, instantiation, crs);
-    (void) stream;
+    ASSERT(varsFp.size() == varsFpInB1.size());
+    G1Commit c1;
+    G2Commit c2;
+    int j = varsFp.size(), i = additionalFp.size();
+    while ((--j, i--) > 0) {
+        if (varsFpInB1[j]) {
+            c1.r = Fp::getRand();
+            c1.c = B1::commit(additionalFp[i].value, c1.r, crs);
+            varsFp[j]->d = reinterpret_cast<void*>(&c1);
+            stream << c1.c;
+        } else {
+            c2.r = Fp::getRand();
+            c2.c = B2::commit(additionalFp[i].value, c2.r, crs);
+            varsFp[j]->d = reinterpret_cast<void*>(&c2);
+            stream << c2.c;
+        }
+    }
+    while (j-- > 0) {
+        if (varsFpInB1[j]) {
+            c1.r = Fp::getRand();
+            c1.c = B1::commit(instantiation.privFp[j], c1.r, crs);
+            varsFp[j]->d = reinterpret_cast<void*>(&c1);
+            stream << c1.c;
+        } else {
+            c2.r = Fp::getRand();
+            c2.c = B2::commit(instantiation.privFp[j], c2.r, crs);
+            varsFp[j]->d = reinterpret_cast<void*>(&c2);
+            stream << c2.c;
+        }
+    }
+    j = varsG1.size();
+    i = additionalG1.size();
+    while ((--j, i--) > 0) {
+        c1.r = Fp::getRand();
+        if ((type == AllEncrypted) ||
+                ((type == SelectedEncryption) && sEnc[1][j])) {
+            c1.c = B1::commit(additionalG1[i].value, c1.r, crs);
+        } else {
+            c1.s = Fp::getRand();
+            c1.c = B1::commit(additionalG1[i].value, c1.r, c1.s, crs);
+        }
+        varsG1[j]->d = reinterpret_cast<void*>(&c1);
+        stream << c1.c;
+    }
+    while (j-- > 0) {
+        c1.r = Fp::getRand();
+        if ((type == AllEncrypted) ||
+                ((type == SelectedEncryption) && sEnc[1][j])) {
+            c1.c = B1::commit(instantiation.privG1[j].value, c1.r, crs);
+        } else {
+            c1.s = Fp::getRand();
+            c1.c = B1::commit(instantiation.privG1[j].value, c1.r, c1.s, crs);
+        }
+        varsG1[j]->d = reinterpret_cast<void*>(&c1);
+        stream << c1.c;
+    }
+    j = varsG2.size();
+    i = additionalG2.size();
+    while ((--j, i--) > 0) {
+        c2.r = Fp::getRand();
+        if ((type == AllEncrypted) ||
+                ((type == SelectedEncryption) && sEnc[2][j])) {
+            c2.c = B2::commit(additionalG2[i].value, c2.r, crs);
+        } else {
+            c2.s = Fp::getRand();
+            c2.c = B2::commit(additionalG2[i].value, c2.r, c2.s, crs);
+        }
+        varsG2[j]->d = reinterpret_cast<void*>(&c2);
+        stream << c2.c;
+    }
+    while (j-- > 0) {
+        c2.r = Fp::getRand();
+        if ((type == AllEncrypted) ||
+                ((type == SelectedEncryption) && sEnc[2][j])) {
+            c2.c = B2::commit(instantiation.privG2[j].value, c2.r, crs);
+        } else {
+            c2.s = Fp::getRand();
+            c2.c = B2::commit(instantiation.privG2[j].value, c2.r, c2.s, crs);
+        }
+        varsG2[j]->d = reinterpret_cast<void*>(&c2);
+        stream << c2.c;
+    }
     // TODO
 }
 

@@ -175,6 +175,37 @@ public:
      * @return Value in @f$\mathbb{G}_1@f$ that this commitment refers to.
      */
     G1 extract(const CRS &crs) const;
+    /**
+     * @brief Commits to an element @a el with randomness @a r.
+     * @param el The element in @f$\mathbb{F}_p@f$ to commit to.
+     * @param r The randomness value.
+     * @param crs The Common Reference String that is to be used
+     *   for this commit.
+     * @return The committed element.
+     */
+    inline static B1 commit(const Fp &el, const Fp &r, const CRS &crs);
+    /**
+     * @brief Commits to an element @a el with randomness @a r.
+     * @param el The element in @f$\mathbb{G}_1@f$ to commit to.
+     * @param r The randomness value.
+     * @param crs The Common Reference String that is to be used
+     *   for this commit.
+     * @note This is a half-commitment (or what is called encryption
+     *   in @cite Escala2013.
+     * @return The committed element.
+     */
+    inline static B1 commit(const G1 &el, const Fp &r, const CRS &crs);
+    /**
+     * @brief Commits to an element @a el with randomness @a r and @a s.
+     * @param el The element in @f$\mathbb{G}_1@f$ to commit to.
+     * @param r The first randomness value.
+     * @param r The second randomness value.
+     * @param crs The Common Reference String that is to be used
+     *   for this commit.
+     * @return The committed element.
+     */
+    inline static B1 commit(const G1 &el, const Fp &r, const Fp &s,
+                            const CRS &crs);
 public:
     G1 _1, _2;
 };
@@ -295,6 +326,37 @@ public:
      * @return Value in @f$\mathbb{G}_2@f$ that this commitment refers to.
      */
     G2 extract(const CRS &crs) const;
+    /**
+     * @brief Commits to an element @a el with randomness @a r.
+     * @param el The element in @f$\mathbb{F}_p@f$ to commit to.
+     * @param r The randomness value.
+     * @param crs The Common Reference String that is to be used
+     *   for this commit.
+     * @return The committed element.
+     */
+    inline static B2 commit(const Fp &el, const Fp &r, const CRS &crs);
+    /**
+     * @brief Commits to an element @a el with randomness @a r.
+     * @param el The element in @f$\mathbb{G}_2@f$ to commit to.
+     * @param r The randomness value.
+     * @param crs The Common Reference String that is to be used
+     *   for this commit.
+     * @note This is a half-commitment (or what is called encryption
+     *   in @cite Escala2013.
+     * @return The committed element.
+     */
+    inline static B2 commit(const G2 &el, const Fp &r, const CRS &crs);
+    /**
+     * @brief Commits to an element @a el with randomness @a r and @a s.
+     * @param el The element in @f$\mathbb{G}_2@f$ to commit to.
+     * @param r The first randomness value.
+     * @param r The second randomness value.
+     * @param crs The Common Reference String that is to be used
+     *   for this commit.
+     * @return The committed element.
+     */
+    inline static B2 commit(const G2 &el, const Fp &r, const Fp &s,
+                            const CRS &crs);
 public:
     G2 _1, _2;
 };
@@ -615,6 +677,20 @@ inline std::istream &operator>>(std::istream &stream, B1 &el) {
     return stream;
 }
 
+inline B1 B1::commit(const Fp &el, const Fp &r, const CRS &crs) {
+    return el * crs.u1 + r * crs.v1;
+}
+
+inline B1 B1::commit(const G1 &el, const Fp &r, const CRS &crs) {
+    return B1(el) + r * crs.v1;
+}
+
+inline B1 B1::commit(const G1 &el, const Fp &r, const Fp &s, const CRS &crs) {
+    if (crs.type == CRS_TYPE_PUBLIC)
+        return B1(el) + r * crs.v1 + s * crs.w1;
+    return B1(el) + (r + crs.i1 * s) * crs.v1;
+}
+
 inline B2::B2() {}
 
 inline B2::B2(const G2 &_1, const G2 &_2) : _1(_1), _2(_2) {}
@@ -678,6 +754,20 @@ inline std::ostream &operator<<(std::ostream &stream, const B2 &el) {
 inline std::istream &operator>>(std::istream &stream, B2 &el) {
     stream >> el._1 >> el._2;
     return stream;
+}
+
+inline B2 B2::commit(const Fp &el, const Fp &r, const CRS &crs) {
+    return el * crs.u2 + r * crs.v2;
+}
+
+inline B2 B2::commit(const G2 &el, const Fp &r, const CRS &crs) {
+    return B2(el) + r * crs.v2;
+}
+
+inline B2 B2::commit(const G2 &el, const Fp &r, const Fp &s, const CRS &crs) {
+    if (crs.type == CRS_TYPE_PUBLIC)
+        return B2(el) + r * crs.v2 + s * crs.w2;
+    return B2(el) + (r + crs.i2 * s) * crs.v2;
 }
 
 inline BT::BT() {}

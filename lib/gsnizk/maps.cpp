@@ -106,14 +106,17 @@ std::istream &operator>>(std::istream &stream, CRS &crs) {
         crs.u2._1 = crs.w2._1;
         crs.u2._2 = crs.w2._2 + crs.v2._2;
 #if !defined(USE_PBC)
-        /* Precomputations of generators in G1 and G2 */
-        crs.v1._2.precomputeForMult();
-        crs.v2._2.precomputeForMult();
-        /* Precomputations for commitments of scalars */
+        /* Precomputations for commitments (of scalars and group elements) */
         crs.u1._1.precomputeForMult();
         crs.u1._2.precomputeForMult();
+        crs.v1._1.precomputeForMult();
+        crs.v1._2.precomputeForMult();
+        crs.w1._2.precomputeForMult();
         crs.u2._1.precomputeForMult();
         crs.u2._2.precomputeForMult();
+        crs.v2._1.precomputeForMult();
+        crs.v2._2.precomputeForMult();
+        crs.w2._2.precomputeForMult();
 #endif
     } else if (crs.type == CRS_TYPE_PRIVATE) {
         stream >> crs.v1 >> crs.v2;
@@ -129,11 +132,16 @@ std::istream &operator>>(std::istream &stream, CRS &crs) {
 
 void CRS::computeElements() {
 #if !defined(USE_PBC)
-    /* Precomputations of generators in G1 and G2 */
+    /* Precomputations for commitments */
     v1._2.precomputeForMult();
     v2._2.precomputeForMult();
 #endif
     if (type == CRS_TYPE_PRIVATE) {
+#if !defined(USE_PBC)
+        /* Precomputations for commitments */
+        v1._1.precomputeForMult();
+        v2._1.precomputeForMult();
+#endif
         w1._1 = i1 * v1._1;
         w1._2 = i1 * v1._2;
         u1._1 = w1._1;
@@ -160,6 +168,11 @@ void CRS::computeElements() {
             u2._2 = i2 * v2._2;
             w2._2 = w2._2 - v2._2;
         }
+#if !defined(USE_PBC)
+        /* Precomputations for commitments */
+        v1._1.precomputeForMult();
+        v2._1.precomputeForMult();
+#endif
     }
 #if !defined(USE_PBC)
     /* Precomputations for commitments of scalars */
@@ -167,6 +180,9 @@ void CRS::computeElements() {
     u1._2.precomputeForMult();
     u2._1.precomputeForMult();
     u2._2.precomputeForMult();
+    /* Precomputations for commitments of group elements */
+    w1._2.precomputeForMult();
+    w2._2.precomputeForMult();
 #endif
 }
 
