@@ -73,9 +73,6 @@ GTData::~GTData() {
     case ELEMENT_PAIR:
         pair.~PairGT();
         return;
-    case ELEMENT_SCALAR:
-        scalar.~ScalarGT();
-        return;
     case ELEMENT_PAIRING:
         pring.~PairingGT();
         return;
@@ -227,12 +224,6 @@ GTElement &GTElement::operator*=(const GTElement &other) {
 GTElement GTElement::operator*(const GTElement &other) const {
     GTData *d = new GTData(ELEMENT_PAIR);
     new (&d->pair) PairGT(data, other.data);
-    return GTElement(std::shared_ptr<GTData>(d));
-}
-
-GTElement operator^(const GTElement &e, const FpElement &s) {
-    GTData *d = new GTData(ELEMENT_SCALAR);
-    new (&d->scalar) ScalarGT(s.data, e.data);
     return GTElement(std::shared_ptr<GTData>(d));
 }
 
@@ -406,11 +397,6 @@ SAT_NODE *getSAT(const GTData &d) {
         node->type = SAT_NODE_AND;
         node->pair.left = getSAT(*d.pair.first);
         node->pair.right = getSAT(*d.pair.second);
-        return node;
-    case ELEMENT_SCALAR:
-        node->type = SAT_NODE_OR;
-        node->pair.left = getSAT(*d.scalar.first);
-        node->pair.right = getSAT(*d.scalar.second);
         return node;
     case ELEMENT_PAIRING:
         node->type = SAT_NODE_OR;
@@ -1089,10 +1075,6 @@ void NIZKProof::getIndexes(std::shared_ptr<GTData> &d) {
         getIndexes(d->pair.first);
         getIndexes(d->pair.second);
         return;
-    case ELEMENT_SCALAR:
-        getIndexes(d->scalar.first);
-        getIndexes(d->scalar.second);
-        return;
     case ELEMENT_PAIRING:
         getIndexes(d->pring.first);
         getIndexes(d->pring.second);
@@ -1261,6 +1243,113 @@ void NIZKProof::getProof(const FpData &d, const CRS &crs) {
             scalarCombine(el1, el2, *proofEl);
             return;
         }
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void NIZKProof::getProof(const G1Data &d, const CRS &crs) {
+    if (d.d) return;
+    ProofEls *proofEl = new ProofEls;
+    d.d = reinterpret_cast<void*>(proofEl);
+    switch (d.type) {
+    case ELEMENT_PAIR:
+        {
+            getProof(*d.pair.first, crs);
+            getProof(*d.pair.second, crs);
+            const ProofEls &el1 =
+                    *reinterpret_cast<const ProofEls*>(d.pair.first->d);
+            const ProofEls &el2 =
+                    *reinterpret_cast<const ProofEls*>(d.pair.second->d);
+            addPiG1(el1.p1_v, el2.p1_v, proofEl->p1_v, crs);
+            addPiG1(el1.p1_w, el2.p1_w, proofEl->p1_w, crs);
+            addPiG2(el1.p2_v, el2.p2_v, proofEl->p2_v, crs);
+            addPiG2(el1.p2_w, el2.p2_w, proofEl->p2_w, crs);
+            return;
+        }
+    case ELEMENT_SCALAR:
+        {
+            getLeft(*d.pair.first, crs);
+            getRight(*d.pair.second, crs);
+            const G1Commit &el1 =
+                    *reinterpret_cast<const G1Commit*>(d.pair.first->d);
+            const G2Commit &el2 =
+                    *reinterpret_cast<const G2Commit*>(d.pair.second->d);
+            scalarCombine(el1, el2, *proofEl);
+            return;
+        }
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void NIZKProof::getProof(const G2Data &d, const CRS &crs) {
+    if (d.d) return;
+    ProofEls *proofEl = new ProofEls;
+    d.d = reinterpret_cast<void*>(proofEl);
+    switch (d.type) {
+    case ELEMENT_PAIR:
+        {
+            getProof(*d.pair.first, crs);
+            getProof(*d.pair.second, crs);
+            const ProofEls &el1 =
+                    *reinterpret_cast<const ProofEls*>(d.pair.first->d);
+            const ProofEls &el2 =
+                    *reinterpret_cast<const ProofEls*>(d.pair.second->d);
+            addPiG1(el1.p1_v, el2.p1_v, proofEl->p1_v, crs);
+            addPiG1(el1.p1_w, el2.p1_w, proofEl->p1_w, crs);
+            addPiG2(el1.p2_v, el2.p2_v, proofEl->p2_v, crs);
+            addPiG2(el1.p2_w, el2.p2_w, proofEl->p2_w, crs);
+            return;
+        }
+    case ELEMENT_SCALAR:
+        {
+            getLeft(*d.pair.first, crs);
+            getRight(*d.pair.second, crs);
+            const G1Commit &el1 =
+                    *reinterpret_cast<const G1Commit*>(d.pair.first->d);
+            const G2Commit &el2 =
+                    *reinterpret_cast<const G2Commit*>(d.pair.second->d);
+            scalarCombine(el1, el2, *proofEl);
+            return;
+        }
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void NIZKProof::getProof(const GTData &d, const CRS &crs) {
+    if (d.d) return;
+    ProofEls *proofEl = new ProofEls;
+    d.d = reinterpret_cast<void*>(proofEl);
+    switch (d.type) {
+    case ELEMENT_PAIR:
+        {
+            getProof(*d.pair.first, crs);
+            getProof(*d.pair.second, crs);
+            const ProofEls &el1 =
+                    *reinterpret_cast<const ProofEls*>(d.pair.first->d);
+            const ProofEls &el2 =
+                    *reinterpret_cast<const ProofEls*>(d.pair.second->d);
+            addPiG1(el1.p1_v, el2.p1_v, proofEl->p1_v, crs);
+            addPiG1(el1.p1_w, el2.p1_w, proofEl->p1_w, crs);
+            addPiG2(el1.p2_v, el2.p2_v, proofEl->p2_v, crs);
+            addPiG2(el1.p2_w, el2.p2_w, proofEl->p2_w, crs);
+            return;
+        }
+    case ELEMENT_PAIRING:
+        {
+            getLeft(*d.pair.first, crs);
+            getRight(*d.pair.second, crs);
+            const G1Commit &el1 =
+                    *reinterpret_cast<const G1Commit*>(d.pair.first->d);
+            const G2Commit &el2 =
+                    *reinterpret_cast<const G2Commit*>(d.pair.second->d);
+            scalarCombine(el1, el2, *proofEl);
+            return;
+        }
+    default:
+        ASSERT(false /* Unexpected data type */);
     }
 }
 

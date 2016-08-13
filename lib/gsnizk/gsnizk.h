@@ -57,7 +57,6 @@ typedef std::pair< std::shared_ptr<FpData>, std::shared_ptr<G1Data> > ScalarG1;
 typedef std::pair< std::shared_ptr<G2Data>, std::shared_ptr<G2Data> > PairG2;
 typedef std::pair< std::shared_ptr<FpData>, std::shared_ptr<G2Data> > ScalarG2;
 typedef std::pair< std::shared_ptr<GTData>, std::shared_ptr<GTData> > PairGT;
-typedef std::pair< std::shared_ptr<FpData>, std::shared_ptr<GTData> > ScalarGT;
 typedef std::pair< std::shared_ptr<G1Data>, std::shared_ptr<G2Data> > PairingGT;
 
 struct FpData {
@@ -104,7 +103,6 @@ struct GTData {
         int index;
         GT el;
         PairGT pair;
-        ScalarGT scalar;
         PairingGT pring;
     };
     void *d;
@@ -134,7 +132,6 @@ GTElement GTConst(int index);
 GTElement GTConst(GT value);
 G1Element operator*(const FpElement &s, const G1Element &e);
 G2Element operator*(const FpElement &s, const G2Element &e);
-GTElement operator^(const GTElement &e, const FpElement &s);
 GTElement e(const G1Element &a, const G2Element &b);
 
 struct EqProofType {
@@ -390,13 +387,6 @@ public:
      * @return Product element, in @f$\mathbb{G}_T@f$.
      */
     GTElement operator*(const GTElement &other) const;
-    /**
-     * @brief Puts an element of @f$\mathbb{G}_T@f$ to a certain power.
-     * @param s Exponent used in the power.
-     * @param e Element to raise to a certain power.
-     * @return Result of the power.
-     */
-    friend GTElement operator^(const GTElement &e, const FpElement &s);
     /**
      * @brief Computes a pairing (bilinear map).
      * @param a Element of @f$\mathbb{G}_1@f$.
