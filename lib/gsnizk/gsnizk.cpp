@@ -723,35 +723,83 @@ bool NIZKProof::verifySolution(const ProofData &instantiation,
     return true;
 }
 
+enum CommitType {
+    COMMIT_PUB,
+    COMMIT_ENC,
+    COMMIT_PRIV
+};
+
 struct G1Commit {
+    CommitType type;
     B1 c;
     Fp r, s;
 };
 
 struct G2Commit {
+    CommitType type;
     B2 c;
     Fp r, s;
 };
 
-enum VALUE_TYPE {
+enum ValueType {
+    VALUE_NULL,
     VALUE_Fp,
     VALUE_G,
     VALUE_B
 };
 
-struct LeftG1 {
-    VALUE_TYPE type;
+struct PiG1 {
+    ValueType type;
     Fp fpValue;
     B1 b1Value;
-    inline LeftG1(VALUE_TYPE type) : type(type) {}
+    inline PiG1(ValueType type) : type(type) {}
 };
 
-struct RightG2 {
-    VALUE_TYPE type;
+struct PiG2 {
+    ValueType type;
     Fp fpValue;
     B2 b2Value;
-    inline RightG2(VALUE_TYPE type) : type(type) {}
+    inline PiG2(ValueType type) : type(type) {}
 };
+
+struct ProofEls {
+    PiG1 p1_v, p1_w;
+    PiG2 p2_v, p2_w;
+};
+
+void addPiG1(const PiG1 &a, const PiG1 &b, PiG1 &result, const CRS &crs) {
+    if ((a.type == VALUE_Fp) && (b.type == VALUE_Fp)) {
+        result.type = VALUE_Fp;
+        result.fpValue = a.fpValue + b.fpValue;
+        return;
+    }
+    result.type = VALUE_B;
+    if (a.type == VALUE_Fp)
+        result.b1Value = B1(a.fpValue, crs);
+    else
+        result.b1Value = a.b1Value;
+    if (b.type == VALUE_Fp)
+        result.b1Value += B1(b.fpValue, crs);
+    else
+        result.b1Value += b.b1Value;
+}
+
+void addPiG2(const PiG2 &a, const PiG2 &b, PiG2 &result, const CRS &crs) {
+    if ((a.type == VALUE_Fp) && (b.type == VALUE_Fp)) {
+        result.type = VALUE_Fp;
+        result.fpValue = a.fpValue + b.fpValue;
+        return;
+    }
+    result.type = VALUE_B;
+    if (a.type == VALUE_Fp)
+        result.b1Value = B2(a.fpValue, crs);
+    else
+        result.b1Value = a.b1Value;
+    if (b.type == VALUE_Fp)
+        result.b1Value += B2(b.fpValue, crs);
+    else
+        result.b1Value += b.b1Value;
+}
 
 void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
                            const ProofData &instantiation) const {
@@ -769,12 +817,14 @@ void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
     G1Commit c1;
     G2Commit c2;
     int j = varsFp.size(), i = additionalFp.size();
+    c1.type = COMMIT_ENC;
+    c2.type = COMMIT_ENC;
     while ((--j, i--) > 0) {
         if (varsFpInB1[j]) {
             c1.r = Fp::getRand();
-            c1.c = B1::commit(additionalFp[i].value, c1.r, crs);
+            c1.c = B1(additionalFp[i].value, crs);
             varsFp[j]->d = reinterpret_cast<void*>(&c1);
-            stream << c1.c;
+            stream << B1::commit(c1.c, c1.r, crs);
         } else {
             c2.r = Fp::getRand();
             c2.c = B2::commit(additionalFp[i].value, c2.r, crs);
@@ -785,9 +835,9 @@ void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
     while (j-- > 0) {
         if (varsFpInB1[j]) {
             c1.r = Fp::getRand();
-            c1.c = B1::commit(instantiation.privFp[j], c1.r, crs);
+            c1.c = B1(instantiation.privFp[j], crs);
             varsFp[j]->d = reinterpret_cast<void*>(&c1);
-            stream << c1.c;
+            stream << B1::commit(c1.c, c1.r, crs);
         } else {
             c2.r = Fp::getRand();
             c2.c = B2::commit(instantiation.privFp[j], c2.r, crs);
@@ -799,53 +849,61 @@ void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
     i = additionalG1.size();
     while ((--j, i--) > 0) {
         c1.r = Fp::getRand();
+        c1.c = B1(additionalG1[i].value);
         if ((type == AllEncrypted) ||
                 ((type == SelectedEncryption) && sEnc[1][j])) {
-            c1.c = B1::commit(additionalG1[i].value, c1.r, crs);
+            c1.type = COMMIT_ENC;
+            stream << B1::commit(c1.c, c1.r, crs);
         } else {
+            c1.type = COMMIT_PRIV;
             c1.s = Fp::getRand();
-            c1.c = B1::commit(additionalG1[i].value, c1.r, c1.s, crs);
+            stream << B1::commit(c1.c, c1.r, c1.s, crs);
         }
         varsG1[j]->d = reinterpret_cast<void*>(&c1);
-        stream << c1.c;
     }
     while (j-- > 0) {
         c1.r = Fp::getRand();
+        c1.c = B1(instantiation.privG1[j].value);
         if ((type == AllEncrypted) ||
                 ((type == SelectedEncryption) && sEnc[1][j])) {
-            c1.c = B1::commit(instantiation.privG1[j].value, c1.r, crs);
+            c1.type = COMMIT_ENC;
+            stream << B1::commit(c1.c, c1.r, crs);
         } else {
+            c1.type = COMMIT_PRIV;
             c1.s = Fp::getRand();
-            c1.c = B1::commit(instantiation.privG1[j].value, c1.r, c1.s, crs);
+            stream << B1::commit(c1.c, c1.r, c1.s, crs);
         }
         varsG1[j]->d = reinterpret_cast<void*>(&c1);
-        stream << c1.c;
     }
     j = varsG2.size();
     i = additionalG2.size();
     while ((--j, i--) > 0) {
         c2.r = Fp::getRand();
+        c2.c = B2(additionalG2[i].value);
         if ((type == AllEncrypted) ||
                 ((type == SelectedEncryption) && sEnc[2][j])) {
-            c2.c = B2::commit(additionalG2[i].value, c2.r, crs);
+            c2.type = COMMIT_ENC;
+            stream << B2::commit(c2.c, c2.r, crs);
         } else {
+            c2.type = COMMIT_PRIV;
             c2.s = Fp::getRand();
-            c2.c = B2::commit(additionalG2[i].value, c2.r, c2.s, crs);
+            stream << B2::commit(c2.c, c2.r, c2.s, crs);
         }
         varsG2[j]->d = reinterpret_cast<void*>(&c2);
-        stream << c2.c;
     }
     while (j-- > 0) {
         c2.r = Fp::getRand();
+        c2.c = B2(instantiation.privG2[j].value);
         if ((type == AllEncrypted) ||
                 ((type == SelectedEncryption) && sEnc[2][j])) {
-            c2.c = B2::commit(instantiation.privG2[j].value, c2.r, crs);
+            c2.type = COMMIT_ENC;
+            stream << B2::commit(c2.c, c2.r, crs);
         } else {
+            c2.type = COMMIT_PRIV;
             c2.s = Fp::getRand();
-            c2.c = B2::commit(instantiation.privG2[j].value, c2.r, c2.s, crs);
+            stream << B2::commit(c2.c, c2.r, c2.s, crs);
         }
         varsG2[j]->d = reinterpret_cast<void*>(&c2);
-        stream << c2.c;
     }
     // TODO
 }
@@ -1105,6 +1163,28 @@ GT NIZKProof::real_eval(const GTData &d, const ProofData &instantiation,
     default:
         ASSERT(false /* Unexpected data type */);
         return GT();
+    }
+}
+
+void NIZKProof::getProof(const FpData &d, const CRS &crs) {
+    if (d.d) return;
+    ProofEls *proofEl = new ProofEls;
+    d.d = reinterpret_cast<void*>(proofEl);
+    switch (d.type) {
+    case ELEMENT_PAIR:
+        getProof(*d.pair.first, crs);
+        getProof(*d.pair.second, crs);
+        const ProofEls &el1 =
+                *reinterpret_cast<const ProofEls*>(d.pair.first->d);
+        const ProofEls &el2 =
+                *reinterpret_cast<const ProofEls*>(d.pair.second->d);
+        addPiG1(el1.p1_v, el2.p1_v, proofEl->p1_v, crs);
+        addPiG1(el1.p1_w, el2.p1_w, proofEl->p1_w, crs);
+        addPiG2(el1.p2_v, el2.p2_v, proofEl->p2_v, crs);
+        addPiG2(el1.p2_w, el2.p2_w, proofEl->p2_w, crs);
+        return;
+    case ELEMENT_SCALAR:
+
     }
 }
 

@@ -15,32 +15,32 @@ B1 B1::commit(const Fp &el, const Fp &r, const CRS &crs) {
     return el * crs.u1 + r * crs.v1;
 }
 
-B1 B1::commit(const G1 &el, const Fp &r, const CRS &crs) {
-    return B1(el) + r * crs.v1;
+B1 B1::commit(const B1 &el, const Fp &r, const CRS &crs) {
+    return el + r * crs.v1;
 }
 
-B1 B1::commit(const G1 &el, const Fp &r, const Fp &s, const CRS &crs) {
+B1 B1::commit(const B1 &el, const Fp &r, const Fp &s, const CRS &crs) {
     if (crs.type == CRS_TYPE_PUBLIC)
-        return B1(el) + r * crs.v1 + s * crs.w1;
-    return B1(el) + (r + crs.i1 * s) * crs.v1;
+        return el + r * crs.v1 + s * crs.w1;
+    return el + (r + crs.i1 * s) * crs.v1;
 }
 
 G2 B2::extract(const CRS &crs) const {
     return _2 - (Fp(1) / crs.j2) * _1;
 }
 
-inline B2 B2::commit(const Fp &el, const Fp &r, const CRS &crs) {
+B2 B2::commit(const Fp &el, const Fp &r, const CRS &crs) {
     return el * crs.u2 + r * crs.v2;
 }
 
-inline B2 B2::commit(const G2 &el, const Fp &r, const CRS &crs) {
-    return B2(el) + r * crs.v2;
+B2 B2::commit(const B2 &el, const Fp &r, const CRS &crs) {
+    return el + r * crs.v2;
 }
 
-inline B2 B2::commit(const G2 &el, const Fp &r, const Fp &s, const CRS &crs) {
+B2 B2::commit(const B2 &el, const Fp &r, const Fp &s, const CRS &crs) {
     if (crs.type == CRS_TYPE_PUBLIC)
-        return B2(el) + r * crs.v2 + s * crs.w2;
-    return B2(el) + (r + crs.i2 * s) * crs.v2;
+        return el + r * crs.v2 + s * crs.w2;
+    return el + (r + crs.i2 * s) * crs.v2;
 }
 
 GT BT::extract(const CRS &crs) const {

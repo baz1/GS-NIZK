@@ -35,6 +35,7 @@ namespace gsnizk {
 /**
  * @cond INTERNAL_DATA_STRUCT
  */
+
 enum ElementType {
     ELEMENT_VARIABLE    = 0,
     ELEMENT_CONST_INDEX = 1,
@@ -44,10 +45,12 @@ enum ElementType {
     ELEMENT_PAIRING     = 5,
     ELEMENT_BASE        = 6
 };
+
 struct FpData;
 struct G1Data;
 struct G2Data;
 struct GTData;
+
 typedef std::pair< std::shared_ptr<FpData>, std::shared_ptr<FpData> > PairFp;
 typedef std::pair< std::shared_ptr<G1Data>, std::shared_ptr<G1Data> > PairG1;
 typedef std::pair< std::shared_ptr<FpData>, std::shared_ptr<G1Data> > ScalarG1;
@@ -56,6 +59,7 @@ typedef std::pair< std::shared_ptr<FpData>, std::shared_ptr<G2Data> > ScalarG2;
 typedef std::pair< std::shared_ptr<GTData>, std::shared_ptr<GTData> > PairGT;
 typedef std::pair< std::shared_ptr<FpData>, std::shared_ptr<GTData> > ScalarGT;
 typedef std::pair< std::shared_ptr<G1Data>, std::shared_ptr<G2Data> > PairingGT;
+
 struct FpData {
     ElementType type;
     union {
@@ -67,6 +71,7 @@ struct FpData {
     inline FpData(ElementType type) : type(type), d(NULL) {}
     ~FpData();
 };
+
 struct G1Data {
     ElementType type;
     union {
@@ -79,6 +84,7 @@ struct G1Data {
     inline G1Data(ElementType type) : type(type), d(NULL) {}
     ~G1Data();
 };
+
 struct G2Data {
     ElementType type;
     union {
@@ -91,6 +97,7 @@ struct G2Data {
     inline G2Data(ElementType type) : type(type), d(NULL) {}
     ~G2Data();
 };
+
 struct GTData {
     ElementType type;
     union {
@@ -104,10 +111,12 @@ struct GTData {
     inline GTData(ElementType type) : type(type), d(NULL) {}
     ~GTData();
 };
+
 class FpElement;
 class G1Element;
 class G2Element;
 class GTElement;
+
 /* Pre-definitions for visibility inside the scope: */
 FpElement FpVar(int index);
 FpElement FpConst(int index);
@@ -127,6 +136,7 @@ G1Element operator*(const FpElement &s, const G1Element &e);
 G2Element operator*(const FpElement &s, const G2Element &e);
 GTElement operator^(const GTElement &e, const FpElement &s);
 GTElement e(const G1Element &a, const G2Element &b);
+
 struct EqProofType {
     enum {
         TYPE_NORMAL = 0,
@@ -134,18 +144,22 @@ struct EqProofType {
         TYPE_ZP     = 2
     } tv1, tw1, tv2, tw2;
 };
+
 struct AdditionalFp {
     std::shared_ptr<FpData> formula;
     mutable Fp value;
 };
+
 struct AdditionalG1 {
     std::shared_ptr<G1Data> formula;
     mutable G1 value;
 };
+
 struct AdditionalG2 {
     std::shared_ptr<G2Data> formula;
     mutable G2 value;
 };
+
 /**
  * @endcond
  */
@@ -566,6 +580,18 @@ private:
                  const CRS &crs) const;
     GT real_eval(const GTData &d, const ProofData &instantiation,
                  const CRS &crs) const;
+    void getProof(const FpData &d, const CRS &crs);
+    void getProof(const G1Data &d, const CRS &crs);
+    void getProof(const G2Data &d, const CRS &crs);
+    void getProof(const GTData &d, const CRS &crs);
+    void getLeft(const FpData &d, const CRS &crs);
+    void getLeft(const G1Data &d, const CRS &crs);
+    void getLeft(const G2Data &d, const CRS &crs);
+    void getLeft(const GTData &d, const CRS &crs);
+    void getRight(const FpData &d, const CRS &crs);
+    void getRight(const G1Data &d, const CRS &crs);
+    void getRight(const G2Data &d, const CRS &crs);
+    void getRight(const GTData &d, const CRS &crs);
 private:
     CommitType type;
     std::vector<PairFp> eqsFp;
