@@ -723,24 +723,6 @@ bool NIZKProof::verifySolution(const ProofData &instantiation,
     return true;
 }
 
-enum CommitType {
-    COMMIT_PUB,
-    COMMIT_ENC,
-    COMMIT_PRIV
-};
-
-struct G1Commit {
-    CommitType type;
-    B1 c;
-    Fp r, s;
-};
-
-struct G2Commit {
-    CommitType type;
-    B2 c;
-    Fp r, s;
-};
-
 enum ValueType {
     VALUE_NULL,
     VALUE_Fp,
@@ -753,13 +735,67 @@ struct PiG1 {
     Fp fpValue;
     B1 b1Value;
     inline PiG1(ValueType type) : type(type) {}
+    PiG1 &operator*=(const Fp &c);
 };
+
+PiG1 &PiG1::operator*=(const Fp &c) {
+    switch (type) {
+    case VALUE_NULL:
+        break;
+    case VALUE_Fp:
+        fpValue *= c;
+        break;
+    case VALUE_G:
+        b1Value._2 *= c;
+        break;
+    case VALUE_B:
+        b1Value *= c;
+        break;
+    }
+    return *this;
+}
 
 struct PiG2 {
     ValueType type;
     Fp fpValue;
     B2 b2Value;
     inline PiG2(ValueType type) : type(type) {}
+    PiG2 &operator*=(const Fp &c);
+};
+
+PiG2 &PiG2::operator*=(const Fp &c) {
+    switch (type) {
+    case VALUE_NULL:
+        break;
+    case VALUE_Fp:
+        fpValue *= c;
+        break;
+    case VALUE_G:
+        b2Value._2 *= c;
+        break;
+    case VALUE_B:
+        b2Value *= c;
+        break;
+    }
+    return *this;
+}
+
+enum CommitType {
+    COMMIT_PUB,
+    COMMIT_ENC,
+    COMMIT_PRIV
+};
+
+struct G1Commit {
+    CommitType type;
+    Fp r, s;
+    PiG1 c;
+};
+
+struct G2Commit {
+    CommitType type;
+    Fp r, s;
+    PiG2 c;
 };
 
 struct ProofEls {
@@ -1166,25 +1202,65 @@ GT NIZKProof::real_eval(const GTData &d, const ProofData &instantiation,
     }
 }
 
+void scalarCombine(const G1Commit &c1, const G2Commit &c2, ProofEls &p) {
+    p.p2_v.type = VALUE_NULL;
+    p.p2_w.type = VALUE_NULL;
+    switch (c1.type) {
+    case COMMIT_PRIV:
+        p.p2_w = c2.c;
+        p.p2_w *= c1.s;
+        break;
+    case COMMIT_ENC:
+        p.p2_v = c2.c;
+        p.p2_v *= c1.r;
+    case COMMIT_PUB:
+        break;
+    }
+    p.p1_v.type = VALUE_NULL;
+    p.p1_w.type = VALUE_NULL;
+    switch (c2.type) {
+    case COMMIT_PRIV:
+        p.p1_w = c1.c;
+        p.p1_w *= c2.s;
+        break;
+    case COMMIT_ENC:
+        p.p1_v = c1.c;
+        p.p1_v *= c2.r;
+    case COMMIT_PUB:
+        break;
+    }
+}
+
 void NIZKProof::getProof(const FpData &d, const CRS &crs) {
     if (d.d) return;
     ProofEls *proofEl = new ProofEls;
     d.d = reinterpret_cast<void*>(proofEl);
     switch (d.type) {
     case ELEMENT_PAIR:
-        getProof(*d.pair.first, crs);
-        getProof(*d.pair.second, crs);
-        const ProofEls &el1 =
-                *reinterpret_cast<const ProofEls*>(d.pair.first->d);
-        const ProofEls &el2 =
-                *reinterpret_cast<const ProofEls*>(d.pair.second->d);
-        addPiG1(el1.p1_v, el2.p1_v, proofEl->p1_v, crs);
-        addPiG1(el1.p1_w, el2.p1_w, proofEl->p1_w, crs);
-        addPiG2(el1.p2_v, el2.p2_v, proofEl->p2_v, crs);
-        addPiG2(el1.p2_w, el2.p2_w, proofEl->p2_w, crs);
-        return;
+        {
+            getProof(*d.pair.first, crs);
+            getProof(*d.pair.second, crs);
+            const ProofEls &el1 =
+                    *reinterpret_cast<const ProofEls*>(d.pair.first->d);
+            const ProofEls &el2 =
+                    *reinterpret_cast<const ProofEls*>(d.pair.second->d);
+            addPiG1(el1.p1_v, el2.p1_v, proofEl->p1_v, crs);
+            addPiG1(el1.p1_w, el2.p1_w, proofEl->p1_w, crs);
+            addPiG2(el1.p2_v, el2.p2_v, proofEl->p2_v, crs);
+            addPiG2(el1.p2_w, el2.p2_w, proofEl->p2_w, crs);
+            return;
+        }
     case ELEMENT_SCALAR:
-
+        {
+            getLeft(*d.pair.first, crs);
+            getRight(*d.pair.second, crs);
+            const G1Commit &el1 =
+                    *reinterpret_cast<const G1Commit*>(d.pair.first->d);
+            const G2Commit &el2 =
+                    *reinterpret_cast<const G2Commit*>(d.pair.second->d);
+            scalarCombine(el1, el2, *proofEl);
+            return;
+        }
     }
 }
 
