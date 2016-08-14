@@ -1037,8 +1037,14 @@ void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
         c2.c.b2Value._2 = instantiation.pubG2[j];
         cstsG2[j]->d = reinterpret_cast<void*>(new G2Commit(c2));
     }
-    for (j = cstsGT.size(); j-- > 0;)
-        cstsGT[j]->d = reinterpret_cast<void*>(new GT(instantiation.pubGT[j]));
+    for (j = cstsGT.size(); j-- > 0;) {
+        ProofEls *elGT = new ProofEls;
+        elGT->p1_v.type = VALUE_NULL;
+        elGT->p1_w.type = VALUE_NULL;
+        elGT->p2_v.type = VALUE_NULL;
+        elGT->p2_w.type = VALUE_NULL;
+        cstsGT[j]->d = reinterpret_cast<void*>(elGT);
+    }
     // TODO
 }
 
