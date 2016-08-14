@@ -1499,4 +1499,35 @@ void NIZKProof::getLeft(const FpData &d, const CRS &crs) const {
     }
 }
 
+void NIZKProof::getLeft(const G1Data &d, const CRS &crs) const {
+    if (d.d) return;
+    G1Commit *c1 = new G1Commit;
+    d.d = reinterpret_cast<void*>(c1);
+    switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        c1->type = COMMIT_PUB;
+        c1->c.type = VALUE_G;
+        c1->c.b1Value._2 = d.el;
+        return;
+    case ELEMENT_PAIR:
+        {
+            getLeft(*d.pair.first, crs);
+            getLeft(*d.pair.second, crs);
+            const G1Commit &el1 =
+                    *reinterpret_cast<const G1Commit*>(d.pair.first->d);
+            const G1Commit &el2 =
+                    *reinterpret_cast<const G1Commit*>(d.pair.second->d);
+            addCommitG1(el1, el2, *c1, crs);
+            return;
+        }
+    case ELEMENT_BASE:
+        c1->type = COMMIT_PUB;
+        c1->c.type = VALUE_G;
+        c1->c.b1Value._2 = crs.getG1Base();
+        return;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
 } /* End of namespace nizk */
