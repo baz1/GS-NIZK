@@ -823,12 +823,83 @@ void addPiG2(const PiG2 &a, const PiG2 &b, PiG2 &result, const CRS &crs) {
         result.b1Value += b.b1Value;
 }
 
-void addCommitG1(const G1Commit &c1, const G1Commit &c2, G1Commit &cr) {
-    // TODO
+template <class T> void addCommitGX(const T &c1, const T &c2, T &cr) {
+    switch (c1.type) {
+    case COMMIT_PUB:
+        switch (c2.type) {
+        case COMMIT_PRIV:
+            cr.s = c2.s;
+        case COMMIT_ENC:
+            cr.r = c2.r;
+        case COMMIT_PUB:
+            break;
+        }
+        break;
+    case COMMIT_ENC:
+        switch (c2.type) {
+        case COMMIT_PRIV:
+            cr.s = c2.s;
+        case COMMIT_ENC:
+            cr.r = c1.r + c2.r;
+            break;
+        case COMMIT_PUB:
+            cr.r = c1.r;
+            break;
+        }
+        break;
+    case COMMIT_PRIV:
+        switch (c2.type) {
+        case COMMIT_PRIV:
+            cr.r = c1.r + c2.r;
+            cr.s = c1.s + c2.s;
+            break;
+        case COMMIT_ENC:
+            cr.r = c1.r + c2.r;
+            cr.s = c1.s;
+            break;
+        case COMMIT_PUB:
+            cr.r = c1.r;
+            cr.s = c1.s;
+            break;
+        }
+        break;
+    }
 }
 
-void addCommitG2(const G2Commit &c1, const G2Commit &c2, G2Commit &cr) {
-    // TODO
+void addCommitG1(const G1Commit &c1, const G1Commit &c2, G1Commit &cr,
+                 const CRS &crs) {
+    addCommitGX(c1, c2, cr);
+    if (c1.c.type == VALUE_Fp) {
+        if (c2.c.type == VALUE_Fp) {
+            cr.c.fpValue = c1.c.fpValue + c2.c.fpValue;
+        } else {
+            cr.c.b1Value = B1(c1.c.fpValue, crs) + c2.c.b1Value;
+        }
+    } else {
+        if (c2.c.type == VALUE_Fp) {
+            cr.c.b1Value = c1.c.b1Value + B1(c2.c.fpValue, crs);
+        } else {
+            cr.c.b1Value = c1.c.b1Value + c2.c.b1Value;
+        }
+    }
+}
+
+void addCommitG2(const G2Commit &c1, const G2Commit &c2, G2Commit &cr,
+                 const CRS &crs) {
+    addCommitGX(c1, c2, cr);
+    if (c1.c.type == VALUE_Fp) {
+        if (c2.c.type == VALUE_Fp) {
+            cr.c.fpValue = c1.c.fpValue + c2.c.fpValue;
+        } else {
+            cr.c.b2Value = B1(c1.c.fpValue, crs) + c2.c.b2Value;
+        }
+    } else {
+        if (c2.c.type == VALUE_Fp) {
+            cr.c.b2Value = c1.c.b2Value + B1(c2.c.fpValue, crs);
+        } else {
+            cr.c.b2Value = c1.c.b2Value + c2.c.b2Value;
+        }
+    }
 }
 
 void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
