@@ -66,7 +66,7 @@ struct FpData {
         Fp el;
         PairFp pair;
     };
-    void *d;
+    mutable void *d;
     inline FpData(ElementType type) : type(type), d(NULL) {}
     ~FpData();
 };
@@ -79,7 +79,7 @@ struct G1Data {
         PairG1 pair;
         ScalarG1 scalar;
     };
-    void *d;
+    mutable void *d;
     inline G1Data(ElementType type) : type(type), d(NULL) {}
     ~G1Data();
 };
@@ -92,7 +92,7 @@ struct G2Data {
         PairG2 pair;
         ScalarG2 scalar;
     };
-    void *d;
+    mutable void *d;
     inline G2Data(ElementType type) : type(type), d(NULL) {}
     ~G2Data();
 };
@@ -105,7 +105,7 @@ struct GTData {
         PairGT pair;
         PairingGT pring;
     };
-    void *d;
+    mutable void *d;
     inline GTData(ElementType type) : type(type), d(NULL) {}
     ~GTData();
 };
@@ -570,18 +570,18 @@ private:
                  const CRS &crs) const;
     GT real_eval(const GTData &d, const ProofData &instantiation,
                  const CRS &crs) const;
-    void getProof(const FpData &d, const CRS &crs);
-    void getProof(const G1Data &d, const CRS &crs);
-    void getProof(const G2Data &d, const CRS &crs);
-    void getProof(const GTData &d, const CRS &crs);
-    void getLeft(const FpData &d, const CRS &crs);
-    void getLeft(const G1Data &d, const CRS &crs);
-    void getLeft(const G2Data &d, const CRS &crs);
-    void getLeft(const GTData &d, const CRS &crs);
-    void getRight(const FpData &d, const CRS &crs);
-    void getRight(const G1Data &d, const CRS &crs);
-    void getRight(const G2Data &d, const CRS &crs);
-    void getRight(const GTData &d, const CRS &crs);
+    void getProof(const FpData &d, const CRS &crs) const;
+    void getProof(const G1Data &d, const CRS &crs) const;
+    void getProof(const G2Data &d, const CRS &crs) const;
+    void getProof(const GTData &d, const CRS &crs) const;
+    void getLeft(const FpData &d, const CRS &crs) const;
+    void getLeft(const G1Data &d, const CRS &crs) const;
+    void getLeft(const G2Data &d, const CRS &crs) const;
+    void getLeft(const GTData &d, const CRS &crs) const;
+    void getRight(const FpData &d, const CRS &crs) const;
+    void getRight(const G1Data &d, const CRS &crs) const;
+    void getRight(const G2Data &d, const CRS &crs) const;
+    void getRight(const GTData &d, const CRS &crs) const;
 private:
     CommitType type;
     std::vector<PairFp> eqsFp;
@@ -593,7 +593,7 @@ private:
     std::vector< std::shared_ptr<G1Data> > varsG1, cstsG1;
     std::vector< std::shared_ptr<G2Data> > varsG2, cstsG2;
     std::vector< std::shared_ptr<GTData> > cstsGT;
-    std::vector<bool> varsFpInB1;
+    std::vector<bool> varsFpInB1, cstsFpInB1;
     std::vector<int> sEnc[4];
     std::vector<EqProofType> tFp, tG1, tG2, tGT;
     std::vector<AdditionalFp> additionalFp;
