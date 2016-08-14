@@ -576,12 +576,8 @@ private:
     void getProof(const GTData &d, const CRS &crs) const;
     void getLeft(const FpData &d, const CRS &crs) const;
     void getLeft(const G1Data &d, const CRS &crs) const;
-    void getLeft(const G2Data &d, const CRS &crs) const;
-    void getLeft(const GTData &d, const CRS &crs) const;
     void getRight(const FpData &d, const CRS &crs) const;
-    void getRight(const G1Data &d, const CRS &crs) const;
     void getRight(const G2Data &d, const CRS &crs) const;
-    void getRight(const GTData &d, const CRS &crs) const;
 private:
     CommitType type;
     std::vector<PairFp> eqsFp;

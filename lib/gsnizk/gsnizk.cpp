@@ -1384,8 +1384,8 @@ void NIZKProof::getProof(const G1Data &d, const CRS &crs) const {
         }
     case ELEMENT_SCALAR:
         {
-            getLeft(*d.pair.first, crs);
-            getRight(*d.pair.second, crs);
+            getLeft(*d.scalar.second, crs);
+            getRight(*d.scalar.first, crs);
             const G1Commit &el1 =
                     *reinterpret_cast<const G1Commit*>(d.pair.first->d);
             const G2Commit &el2 =
@@ -1419,8 +1419,8 @@ void NIZKProof::getProof(const G2Data &d, const CRS &crs) const {
         }
     case ELEMENT_SCALAR:
         {
-            getLeft(*d.pair.first, crs);
-            getRight(*d.pair.second, crs);
+            getLeft(*d.scalar.first, crs);
+            getRight(*d.scalar.second, crs);
             const G1Commit &el1 =
                     *reinterpret_cast<const G1Commit*>(d.pair.first->d);
             const G2Commit &el2 =
@@ -1454,12 +1454,12 @@ void NIZKProof::getProof(const GTData &d, const CRS &crs) const {
         }
     case ELEMENT_PAIRING:
         {
-            getLeft(*d.pair.first, crs);
-            getRight(*d.pair.second, crs);
+            getLeft(*d.pring.first, crs);
+            getRight(*d.pring.second, crs);
             const G1Commit &el1 =
-                    *reinterpret_cast<const G1Commit*>(d.pair.first->d);
+                    *reinterpret_cast<const G1Commit*>(d.pring.first->d);
             const G2Commit &el2 =
-                    *reinterpret_cast<const G2Commit*>(d.pair.second->d);
+                    *reinterpret_cast<const G2Commit*>(d.pring.second->d);
             scalarCombine(el1, el2, *proofEl);
             return;
         }
@@ -1530,35 +1530,12 @@ void NIZKProof::getLeft(const G1Data &d, const CRS &crs) const {
     }
 }
 
-void NIZKProof::getLeft(const G2Data &d, const CRS &crs) const {
-    if (d.d) return;
-    G2Commit *c2 = new G2Commit;
-    d.d = reinterpret_cast<void*>(c2);
-    switch (d.type) {
-    case ELEMENT_CONST_VALUE:
-        c2->type = COMMIT_PUB;
-        c2->c.type = VALUE_G;
-        c2->c.b2Value._2 = d.el;
-        return;
-    case ELEMENT_PAIR:
-        {
-            getLeft(*d.pair.first, crs);
-            getLeft(*d.pair.second, crs);
-            const G2Commit &el1 =
-                    *reinterpret_cast<const G2Commit*>(d.pair.first->d);
-            const G2Commit &el2 =
-                    *reinterpret_cast<const G2Commit*>(d.pair.second->d);
-            addCommitG2(el1, el2, *c2, crs);
-            return;
-        }
-    case ELEMENT_BASE:
-        c2->type = COMMIT_PUB;
-        c2->c.type = VALUE_G;
-        c2->c.b2Value._2 = crs.getG2Base();
-        return;
-    default:
-        ASSERT(false /* Unexpected data type */);
-    }
+void NIZKProof::getRight(const FpData &d, const CRS &crs) const {
+    // TODO
+}
+
+void NIZKProof::getRight(const G2Data &d, const CRS &crs) const {
+    // TODO
 }
 
 } /* End of namespace nizk */
