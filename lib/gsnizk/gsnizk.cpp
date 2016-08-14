@@ -626,7 +626,6 @@ bool NIZKProof::endEquations() {
             cstsG1.clear();
             varsG2.clear();
             cstsG2.clear();
-            varsGT.clear();
             cstsGT.clear();
             return false;
         }
@@ -720,6 +719,7 @@ struct PiG1 {
     ValueType type;
     Fp fpValue;
     B1 b1Value;
+    inline PiG1() {}
     inline PiG1(ValueType type) : type(type) {}
     PiG1 &operator*=(const Fp &c);
 };
@@ -745,6 +745,7 @@ struct PiG2 {
     ValueType type;
     Fp fpValue;
     B2 b2Value;
+    inline PiG2() {}
     inline PiG2(ValueType type) : type(type) {}
     PiG2 &operator*=(const Fp &c);
 };
@@ -814,13 +815,13 @@ void addPiG2(const PiG2 &a, const PiG2 &b, PiG2 &result, const CRS &crs) {
     }
     result.type = VALUE_B;
     if (a.type == VALUE_Fp)
-        result.b1Value = B2(a.fpValue, crs);
+        result.b2Value = B2(a.fpValue, crs);
     else
-        result.b1Value = a.b1Value;
+        result.b2Value = a.b2Value;
     if (b.type == VALUE_Fp)
-        result.b1Value += B2(b.fpValue, crs);
+        result.b2Value += B2(b.fpValue, crs);
     else
-        result.b1Value += b.b1Value;
+        result.b2Value += b.b2Value;
 }
 
 template <class T> void addCommitGX(const T &c1, const T &c2, T &cr) {
@@ -891,11 +892,11 @@ void addCommitG2(const G2Commit &c1, const G2Commit &c2, G2Commit &cr,
         if (c2.c.type == VALUE_Fp) {
             cr.c.fpValue = c1.c.fpValue + c2.c.fpValue;
         } else {
-            cr.c.b2Value = B1(c1.c.fpValue, crs) + c2.c.b2Value;
+            cr.c.b2Value = B2(c1.c.fpValue, crs) + c2.c.b2Value;
         }
     } else {
         if (c2.c.type == VALUE_Fp) {
-            cr.c.b2Value = c1.c.b2Value + B1(c2.c.fpValue, crs);
+            cr.c.b2Value = c1.c.b2Value + B2(c2.c.fpValue, crs);
         } else {
             cr.c.b2Value = c1.c.b2Value + c2.c.b2Value;
         }
@@ -968,7 +969,7 @@ void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
     }
     while (j-- > 0) {
         c1.r = Fp::getRand();
-        c1.c.b1Value._2 = instantiation.privG1[j].value;
+        c1.c.b1Value._2 = instantiation.privG1[j];
         if ((type == AllEncrypted) ||
                 ((type == SelectedEncryption) && sEnc[1][j])) {
             c1.type = COMMIT_ENC;
@@ -1002,12 +1003,12 @@ void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
         if ((type == AllEncrypted) ||
                 ((type == SelectedEncryption) && sEnc[2][j])) {
             c2.type = COMMIT_ENC;
-            c2.c.b2Value = B2::commit(instantiation.privG2[j].value,
+            c2.c.b2Value = B2::commit(instantiation.privG2[j],
                     c2.r, crs);
         } else {
             c2.type = COMMIT_PRIV;
             c2.s = Fp::getRand();
-            c2.c.b2Value = B2::commit(instantiation.privG2[j].value,
+            c2.c.b2Value = B2::commit(instantiation.privG2[j],
                     c2.r, c2.s, crs);
         }
         stream << c2.c.b2Value;
@@ -1281,9 +1282,6 @@ GT NIZKProof::real_eval(const GTData &d, const ProofData &instantiation,
     case ELEMENT_PAIR:
         return real_eval(*d.pair.first, instantiation, crs) *
                 real_eval(*d.pair.second, instantiation, crs);
-    case ELEMENT_SCALAR:
-        return real_eval(*d.scalar.second, instantiation, crs) ^
-                real_eval(*d.scalar.first, instantiation, crs);
     case ELEMENT_PAIRING:
         return GT::pairing(real_eval(*d.pring.first, instantiation, crs),
                 real_eval(*d.pring.second, instantiation, crs));
@@ -1475,14 +1473,16 @@ void NIZKProof::getLeft(const FpData &d, const CRS &crs) const {
         c1->c.fpValue = d.el;
         return;
     case ELEMENT_PAIR:
-        getLeft(*d.pair.first, crs);
-        getLeft(*d.pair.second, crs);
-        const G1Commit &el1 =
-                *reinterpret_cast<const G1Commit*>(d.pair.first->d);
-        const G1Commit &el2 =
-                *reinterpret_cast<const G1Commit*>(d.pair.second->d);
-        addCommitG1(el1, el2, *c1);
-        return;
+        {
+            getLeft(*d.pair.first, crs);
+            getLeft(*d.pair.second, crs);
+            const G1Commit &el1 =
+                    *reinterpret_cast<const G1Commit*>(d.pair.first->d);
+            const G1Commit &el2 =
+                    *reinterpret_cast<const G1Commit*>(d.pair.second->d);
+            addCommitG1(el1, el2, *c1, crs);
+            return;
+        }
     case ELEMENT_BASE:
         c1->type = COMMIT_PUB;
         c1->c.type = VALUE_Fp;
