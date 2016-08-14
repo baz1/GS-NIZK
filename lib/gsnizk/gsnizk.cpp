@@ -1531,11 +1531,65 @@ void NIZKProof::getLeft(const G1Data &d, const CRS &crs) const {
 }
 
 void NIZKProof::getRight(const FpData &d, const CRS &crs) const {
-    // TODO
+    if (d.d) return;
+    G2Commit *c2 = new G2Commit;
+    d.d = reinterpret_cast<void*>(c2);
+    switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        c2->type = COMMIT_PUB;
+        c2->c.type = VALUE_Fp;
+        c2->c.fpValue = d.el;
+        return;
+    case ELEMENT_PAIR:
+        {
+            getRight(*d.pair.first, crs);
+            getRight(*d.pair.second, crs);
+            const G2Commit &el1 =
+                    *reinterpret_cast<const G2Commit*>(d.pair.first->d);
+            const G2Commit &el2 =
+                    *reinterpret_cast<const G2Commit*>(d.pair.second->d);
+            addCommitG2(el1, el2, *c2, crs);
+            return;
+        }
+    case ELEMENT_BASE:
+        c2->type = COMMIT_PUB;
+        c2->c.type = VALUE_Fp;
+        c2->c.fpValue = Fp::getUnit();
+        return;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
 }
 
 void NIZKProof::getRight(const G2Data &d, const CRS &crs) const {
-    // TODO
+    if (d.d) return;
+    G2Commit *c2 = new G2Commit;
+    d.d = reinterpret_cast<void*>(c2);
+    switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        c2->type = COMMIT_PUB;
+        c2->c.type = VALUE_G;
+        c2->c.b2Value._2 = d.el;
+        return;
+    case ELEMENT_PAIR:
+        {
+            getRight(*d.pair.first, crs);
+            getRight(*d.pair.second, crs);
+            const G2Commit &el1 =
+                    *reinterpret_cast<const G2Commit*>(d.pair.first->d);
+            const G2Commit &el2 =
+                    *reinterpret_cast<const G2Commit*>(d.pair.second->d);
+            addCommitG2(el1, el2, *c2, crs);
+            return;
+        }
+    case ELEMENT_BASE:
+        c2->type = COMMIT_PUB;
+        c2->c.type = VALUE_G;
+        c2->c.b2Value._2 = crs.getG2Base();
+        return;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
 }
 
 } /* End of namespace nizk */
