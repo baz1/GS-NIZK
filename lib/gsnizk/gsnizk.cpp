@@ -630,7 +630,7 @@ bool NIZKProof::endEquations() {
             return false;
         }
     }
-    // TODO rewrite equations
+    // TODO rewrite equations, etc.
     if (type == SelectedEncryption) {
         SAT_NODE *root = new SAT_NODE;
         root->type = SAT_NODE_TRUE;
@@ -667,7 +667,7 @@ bool NIZKProof::endEquations() {
                 --sEnc[i][j];
         }
     }
-    // TODO fill the equation proof types and varsFpInB1
+    // TODO fill the equation proof types
     fixed = true;
     return true;
 }
@@ -903,6 +903,123 @@ void addCommitG2(const G2Commit &c1, const G2Commit &c2, G2Commit &cr,
     }
 }
 
+void removeProof(const FpData &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<ProofEls*>(d.d);
+    d.d = NULL;
+    switch (d.type) {
+    case ELEMENT_PAIR:
+        removeProof(*d.pair.first);
+        removeProof(*d.pair.second);
+        break;
+    case ELEMENT_SCALAR:
+        removeLeft(*d.pair.first);
+        removeRight(*d.pair.second);
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void removeProof(const G1Data &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<ProofEls*>(d.d);
+    d.d = NULL;
+    switch (d.type) {
+    case ELEMENT_PAIR:
+        removeProof(*d.pair.first);
+        removeProof(*d.pair.second);
+        break;
+    case ELEMENT_SCALAR:
+        removeLeft(*d.scalar.second);
+        removeRight(*d.scalar.first);
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void removeProof(const G2Data &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<ProofEls*>(d.d);
+    d.d = NULL;
+    switch (d.type) {
+    case ELEMENT_PAIR:
+        removeProof(*d.pair.first);
+        removeProof(*d.pair.second);
+        break;
+    case ELEMENT_SCALAR:
+        removeLeft(*d.scalar.first);
+        removeRight(*d.scalar.second);
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void removeProof(const GTData &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<ProofEls*>(d.d);
+    d.d = NULL;
+    switch (d.type) {
+    case ELEMENT_PAIR:
+        removeProof(*d.pair.first);
+        removeProof(*d.pair.second);
+        break;
+    case ELEMENT_PAIRING:
+        removeLeft(*d.pring.first);
+        removeRight(*d.pring.second);
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void removeLeft(const FpData &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<G1Commit*>(d.d);
+    d.d = NULL;
+    if (d.type == ELEMENT_PAIR) {
+        removeLeft(*d.pair.first);
+        removeLeft(*d.pair.second);
+    }
+}
+
+void removeLeft(const G1Data &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<G1Commit*>(d.d);
+    d.d = NULL;
+    if (d.type == ELEMENT_PAIR) {
+        removeLeft(*d.pair.first);
+        removeLeft(*d.pair.second);
+    }
+}
+
+void removeRight(const FpData &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<G2Commit*>(d.d);
+    d.d = NULL;
+    if (d.type == ELEMENT_PAIR) {
+        removeRight(*d.pair.first);
+        removeRight(*d.pair.second);
+    }
+}
+
+void removeRight(const G2Data &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<G2Commit*>(d.d);
+    d.d = NULL;
+    if (d.type == ELEMENT_PAIR) {
+        removeRight(*d.pair.first);
+        removeRight(*d.pair.second);
+    }
+}
+
+void writeEqProof(std::ostream &stream, const ProofEls &left,
+                  const ProofEls &right, EqProofType expectedType) {
+    // TODO
+}
+
 void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
                            const ProofData &instantiation) const {
     if (!fixed)
@@ -1045,7 +1162,58 @@ void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
         elGT->p2_w.type = VALUE_NULL;
         cstsGT[j]->d = reinterpret_cast<void*>(elGT);
     }
-    // TODO
+    for (i = eqsFp.size(); i-- > 0;) {
+        const FpData &left = *eqsFp[i].first;
+        const FpData &right = *eqsFp[i].second;
+        getProof(left, crs);
+        getProof(right, crs);
+        writeEqProof(stream, left, right, tFp[i]);
+    }
+    for (i = eqsG1.size(); i-- > 0;) {
+        const G1Data &left = *eqsG1[i].first;
+        const G1Data &right = *eqsG1[i].second;
+        getProof(left, crs);
+        getProof(right, crs);
+        writeEqProof(stream, left, right, tG1[i]);
+    }
+    for (i = eqsG2.size(); i-- > 0;) {
+        const G2Data &left = *eqsG2[i].first;
+        const G2Data &right = *eqsG2[i].second;
+        getProof(left, crs);
+        getProof(right, crs);
+        writeEqProof(stream, left, right, tG2[i]);
+    }
+    for (i = eqsGT.size(); i-- > 0;) {
+        const GTData &left = *eqsGT[i].first;
+        const GTData &right = *eqsGT[i].second;
+        getProof(left, crs);
+        getProof(right, crs);
+        writeEqProof(stream, left, right, tGT[i]);
+    }
+    for (i = eqsFp.size(); i-- > 0;) {
+        const FpData &left = *eqsFp[i].first;
+        const FpData &right = *eqsFp[i].second;
+        removeProof(left);
+        removeProof(right);
+    }
+    for (i = eqsG1.size(); i-- > 0;) {
+        const G1Data &left = *eqsG1[i].first;
+        const G1Data &right = *eqsG1[i].second;
+        removeProof(left);
+        removeProof(right);
+    }
+    for (i = eqsG2.size(); i-- > 0;) {
+        const G2Data &left = *eqsG2[i].first;
+        const G2Data &right = *eqsG2[i].second;
+        removeProof(left);
+        removeProof(right);
+    }
+    for (i = eqsGT.size(); i-- > 0;) {
+        const GTData &left = *eqsGT[i].first;
+        const GTData &right = *eqsGT[i].second;
+        removeProof(left);
+        removeProof(right);
+    }
 }
 
 bool NIZKProof::checkInstantiation(const ProofData &instantiation) const {
