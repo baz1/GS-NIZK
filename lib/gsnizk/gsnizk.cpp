@@ -1248,6 +1248,14 @@ struct ProofEls {
 };
 
 void addPiG1(const PiG1 &a, const PiG1 &b, PiG1 &result, const CRS &crs) {
+    if (a.type == VALUE_NULL) {
+        result = b;
+        return;
+    }
+    if (b.type == VALUE_NULL) {
+        result = a;
+        return;
+    }
     result.type = ((a.type == b.type) ? a.type : VALUE_B);
     if (result.type == VALUE_Fp) {
         result.fpValue = a.fpValue + b.fpValue;
@@ -1264,6 +1272,14 @@ void addPiG1(const PiG1 &a, const PiG1 &b, PiG1 &result, const CRS &crs) {
 }
 
 void addPiG2(const PiG2 &a, const PiG2 &b, PiG2 &result, const CRS &crs) {
+    if (a.type == VALUE_NULL) {
+        result = b;
+        return;
+    }
+    if (b.type == VALUE_NULL) {
+        result = a;
+        return;
+    }
     result.type = ((a.type == b.type) ? a.type : VALUE_B);
     if (result.type == VALUE_Fp) {
         result.fpValue = a.fpValue + b.fpValue;
@@ -2323,7 +2339,13 @@ void getPTRight(const FpData &d);
 void getPTRight(const G2Data &d);
 
 template <typename T> void addPiGX(const T &a, const T &b, T &result) {
-    result.type = ((a.type == b.type) ? a.type : VALUE_B);
+    if (a.type == VALUE_NULL) {
+        result.type = b.type;
+    } else if (b.type == VALUE_NULL) {
+        result.type = a.type;
+    } else {
+        result.type = ((a.type == b.type) ? a.type : VALUE_B);
+    }
 }
 
 void scalarCombineLight(const G1Commit &c1, const G2Commit &c2, ProofEls &p) {
