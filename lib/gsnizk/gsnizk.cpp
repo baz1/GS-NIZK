@@ -2760,8 +2760,50 @@ void NIZKProof::cleanupPE() const {
     }
 }
 
-bool checkProof(std::istream &stream, const CRS &crs,
+bool NIZKProof::checkProof(std::istream &stream, const CRS &crs,
                 const ProofData &instantiation) const {
+    if (!fixed) return false;
+    if ((instantiation.pubFp.size() != cstsFp.size()) ||
+            (instantiation.pubG1.size() != cstsG1.size()) ||
+            (instantiation.pubG2.size() != cstsG2.size()) ||
+            (instantiation.pubGT.size() != cstsGT.size()))
+        return false;
+    ASSERT(varsFp.size() == varsFpInB1.size());
+    ASSERT(cstsFp.size() == cstsFpInB1.size());
+    B1 b1;
+    B2 b2;
+    for (int i = varsFp.size(); i-- > 0;) {
+        if (varsFpInB1[i]) {
+            stream >> b1;
+            varsFp[i]->d = reinterpret_cast<void*>(new B1(b1));
+        } else {
+            stream >> b2;
+            varsFp[i]->d = reinterpret_cast<void*>(new B2(b2));
+        }
+    }
+    for (int i = varsG1.size(); i-- > 0;) {
+        stream >> b1;
+        varsG1[i]->d = reinterpret_cast<void*>(new B1(b1));
+    }
+    for (int i = varsG2.size(); i-- > 0;) {
+        stream >> b2;
+        varsG2[i]->d = reinterpret_cast<void*>(new B2(b2));
+    }
+    for (int i = cstsFp.size(); i-- > 0;) {
+        if (cstsFpInB1[i]) {
+            varsFp[i]->d = reinterpret_cast<void*>(new B1(
+                    instantiation.pubFp[i], crs));
+        } else {
+            varsFp[i]->d = reinterpret_cast<void*>(new B2(
+                    instantiation.pubFp[i], crs));
+        }
+    }
+    for (int i = cstsG1.size(); i-- > 0;)
+        cstsG1[i]->d = reinterpret_cast<void*>(new B1(instantiation.pubG1[i]));
+    for (int i = cstsG2.size(); i-- > 0;)
+        cstsG2[i]->d = reinterpret_cast<void*>(new B2(instantiation.pubG2[i]));
+    for (int i = cstsGT.size(); i-- > 0;)
+        cstsGT[i]->d = reinterpret_cast<void*>(new BT(instantiation.pubGT[i]));
     // TODO
 }
 
