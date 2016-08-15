@@ -997,6 +997,38 @@ void NIZKProof::readFromStream(std::istream &stream,
     }
 }
 
+std::ostream &operator<<(std::ostream &stream, const PairFp &p) {
+    writeToStream(stream, *p.first);
+    writeToStream(stream, *p.second);
+}
+
+std::ostream &operator<<(std::ostream &stream, const PairG1 &p) {
+    writeToStream(stream, *p.first);
+    writeToStream(stream, *p.second);
+}
+
+std::ostream &operator<<(std::ostream &stream, const PairG2 &p) {
+    writeToStream(stream, *p.first);
+    writeToStream(stream, *p.second);
+}
+
+std::ostream &operator<<(std::ostream &stream, const PairGT &p) {
+    writeToStream(stream, *p.first);
+    writeToStream(stream, *p.second);
+}
+
+inline std::ostream &operator<<(std::ostream &stream, const AdditionalFp &a) {
+    writeToStream(stream, *a.formula);
+}
+
+inline std::ostream &operator<<(std::ostream &stream, const AdditionalG1 &a) {
+    writeToStream(stream, *a.formula);
+}
+
+inline std::ostream &operator<<(std::ostream &stream, const AdditionalG2 &a) {
+    writeToStream(stream, *a.formula);
+}
+
 std::ostream &operator<<(std::ostream &stream, const NIZKProof &p) {
     if (!p.fixed) return stream;
     stream << ((int) p.type);
@@ -1004,14 +1036,19 @@ std::ostream &operator<<(std::ostream &stream, const NIZKProof &p) {
     stream << p.varsG1.size() << p.cstsG1.size();
     stream << p.varsG2.size() << p.cstsG2.size();
     stream << p.cstsGT.size();
-    // TODO eqs
+    writeVectorToStream(p.eqsFp);
+    writeVectorToStream(p.eqsG1);
+    writeVectorToStream(p.eqsG2);
+    writeVectorToStream(p.eqsGT);
     writeVectorToStream(stream, p.sEnc[0]);
     writeVectorToStream(stream, p.sEnc[1]);
     writeVectorToStream(stream, p.tFp);
     writeVectorToStream(stream, p.tG1);
     writeVectorToStream(stream, p.tG2);
     writeVectorToStream(stream, p.tGT);
-    // TODO additional variables
+    writeVectorToStream(additionalFp);
+    writeVectorToStream(additionalG1);
+    writeVectorToStream(additionalG2);
     return stream;
 }
 
@@ -1036,14 +1073,48 @@ NIZKProof::NIZKProof(std::istream &stream) : fixed(true) {
     cstsG2.resize(s);
     stream >> s;
     cstsGT.resize(s);
-    // TODO eqs
+    stream >> s;
+    eqsFp.resize(s);
+    while (s-- > 0) {
+        readFromStream(stream, eqsFp[s].first, 0);
+        readFromStream(stream, eqsFp[s].second, 0);
+    }
+    stream >> s;
+    eqsG1.resize(s);
+    while (s-- > 0) {
+        readFromStream(stream, eqsG1[s].first);
+        readFromStream(stream, eqsG1[s].second);
+    }
+    stream >> s;
+    eqsG2.resize(s);
+    while (s-- > 0) {
+        readFromStream(stream, eqsG2[s].first);
+        readFromStream(stream, eqsG2[s].second);
+    }
+    stream >> s;
+    eqsGT.resize(s);
+    while (s-- > 0) {
+        readFromStream(stream, eqsGT[s].first);
+        readFromStream(stream, eqsGT[s].second);
+    }
     readVectorFromStream(stream, sEnc[0]);
     readVectorFromStream(stream, sEnc[1]);
     readVectorFromStream(stream, tFp);
     readVectorFromStream(stream, tG1);
     readVectorFromStream(stream, tG2);
     readVectorFromStream(stream, tGT);
-    // TODO additional variables
+    stream >> s;
+    additionalFp.resize(s);
+    while (s-- > 0)
+        readFromStream(stream, additionalFp[s].formula, 0);
+    stream >> s;
+    additionalG1.resize(s);
+    while (s-- > 0)
+        readFromStream(stream, additionalG1[s].formula);
+    stream >> s;
+    additionalG2.resize(s);
+    while (s-- > 0)
+        readFromStream(stream, additionalG2[s].formula);
 }
 
 std::istream &operator>>(std::istream &stream, NIZKProof &p) {
