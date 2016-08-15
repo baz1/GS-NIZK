@@ -556,6 +556,25 @@ public:
      */
     void writeProof(std::ostream &stream, const CRS &crs,
                     const ProofData &instantiation) const;
+    /**
+     * @brief Writes this system of equations to an output stream.
+     * @warning You need to call the function @ref endEquations()
+     *   before calling this function, or else nothing will be
+     *   written to the stream.
+     * @param stream Output stream.
+     * @param p The system of equations to write in the stream.
+     * @return Reference to the output stream.
+     * @sa NIZKProof::endEquations()
+     */
+    friend std::ostream &operator<<(std::ostream &stream, const NIZKProof &p);
+    /**
+     * @brief Reads a system of equations from an input stream.
+     * @warning The previous value of @a p will be completely erased.
+     * @param stream Input stream.
+     * @param p System of equations to read from the stream.
+     * @return Reference to the input stream.
+     */
+    friend std::istream &operator>>(std::istream &stream, NIZKProof &p);
 private:
     bool checkInstantiation(const ProofData &instantiation) const;
     void getIndexes(std::shared_ptr<FpData> &d);
