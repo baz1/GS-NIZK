@@ -672,6 +672,75 @@ bool NIZKProof::endEquations() {
     return true;
 }
 
+template <typename T> inline void writeVectorToStream(std::ostream &stream,
+        const std::vector<T> &v) {
+    int i = v.size();
+    stream << i;
+    while (i-- > 0)
+        stream << v[i];
+}
+
+template <typename T> inline void readVectorFromStream(std::istream &stream,
+        std::vector<T> &v) {
+    int i;
+    stream >> i;
+    v.resize(i);
+    while (i-- > 0)
+        stream >> v[i];
+}
+
+std::ostream &operator<<(std::ostream &stream, const NIZKProof &p) {
+    if (!fixed) return stream;
+    stream << p.type;
+    stream << p.varsFp.size() << p.cstsFp.size();
+    stream << p.varsG1.size() << p.cstsG1.size();
+    stream << p.varsG2.size() << p.cstsG2.size();
+    stream << p.cstsGT.size();
+    // TODO eqs
+    writeVectorToStream(stream, p.sEnc[0]);
+    writeVectorToStream(stream, p.sEnc[1]);
+    writeVectorToStream(stream, p.tFp);
+    writeVectorToStream(stream, p.tG1);
+    writeVectorToStream(stream, p.tG2);
+    writeVectorToStream(stream, p.tGT);
+    // TODO additional variables
+    return stream;
+}
+
+NIZKProof::NIZKProof(std::istream &stream) : fixed(true) {
+    stream >> type;
+    size_t s;
+    stream >> s;
+    varsFp.resize(s);
+    varsFpInB1.resize(s);
+    stream >> s;
+    cstsFp.resize(s);
+    cstsFpInB1.resize(s);
+    stream >> s;
+    varsG1.resize(s);
+    stream >> s;
+    cstsG1.resize(s);
+    stream >> s;
+    varsG2.resize(s);
+    stream >> s;
+    cstsG2.resize(s);
+    stream >> s;
+    cstsGT.resize(s);
+    // TODO eqs
+    readVectorFromStream(stream, sEnc[0]);
+    readVectorFromStream(stream, sEnc[1]);
+    readVectorFromStream(stream, tFp);
+    readVectorFromStream(stream, tG1);
+    readVectorFromStream(stream, tG2);
+    readVectorFromStream(stream, tGT);
+    // TODO additional variables
+}
+
+std::istream &operator>>(std::istream &stream, NIZKProof &p) {
+    p.~NIZKProof();
+    new (&p) NIZKProof(stream);
+    return stream;
+}
 
 bool NIZKProof::verifySolution(const ProofData &instantiation,
                                const CRS &crs) const {
@@ -1071,7 +1140,7 @@ void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
         c1.r = Fp::getRand();
         c1.c.b1Value._2 = additionalG1[i].value;
         if ((type == AllEncrypted) ||
-                ((type == SelectedEncryption) && sEnc[1][j])) {
+                ((type == SelectedEncryption) && sEnc[INDEX_TYPE_G1][j])) {
             c1.type = COMMIT_ENC;
             stream << B1::commit(c1.c.b1Value, c1.r, crs);
         } else {
@@ -1085,7 +1154,7 @@ void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
         c1.r = Fp::getRand();
         c1.c.b1Value._2 = instantiation.privG1[j];
         if ((type == AllEncrypted) ||
-                ((type == SelectedEncryption) && sEnc[1][j])) {
+                ((type == SelectedEncryption) && sEnc[INDEX_TYPE_G1][j])) {
             c1.type = COMMIT_ENC;
             stream << B1::commit(c1.c.b1Value, c1.r, crs);
         } else {
@@ -1101,7 +1170,7 @@ void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
     while ((--j, i--) > 0) {
         c2.r = Fp::getRand();
         if ((type == AllEncrypted) ||
-                ((type == SelectedEncryption) && sEnc[2][j])) {
+                ((type == SelectedEncryption) && sEnc[INDEX_TYPE_G2][j])) {
             c2.type = COMMIT_ENC;
             c2.c.b2Value = B2::commit(additionalG2[i].value, c2.r, crs);
         } else {
@@ -1115,7 +1184,7 @@ void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
     while (j-- > 0) {
         c2.r = Fp::getRand();
         if ((type == AllEncrypted) ||
-                ((type == SelectedEncryption) && sEnc[2][j])) {
+                ((type == SelectedEncryption) && sEnc[INDEX_TYPE_G2][j])) {
             c2.type = COMMIT_ENC;
             c2.c.b2Value = B2::commit(instantiation.privG2[j],
                     c2.r, crs);

@@ -476,7 +476,15 @@ public:
      * @brief Contructs a new NIZKProof object ready to accept equations.
      * @param type The desired type of commitments.
      */
-    inline NIZKProof(CommitType type);
+    inline NIZKProof(CommitType type = CommitType::SelectedEncryption);
+    /**
+     * @brief Contructs a new NIZKProof object from an input stream.
+     * @param stream Input stream.
+     * @note The created system of equations will be fixed,
+     *   as if @ref endEquations() had been called.
+     * @sa operator<<(std::ostream&,const NIZKProof&)
+     */
+    NIZKProof(std::istream &stream);
     /**
      * @brief Appends an equation in @f$\mathbb{F}_p@f$ to the proof.
      * @param leftHandSide Left hand side of the equation.
@@ -523,6 +531,30 @@ public:
      */
     bool endEquations();
     /**
+     * @brief Writes this system of equations to an output stream.
+     * @warning You need to call the function @ref endEquations()
+     *   before calling this function, or else nothing will be
+     *   written to the stream.
+     * @param stream Output stream.
+     * @param p The system of equations to write in the stream.
+     * @return Reference to the output stream.
+     * @sa NIZKProof::endEquations()
+     * @sa operator>>(std::ostream&,NIZKProof&)
+     * @sa NIZKProof::NIZKProof(std::istream&)
+     */
+    friend std::ostream &operator<<(std::ostream &stream, const NIZKProof &p);
+    /**
+     * @brief Reads a system of equations from an input stream.
+     * @warning The previous value of @a p will be completely erased.
+     * @note The created system of equations will be fixed,
+     *   as if @ref endEquations() had been called.
+     * @param stream Input stream.
+     * @param p System of equations to read from the stream.
+     * @return Reference to the input stream.
+     * @sa operator<<(std::ostream&,const NIZKProof&)
+     */
+    friend std::istream &operator>>(std::istream &stream, NIZKProof &p);
+    /**
      * @brief Verifies that a given couple of values are solution of the
      *   equations.
      * @note The user should call the function @ref endEquations()
@@ -556,25 +588,6 @@ public:
      */
     void writeProof(std::ostream &stream, const CRS &crs,
                     const ProofData &instantiation) const;
-    /**
-     * @brief Writes this system of equations to an output stream.
-     * @warning You need to call the function @ref endEquations()
-     *   before calling this function, or else nothing will be
-     *   written to the stream.
-     * @param stream Output stream.
-     * @param p The system of equations to write in the stream.
-     * @return Reference to the output stream.
-     * @sa NIZKProof::endEquations()
-     */
-    friend std::ostream &operator<<(std::ostream &stream, const NIZKProof &p);
-    /**
-     * @brief Reads a system of equations from an input stream.
-     * @warning The previous value of @a p will be completely erased.
-     * @param stream Input stream.
-     * @param p System of equations to read from the stream.
-     * @return Reference to the input stream.
-     */
-    friend std::istream &operator>>(std::istream &stream, NIZKProof &p);
 private:
     bool checkInstantiation(const ProofData &instantiation) const;
     void getIndexes(std::shared_ptr<FpData> &d);
@@ -609,7 +622,7 @@ private:
     std::vector< std::shared_ptr<G2Data> > varsG2, cstsG2;
     std::vector< std::shared_ptr<GTData> > cstsGT;
     std::vector<bool> varsFpInB1, cstsFpInB1;
-    std::vector<int> sEnc[4];
+    std::vector<int> sEnc[2];
     std::vector<EqProofType> tFp, tG1, tG2, tGT;
     std::vector<AdditionalFp> additionalFp;
     std::vector<AdditionalG1> additionalG1;
