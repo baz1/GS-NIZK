@@ -574,7 +574,7 @@ public:
                         const CRS &crs = CRS()) const;
     /**
      * @brief Write a NIZK proof to a stream.
-     * @note The user should call the function @ref endEquations()
+     * @warning The user should call the function @ref endEquations()
      *   before calling this function.
      * @warning It is assumed that the given values are a solution of the
      *   equations for the proof to be correct. This can be checked with
@@ -585,8 +585,23 @@ public:
      * @param instantiation Instantiation values for the constants and
      *   variables.
      * @sa NIZKProof::endEquations()
+     * @sa NIZKProof::checkProof(std::istream&,const CRS&, const ProofData&)
      */
     void writeProof(std::ostream &stream, const CRS &crs,
+                    const ProofData &instantiation) const;
+    /**
+     * @brief Checks a NIZK proof from a stream.
+     * @warning The user should call the function @ref endEquations()
+     *   before calling this function.
+     * @param stream Input stream from which the NIZK proof is to be read.
+     * @param crs Common Reference String to use for this proof.
+     * @param instantiation Instantiation values for the constants.
+     * @note The instantiation vectors for the variables are ignored.
+     * @return `true` if the NIZK proof verifies, `false` otherwise.
+     * @sa NIZKProof::endEquations()
+     * @sa NIZKProof::writeProof(std::ostream&,const CRS&, const ProofData&)
+     */
+    bool checkProof(std::istream &stream, const CRS &crs,
                     const ProofData &instantiation) const;
 private:
     bool checkInstantiation(const ProofData &instantiation) const;

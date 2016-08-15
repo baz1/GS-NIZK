@@ -140,7 +140,7 @@ class Fp {
     friend class G1;
     friend class G2;
     friend class GT;
-    friend void initialize_pairings(int, const char*);
+    friend void initialize_pairings(int len, const char *rndData);
     friend void terminate_pairings();
     friend G1 operator*(const Fp &m, const G1 &g);
     friend G2 operator*(const Fp &m, const G2 &g);
@@ -1264,6 +1264,10 @@ private:
 
 /* Inline definitions: */
 
+/**
+ * @cond INTERNAL_DATA_STRUCT
+ */
+
 inline SharedData::SharedData(void *p) : c(0), p(p) {}
 
 inline Fp::Fp() { ++(d = zero)->c; }
@@ -1378,6 +1382,10 @@ inline void GT::clear() {
 inline GT::GT(void *v) : d(new SharedData(v)) {}
 
 inline GT::GT(SharedData *d) : d(d) { ++d->c; }
+
+/**
+ * @endcond
+ */
 
 } /* End of namespace pairings */
 

@@ -199,7 +199,7 @@ public:
      * @brief Commits to an element @a el with randomness @a r and @a s.
      * @param el The element in @f$\mathbb{G}_1@f$ to commit to.
      * @param r The first randomness value.
-     * @param r The second randomness value.
+     * @param s The second randomness value.
      * @param crs The Common Reference String that is to be used
      *   for this commit.
      * @return The committed element.
@@ -219,7 +219,7 @@ public:
      *   with randomness @a r and @a s.
      * @param el The converted element in @f$\mathbb{B}_1@f$ to commit to.
      * @param r The first randomness value.
-     * @param r The second randomness value.
+     * @param s The second randomness value.
      * @param crs The Common Reference String that is to be used
      *   for this commit.
      * @return The committed element.
@@ -369,7 +369,7 @@ public:
      * @brief Commits to an element @a el with randomness @a r and @a s.
      * @param el The element in @f$\mathbb{G}_2@f$ to commit to.
      * @param r The first randomness value.
-     * @param r The second randomness value.
+     * @param s The second randomness value.
      * @param crs The Common Reference String that is to be used
      *   for this commit.
      * @return The committed element.
@@ -389,7 +389,7 @@ public:
      *   with randomness @a r and @a s.
      * @param el The converted element in @f$\mathbb{B}_2@f$ to commit to.
      * @param r The first randomness value.
-     * @param r The second randomness value.
+     * @param s The second randomness value.
      * @param crs The Common Reference String that is to be used
      *   for this commit.
      * @return The committed element.
@@ -414,8 +414,10 @@ public:
     inline BT();
     /**
      * @brief Constructs an element from its components
-     * @param _1 First component.
-     * @param _2 Second component.
+     * @param _11 First component.
+     * @param _12 Second component.
+     * @param _21 Third component.
+     * @param _22 Forth component.
      */
     inline BT(const GT &_11, const GT &_12, const GT &_21, const GT &_22);
     /**

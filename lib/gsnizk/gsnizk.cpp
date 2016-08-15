@@ -1472,16 +1472,12 @@ void writeEqProof(std::ostream &stream, const ProofEls &left,
     ProofEls result;
     subPiG1(left.p1_v, right.p1_v, result.p1_v, crs);
     ASSERT((int) result.p1_v.type == (int) expectedType.tv1);
-    // TODO check that it is theoretically true
     subPiG1(left.p1_w, right.p1_w, result.p1_w, crs);
     ASSERT((int) result.p1_w.type == (int) expectedType.tw1);
-    // TODO check that it is theoretically true
     subPiG2(left.p2_v, right.p2_v, result.p2_v, crs);
     ASSERT((int) result.p2_v.type == (int) expectedType.tv2);
-    // TODO check that it is theoretically true
     subPiG2(left.p2_w, right.p2_w, result.p2_w, crs);
     ASSERT((int) result.p2_w.type == (int) expectedType.tw2);
-    // TODO check that it is theoretically true
     switch (result.p1_v.type) {
     case VALUE_Fp:
         stream << result.p1_v.fpValue;
@@ -2762,6 +2758,11 @@ void NIZKProof::cleanupPE() const {
         removeProof(left);
         removeProof(right);
     }
+}
+
+bool checkProof(std::istream &stream, const CRS &crs,
+                const ProofData &instantiation) const {
+    // TODO
 }
 
 } /* End of namespace nizk */
