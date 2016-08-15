@@ -136,9 +136,9 @@ GTElement e(const G1Element &a, const G2Element &b);
 
 struct EqProofType {
     enum {
-        TYPE_NORMAL = 0,
-        TYPE_SINGLE = 1,
-        TYPE_ZP     = 2
+        TYPE_NORMAL = 3,
+        TYPE_SINGLE = 2,
+        TYPE_ZP     = 1
     } tv1, tw1, tv2, tw2;
 };
 

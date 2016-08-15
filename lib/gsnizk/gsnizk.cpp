@@ -709,10 +709,10 @@ bool NIZKProof::verifySolution(const ProofData &instantiation,
 }
 
 enum ValueType {
-    VALUE_NULL,
-    VALUE_Fp,
-    VALUE_G,
-    VALUE_B
+    VALUE_NULL = 0,
+    VALUE_Fp = 1,
+    VALUE_G = 2,
+    VALUE_B = 3
 };
 
 struct PiG1 {
@@ -824,6 +824,40 @@ void addPiG2(const PiG2 &a, const PiG2 &b, PiG2 &result, const CRS &crs) {
         result.b2Value += b.b2Value;
 }
 
+void subPiG1(const PiG1 &a, const PiG1 &b, PiG1 &result, const CRS &crs) {
+    if ((a.type == VALUE_Fp) && (b.type == VALUE_Fp)) {
+        result.type = VALUE_Fp;
+        result.fpValue = a.fpValue - b.fpValue;
+        return;
+    }
+    result.type = VALUE_B;
+    if (a.type == VALUE_Fp)
+        result.b1Value = B1(a.fpValue, crs);
+    else
+        result.b1Value = a.b1Value;
+    if (b.type == VALUE_Fp)
+        result.b1Value -= B1(b.fpValue, crs);
+    else
+        result.b1Value -= b.b1Value;
+}
+
+void subPiG2(const PiG2 &a, const PiG2 &b, PiG2 &result, const CRS &crs) {
+    if ((a.type == VALUE_Fp) && (b.type == VALUE_Fp)) {
+        result.type = VALUE_Fp;
+        result.fpValue = a.fpValue - b.fpValue;
+        return;
+    }
+    result.type = VALUE_B;
+    if (a.type == VALUE_Fp)
+        result.b2Value = B2(a.fpValue, crs);
+    else
+        result.b2Value = a.b2Value;
+    if (b.type == VALUE_Fp)
+        result.b2Value -= B2(b.fpValue, crs);
+    else
+        result.b2Value -= b.b2Value;
+}
+
 template <class T> void addCommitGX(const T &c1, const T &c2, T &cr) {
     switch (c1.type) {
     case COMMIT_PUB:
@@ -903,121 +937,84 @@ void addCommitG2(const G2Commit &c1, const G2Commit &c2, G2Commit &cr,
     }
 }
 
-void removeProof(const FpData &d) {
-    if (!d.d) return;
-    delete reinterpret_cast<ProofEls*>(d.d);
-    d.d = NULL;
-    switch (d.type) {
-    case ELEMENT_PAIR:
-        removeProof(*d.pair.first);
-        removeProof(*d.pair.second);
-        break;
-    case ELEMENT_SCALAR:
-        removeLeft(*d.pair.first);
-        removeRight(*d.pair.second);
-        break;
-    default:
-        ASSERT(false /* Unexpected data type */);
-    }
-}
-
-void removeProof(const G1Data &d) {
-    if (!d.d) return;
-    delete reinterpret_cast<ProofEls*>(d.d);
-    d.d = NULL;
-    switch (d.type) {
-    case ELEMENT_PAIR:
-        removeProof(*d.pair.first);
-        removeProof(*d.pair.second);
-        break;
-    case ELEMENT_SCALAR:
-        removeLeft(*d.scalar.second);
-        removeRight(*d.scalar.first);
-        break;
-    default:
-        ASSERT(false /* Unexpected data type */);
-    }
-}
-
-void removeProof(const G2Data &d) {
-    if (!d.d) return;
-    delete reinterpret_cast<ProofEls*>(d.d);
-    d.d = NULL;
-    switch (d.type) {
-    case ELEMENT_PAIR:
-        removeProof(*d.pair.first);
-        removeProof(*d.pair.second);
-        break;
-    case ELEMENT_SCALAR:
-        removeLeft(*d.scalar.first);
-        removeRight(*d.scalar.second);
-        break;
-    default:
-        ASSERT(false /* Unexpected data type */);
-    }
-}
-
-void removeProof(const GTData &d) {
-    if (!d.d) return;
-    delete reinterpret_cast<ProofEls*>(d.d);
-    d.d = NULL;
-    switch (d.type) {
-    case ELEMENT_PAIR:
-        removeProof(*d.pair.first);
-        removeProof(*d.pair.second);
-        break;
-    case ELEMENT_PAIRING:
-        removeLeft(*d.pring.first);
-        removeRight(*d.pring.second);
-        break;
-    default:
-        ASSERT(false /* Unexpected data type */);
-    }
-}
-
-void removeLeft(const FpData &d) {
-    if (!d.d) return;
-    delete reinterpret_cast<G1Commit*>(d.d);
-    d.d = NULL;
-    if (d.type == ELEMENT_PAIR) {
-        removeLeft(*d.pair.first);
-        removeLeft(*d.pair.second);
-    }
-}
-
-void removeLeft(const G1Data &d) {
-    if (!d.d) return;
-    delete reinterpret_cast<G1Commit*>(d.d);
-    d.d = NULL;
-    if (d.type == ELEMENT_PAIR) {
-        removeLeft(*d.pair.first);
-        removeLeft(*d.pair.second);
-    }
-}
-
-void removeRight(const FpData &d) {
-    if (!d.d) return;
-    delete reinterpret_cast<G2Commit*>(d.d);
-    d.d = NULL;
-    if (d.type == ELEMENT_PAIR) {
-        removeRight(*d.pair.first);
-        removeRight(*d.pair.second);
-    }
-}
-
-void removeRight(const G2Data &d) {
-    if (!d.d) return;
-    delete reinterpret_cast<G2Commit*>(d.d);
-    d.d = NULL;
-    if (d.type == ELEMENT_PAIR) {
-        removeRight(*d.pair.first);
-        removeRight(*d.pair.second);
-    }
-}
+void removeProof(const FpData &d);
+void removeProof(const G1Data &d);
+void removeProof(const G2Data &d);
+void removeProof(const GTData &d);
+void removeLeft(const FpData &d);
+void removeLeft(const G1Data &d);
+void removeRight(const FpData &d);
+void removeRight(const G2Data &d);
 
 void writeEqProof(std::ostream &stream, const ProofEls &left,
-                  const ProofEls &right, EqProofType expectedType) {
-    // TODO
+                  const ProofEls &right, EqProofType expectedType,
+                  const CRS &crs) {
+    (void) expectedType; /* (prevent warning when no debugging) */
+    ProofEls result;
+    subPiG1(left.p1_v, right.p1_v, result.p1_v, crs);
+    ASSERT((int) result.p1_v.type == (int) expectedType.tv1);
+    // TODO check that it is theoretically true
+    subPiG1(left.p1_w, right.p1_w, result.p1_w, crs);
+    ASSERT((int) result.p1_w.type == (int) expectedType.tw1);
+    // TODO check that it is theoretically true
+    subPiG2(left.p2_v, right.p2_v, result.p2_v, crs);
+    ASSERT((int) result.p2_v.type == (int) expectedType.tv2);
+    // TODO check that it is theoretically true
+    subPiG2(left.p2_w, right.p2_w, result.p2_w, crs);
+    ASSERT((int) result.p2_w.type == (int) expectedType.tw2);
+    // TODO check that it is theoretically true
+    switch (result.p1_v.type) {
+    case VALUE_Fp:
+        stream << result.p1_v.fpValue;
+        break;
+    case VALUE_G:
+        stream << result.p1_v.b1Value._2;
+        break;
+    case VALUE_B:
+        stream << result.p1_v.b1Value;
+        break;
+    default:
+        ASSERT(false /* Unexpected error */);
+    }
+    switch (result.p1_w.type) {
+    case VALUE_Fp:
+        stream << result.p1_w.fpValue;
+        break;
+    case VALUE_G:
+        stream << result.p1_w.b1Value._2;
+        break;
+    case VALUE_B:
+        stream << result.p1_w.b1Value;
+        break;
+    default:
+        ASSERT(false /* Unexpected error */);
+    }
+    switch (result.p2_v.type) {
+    case VALUE_Fp:
+        stream << result.p2_v.fpValue;
+        break;
+    case VALUE_G:
+        stream << result.p2_v.b2Value._2;
+        break;
+    case VALUE_B:
+        stream << result.p2_v.b2Value;
+        break;
+    default:
+        ASSERT(false /* Unexpected error */);
+    }
+    switch (result.p2_w.type) {
+    case VALUE_Fp:
+        stream << result.p2_w.fpValue;
+        break;
+    case VALUE_G:
+        stream << result.p2_w.b2Value._2;
+        break;
+    case VALUE_B:
+        stream << result.p2_w.b2Value;
+        break;
+    default:
+        ASSERT(false /* Unexpected error */);
+    }
 }
 
 void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
@@ -1167,28 +1164,32 @@ void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
         const FpData &right = *eqsFp[i].second;
         getProof(left, crs);
         getProof(right, crs);
-        writeEqProof(stream, left, right, tFp[i]);
+        writeEqProof(stream, *reinterpret_cast<ProofEls*>(left.d),
+                     *reinterpret_cast<ProofEls*>(right.d), tFp[i], crs);
     }
     for (i = eqsG1.size(); i-- > 0;) {
         const G1Data &left = *eqsG1[i].first;
         const G1Data &right = *eqsG1[i].second;
         getProof(left, crs);
         getProof(right, crs);
-        writeEqProof(stream, left, right, tG1[i]);
+        writeEqProof(stream, *reinterpret_cast<ProofEls*>(left.d),
+                     *reinterpret_cast<ProofEls*>(right.d), tG1[i], crs);
     }
     for (i = eqsG2.size(); i-- > 0;) {
         const G2Data &left = *eqsG2[i].first;
         const G2Data &right = *eqsG2[i].second;
         getProof(left, crs);
         getProof(right, crs);
-        writeEqProof(stream, left, right, tG2[i]);
+        writeEqProof(stream, *reinterpret_cast<ProofEls*>(left.d),
+                     *reinterpret_cast<ProofEls*>(right.d), tG2[i], crs);
     }
     for (i = eqsGT.size(); i-- > 0;) {
         const GTData &left = *eqsGT[i].first;
         const GTData &right = *eqsGT[i].second;
         getProof(left, crs);
         getProof(right, crs);
-        writeEqProof(stream, left, right, tGT[i]);
+        writeEqProof(stream, *reinterpret_cast<ProofEls*>(left.d),
+                     *reinterpret_cast<ProofEls*>(right.d), tGT[i], crs);
     }
     for (i = eqsFp.size(); i-- > 0;) {
         const FpData &left = *eqsFp[i].first;
@@ -1757,6 +1758,118 @@ void NIZKProof::getRight(const G2Data &d, const CRS &crs) const {
         return;
     default:
         ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void removeProof(const FpData &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<ProofEls*>(d.d);
+    d.d = NULL;
+    switch (d.type) {
+    case ELEMENT_PAIR:
+        removeProof(*d.pair.first);
+        removeProof(*d.pair.second);
+        break;
+    case ELEMENT_SCALAR:
+        removeLeft(*d.pair.first);
+        removeRight(*d.pair.second);
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void removeProof(const G1Data &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<ProofEls*>(d.d);
+    d.d = NULL;
+    switch (d.type) {
+    case ELEMENT_PAIR:
+        removeProof(*d.pair.first);
+        removeProof(*d.pair.second);
+        break;
+    case ELEMENT_SCALAR:
+        removeLeft(*d.scalar.second);
+        removeRight(*d.scalar.first);
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void removeProof(const G2Data &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<ProofEls*>(d.d);
+    d.d = NULL;
+    switch (d.type) {
+    case ELEMENT_PAIR:
+        removeProof(*d.pair.first);
+        removeProof(*d.pair.second);
+        break;
+    case ELEMENT_SCALAR:
+        removeLeft(*d.scalar.first);
+        removeRight(*d.scalar.second);
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void removeProof(const GTData &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<ProofEls*>(d.d);
+    d.d = NULL;
+    switch (d.type) {
+    case ELEMENT_PAIR:
+        removeProof(*d.pair.first);
+        removeProof(*d.pair.second);
+        break;
+    case ELEMENT_PAIRING:
+        removeLeft(*d.pring.first);
+        removeRight(*d.pring.second);
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void removeLeft(const FpData &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<G1Commit*>(d.d);
+    d.d = NULL;
+    if (d.type == ELEMENT_PAIR) {
+        removeLeft(*d.pair.first);
+        removeLeft(*d.pair.second);
+    }
+}
+
+void removeLeft(const G1Data &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<G1Commit*>(d.d);
+    d.d = NULL;
+    if (d.type == ELEMENT_PAIR) {
+        removeLeft(*d.pair.first);
+        removeLeft(*d.pair.second);
+    }
+}
+
+void removeRight(const FpData &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<G2Commit*>(d.d);
+    d.d = NULL;
+    if (d.type == ELEMENT_PAIR) {
+        removeRight(*d.pair.first);
+        removeRight(*d.pair.second);
+    }
+}
+
+void removeRight(const G2Data &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<G2Commit*>(d.d);
+    d.d = NULL;
+    if (d.type == ELEMENT_PAIR) {
+        removeRight(*d.pair.first);
+        removeRight(*d.pair.second);
     }
 }
 
