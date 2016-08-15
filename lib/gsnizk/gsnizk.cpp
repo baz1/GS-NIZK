@@ -672,6 +672,27 @@ bool NIZKProof::endEquations() {
     return true;
 }
 
+std::ostream &operator<<(std::ostream &stream, const EqProofType &t) {
+    stream << ((int) t.tv1);
+    stream << ((int) t.tw1);
+    stream << ((int) t.tv2);
+    stream << ((int) t.tw2);
+    return stream;
+}
+
+std::istream &operator>>(std::istream &stream, EqProofType &t) {
+    int i;
+    stream >> i;
+    t.tv1 = (EqProofType::EqProofTypeIndividual) i;
+    stream >> i;
+    t.tw1 = (EqProofType::EqProofTypeIndividual) i;
+    stream >> i;
+    t.tv2 = (EqProofType::EqProofTypeIndividual) i;
+    stream >> i;
+    t.tw2 = (EqProofType::EqProofTypeIndividual) i;
+    return stream;
+}
+
 template <typename T> inline void writeVectorToStream(std::ostream &stream,
         const std::vector<T> &v) {
     int i = v.size();
@@ -736,6 +757,31 @@ void writeToStream(std::ostream &stream, const G1Data &d) {
     }
 }
 
+void writeToStream(std::ostream &stream, const G2Data &d) {
+    stream << ((int) d.type);
+    switch (d.type) {
+    case ELEMENT_VARIABLE:
+    case ELEMENT_CONST_INDEX:
+        stream << d.index;
+        break;
+    case ELEMENT_CONST_VALUE:
+        stream << d.el;
+        break;
+    case ELEMENT_PAIR:
+        writeToStream(stream, *d.pair.first);
+        writeToStream(stream, *d.pair.second);
+        break;
+    case ELEMENT_SCALAR:
+        writeToStream(stream, *d.scalar.first);
+        writeToStream(stream, *d.scalar.second);
+        break;
+    case ELEMENT_BASE:
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
 void NIZKProof::readFromStream(std::istream &stream,
                                std::shared_ptr<FpData> &dp,
                                int side) {
@@ -751,7 +797,8 @@ void NIZKProof::readFromStream(std::istream &stream,
                 ASSERT(varsFpInB1[mindex] == (side < 0) /* Wrong data */);
                 return;
             } else {
-                varsFp[mindex] = (dp = std::shared_ptr<FpData>(new FpData));
+                varsFp[mindex] = (dp = std::shared_ptr<FpData>(
+                            new FpData((ElementType) mtype)));
                 varsFpInB1[mindex] = (side < 0);
             }
         } else {
@@ -761,16 +808,15 @@ void NIZKProof::readFromStream(std::istream &stream,
                 ASSERT(cstsFpInB1[mindex] == (side < 0) /* Wrong data */);
                 return;
             } else {
-                cstsFp[mindex] = (dp = std::shared_ptr<FpData>(new FpData));
+                cstsFp[mindex] = (dp = std::shared_ptr<FpData>(
+                            new FpData((ElementType) mtype)));
                 cstsFpInB1[mindex] = (side < 0);
             }
         }
-        dp->type = mtype;
         dp->index = mindex;
         return;
     }
-    dp = std::shared_ptr<FpData>(new FpData);
-    dp->type = mtype;
+    dp = std::shared_ptr<FpData>(new FpData((ElementType) mtype));
     switch (mtype) {
     case ELEMENT_CONST_VALUE:
         ASSERT(side != 0 /* Wrong data */);
@@ -805,7 +851,8 @@ void NIZKProof::readFromStream(std::istream &stream,
                 dp = varsG1[mindex];
                 return;
             } else {
-                varsG1[mindex] = (dp = std::shared_ptr<G1Data>(new G1Data));
+                varsG1[mindex] = (dp = std::shared_ptr<G1Data>(
+                            new G1Data((ElementType) mtype)));
             }
         } else {
             ASSERT((0 <= mindex) && (mindex < cstsG1.size()) /* Wrong data */);
@@ -813,15 +860,14 @@ void NIZKProof::readFromStream(std::istream &stream,
                 dp = cstsG1[mindex];
                 return;
             } else {
-                cstsG1[mindex] = (dp = std::shared_ptr<G1Data>(new G1Data));
+                cstsG1[mindex] = (dp = std::shared_ptr<G1Data>(
+                            new G1Data((ElementType) mtype)));
             }
         }
-        dp->type = mtype;
         dp->index = mindex;
         return;
     }
-    dp = std::shared_ptr<G1Data>(new G1Data);
-    dp->type = mtype;
+    dp = std::shared_ptr<G1Data>(new G1Data((ElementType) mtype));
     switch (mtype) {
     case ELEMENT_CONST_VALUE:
         stream >> dp->el;
@@ -841,9 +887,57 @@ void NIZKProof::readFromStream(std::istream &stream,
     }
 }
 
+void NIZKProof::readFromStream(std::istream &stream,
+                               std::shared_ptr<G2Data> &dp) {
+    int mtype, mindex;
+    stream >> mtype;
+    if (mtype <= 1) { /* ELEMENT_VARIABLE or ELEMENT_CONST_INDEX */
+        stream >> mindex;
+        if (mtype == ELEMENT_VARIABLE) {
+            ASSERT((0 <= mindex) && (mindex < varsG2.size()) /* Wrong data */);
+            if (varsG2[mindex]) {
+                dp = varsG2[mindex];
+                return;
+            } else {
+                varsG2[mindex] = (dp = std::shared_ptr<G2Data>(
+                            new G2Data((ElementType) mtype)));
+            }
+        } else {
+            ASSERT((0 <= mindex) && (mindex < cstsG2.size()) /* Wrong data */);
+            if (cstsG2[mindex]) {
+                dp = cstsG2[mindex];
+                return;
+            } else {
+                cstsG2[mindex] = (dp = std::shared_ptr<G2Data>(
+                            new G2Data((ElementType) mtype)));
+            }
+        }
+        dp->index = mindex;
+        return;
+    }
+    dp = std::shared_ptr<G2Data>(new G2Data((ElementType) mtype));
+    switch (mtype) {
+    case ELEMENT_CONST_VALUE:
+        stream >> dp->el;
+        return;
+    case ELEMENT_PAIR:
+        readFromStream(stream, dp->pair.first);
+        readFromStream(stream, dp->pair.second);
+        return;
+    case ELEMENT_SCALAR:
+        readFromStream(stream, dp->scalar.first, -1);
+        readFromStream(stream, dp->scalar.second);
+        return;
+    case ELEMENT_BASE:
+        return;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
 std::ostream &operator<<(std::ostream &stream, const NIZKProof &p) {
-    if (!fixed) return stream;
-    stream << p.type;
+    if (!p.fixed) return stream;
+    stream << ((int) p.type);
     stream << p.varsFp.size() << p.cstsFp.size();
     stream << p.varsG1.size() << p.cstsG1.size();
     stream << p.varsG2.size() << p.cstsG2.size();
@@ -860,7 +954,9 @@ std::ostream &operator<<(std::ostream &stream, const NIZKProof &p) {
 }
 
 NIZKProof::NIZKProof(std::istream &stream) : fixed(true) {
-    stream >> type;
+    int mtype;
+    stream >> mtype;
+    type = (CommitType) mtype;
     size_t s;
     stream >> s;
     varsFp.resize(s);

@@ -135,7 +135,7 @@ G2Element operator*(const FpElement &s, const G2Element &e);
 GTElement e(const G1Element &a, const G2Element &b);
 
 struct EqProofType {
-    enum {
+    enum EqProofTypeIndividual {
         TYPE_NORMAL = 3,
         TYPE_SINGLE = 2,
         TYPE_ZP     = 1
@@ -467,9 +467,9 @@ struct ProofData {
 class NIZKProof {
 public:
     enum CommitType {
-        NormalCommit,
-        SelectedEncryption,
-        AllEncrypted
+        NormalCommit = 0,
+        SelectedEncryption = 1,
+        AllEncrypted = 2
     };
 public:
     /**
@@ -613,6 +613,7 @@ private:
     void readFromStream(std::istream &stream, std::shared_ptr<FpData> &dp,
                         int side);
     void readFromStream(std::istream &stream, std::shared_ptr<G1Data> &dp);
+    void readFromStream(std::istream &stream, std::shared_ptr<G2Data> &dp);
 private:
     CommitType type;
     std::vector<PairFp> eqsFp;
