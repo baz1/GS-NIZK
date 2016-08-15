@@ -1982,6 +1982,14 @@ void NIZKProof::getProof(const GTData &d, const CRS &crs) const {
     ProofEls *proofEl = new ProofEls;
     d.d = reinterpret_cast<void*>(proofEl);
     switch (d.type) {
+    case ELEMENT_CONST_INDEX:
+    case ELEMENT_CONST_VALUE:
+    case ELEMENT_BASE:
+        proofEl->p1_v.type = VALUE_NULL;
+        proofEl->p1_w.type = VALUE_NULL;
+        proofEl->p2_v.type = VALUE_NULL;
+        proofEl->p2_w.type = VALUE_NULL;
+        return;
     case ELEMENT_PAIR:
         {
             getProof(*d.pair.first, crs);
