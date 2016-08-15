@@ -614,6 +614,7 @@ private:
                         int side);
     void readFromStream(std::istream &stream, std::shared_ptr<G1Data> &dp);
     void readFromStream(std::istream &stream, std::shared_ptr<G2Data> &dp);
+    void readFromStream(std::istream &stream, std::shared_ptr<GTData> &dp);
 private:
     CommitType type;
     std::vector<PairFp> eqsFp;

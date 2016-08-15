@@ -782,6 +782,31 @@ void writeToStream(std::ostream &stream, const G2Data &d) {
     }
 }
 
+void writeToStream(std::ostream &stream, const GTData &d) {
+    stream << ((int) d.type);
+    switch (d.type) {
+    case ELEMENT_VARIABLE:
+    case ELEMENT_CONST_INDEX:
+        stream << d.index;
+        break;
+    case ELEMENT_CONST_VALUE:
+        stream << d.el;
+        break;
+    case ELEMENT_PAIR:
+        writeToStream(stream, *d.pair.first);
+        writeToStream(stream, *d.pair.second);
+        break;
+    case ELEMENT_PAIRING:
+        writeToStream(stream, *d.pring.first);
+        writeToStream(stream, *d.pring.second);
+        break;
+    case ELEMENT_BASE:
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
 void NIZKProof::readFromStream(std::istream &stream,
                                std::shared_ptr<FpData> &dp,
                                int side) {
@@ -927,6 +952,43 @@ void NIZKProof::readFromStream(std::istream &stream,
     case ELEMENT_SCALAR:
         readFromStream(stream, dp->scalar.first, -1);
         readFromStream(stream, dp->scalar.second);
+        return;
+    case ELEMENT_BASE:
+        return;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void NIZKProof::readFromStream(std::istream &stream,
+                               std::shared_ptr<GTData> &dp) {
+    int mtype, mindex;
+    stream >> mtype;
+    if (mtype == ELEMENT_CONST_INDEX) {
+        stream >> mindex;
+        ASSERT((0 <= mindex) && (mindex < cstsGT.size()) /* Wrong data */);
+        if (cstsGT[mindex]) {
+            dp = cstsGT[mindex];
+            return;
+        } else {
+            cstsGT[mindex] = (dp = std::shared_ptr<GTData>(
+                        new GTData((ElementType) mtype)));
+        }
+        dp->index = mindex;
+        return;
+    }
+    dp = std::shared_ptr<GTData>(new GTData((ElementType) mtype));
+    switch (mtype) {
+    case ELEMENT_CONST_VALUE:
+        stream >> dp->el;
+        return;
+    case ELEMENT_PAIR:
+        readFromStream(stream, dp->pair.first);
+        readFromStream(stream, dp->pair.second);
+        return;
+    case ELEMENT_PAIRING:
+        readFromStream(stream, dp->pring.first);
+        readFromStream(stream, dp->pring.second);
         return;
     case ELEMENT_BASE:
         return;
