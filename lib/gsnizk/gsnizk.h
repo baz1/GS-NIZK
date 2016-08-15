@@ -610,6 +610,8 @@ private:
     void getLeft(const G1Data &d, const CRS &crs) const;
     void getRight(const FpData &d, const CRS &crs) const;
     void getRight(const G2Data &d, const CRS &crs) const;
+    void readFromStream(std::istream &stream, std::shared_ptr<FpData> &dp,
+                        int side);
 private:
     CommitType type;
     std::vector<PairFp> eqsFp;

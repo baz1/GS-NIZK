@@ -689,6 +689,85 @@ template <typename T> inline void readVectorFromStream(std::istream &stream,
         stream >> v[i];
 }
 
+void writeToStream(std::ostream &stream, const FpData &d) {
+    stream << ((int) d.type);
+    switch (d.type) {
+    case ELEMENT_VARIABLE:
+    case ELEMENT_CONST_INDEX:
+        stream << d.index;
+        break;
+    case ELEMENT_CONST_VALUE:
+        stream << d.el;
+        break;
+    case ELEMENT_PAIR:
+    case ELEMENT_SCALAR:
+        writeToStream(stream, *d.pair.first);
+        writeToStream(stream, *d.pair.second);
+        break;
+    case ELEMENT_BASE:
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void NIZKProof::readFromStream(std::istream &stream,
+                               std::shared_ptr<FpData> &dp,
+                               int side) {
+    int mtype, mindex;
+    stream >> mtype;
+    if (mtype <= 1) { /* ELEMENT_VARIABLE or ELEMENT_CONST_INDEX */
+        ASSERT(side != 0 /* Wrong data */);
+        stream >> mindex;
+        if (mtype == ELEMENT_VARIABLE) {
+            ASSERT((0 <= mindex) && (mindex < varsFp.size()) /* Wrong data */);
+            if (varsFp[mindex]) {
+                dp = varsFp[mindex];
+                ASSERT(varsFpInB1[mindex] == (side < 0) /* Wrong data */);
+                return;
+            } else {
+                varsFp[mindex] = (dp = std::shared_ptr<FpData>(new FpData));
+                varsFpInB1[mindex] = (side < 0);
+            }
+        } else {
+            ASSERT((0 <= mindex) && (mindex < cstsFp.size()) /* Wrong data */);
+            if (cstsFp[mindex]) {
+                dp = cstsFp[mindex];
+                ASSERT(cstsFpInB1[mindex] == (side < 0) /* Wrong data */);
+                return;
+            } else {
+                cstsFp[mindex] = (dp = std::shared_ptr<FpData>(new FpData));
+                cstsFpInB1[mindex] = (side < 0);
+            }
+        }
+        dp->type = mtype;
+        dp->index = mindex;
+        return;
+    }
+    dp = std::shared_ptr<FpData>(new FpData);
+    dp->type = mtype;
+    switch (mtype) {
+    case ELEMENT_CONST_VALUE:
+        ASSERT(side != 0 /* Wrong data */);
+        stream >> dp->el;
+        return;
+    case ELEMENT_PAIR:
+        readFromStream(stream, dp->pair.first, side);
+        readFromStream(stream, dp->pair.second, side);
+        return;
+    case ELEMENT_SCALAR:
+        ASSERT(side == 0 /* Wrong data */);
+        readFromStream(stream, dp->pair.first, -1);
+        readFromStream(stream, dp->pair.second, 1);
+        return;
+    case ELEMENT_BASE:
+        ASSERT(side != 0 /* Wrong data */);
+        return;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
 std::ostream &operator<<(std::ostream &stream, const NIZKProof &p) {
     if (!fixed) return stream;
     stream << p.type;
@@ -1329,7 +1408,6 @@ void NIZKProof::getIndexes(std::shared_ptr<FpData> &d) {
         return;
     default:
         ASSERT(false /* Unexpected data type */);
-        return;
     }
 }
 
@@ -1369,7 +1447,6 @@ void NIZKProof::getIndexes(std::shared_ptr<G1Data> &d) {
         return;
     default:
         ASSERT(false /* Unexpected data type */);
-        return;
     }
 }
 
@@ -1409,7 +1486,6 @@ void NIZKProof::getIndexes(std::shared_ptr<G2Data> &d) {
         return;
     default:
         ASSERT(false /* Unexpected data type */);
-        return;
     }
 }
 
@@ -1437,7 +1513,6 @@ void NIZKProof::getIndexes(std::shared_ptr<GTData> &d) {
         return;
     default:
         ASSERT(false /* Unexpected data type */);
-        return;
     }
 }
 
