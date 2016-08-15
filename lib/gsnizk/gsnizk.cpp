@@ -711,6 +711,31 @@ void writeToStream(std::ostream &stream, const FpData &d) {
     }
 }
 
+void writeToStream(std::ostream &stream, const G1Data &d) {
+    stream << ((int) d.type);
+    switch (d.type) {
+    case ELEMENT_VARIABLE:
+    case ELEMENT_CONST_INDEX:
+        stream << d.index;
+        break;
+    case ELEMENT_CONST_VALUE:
+        stream << d.el;
+        break;
+    case ELEMENT_PAIR:
+        writeToStream(stream, *d.pair.first);
+        writeToStream(stream, *d.pair.second);
+        break;
+    case ELEMENT_SCALAR:
+        writeToStream(stream, *d.scalar.second);
+        writeToStream(stream, *d.scalar.first);
+        break;
+    case ELEMENT_BASE:
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
 void NIZKProof::readFromStream(std::istream &stream,
                                std::shared_ptr<FpData> &dp,
                                int side) {
@@ -762,6 +787,54 @@ void NIZKProof::readFromStream(std::istream &stream,
         return;
     case ELEMENT_BASE:
         ASSERT(side != 0 /* Wrong data */);
+        return;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void NIZKProof::readFromStream(std::istream &stream,
+                               std::shared_ptr<G1Data> &dp) {
+    int mtype, mindex;
+    stream >> mtype;
+    if (mtype <= 1) { /* ELEMENT_VARIABLE or ELEMENT_CONST_INDEX */
+        stream >> mindex;
+        if (mtype == ELEMENT_VARIABLE) {
+            ASSERT((0 <= mindex) && (mindex < varsG1.size()) /* Wrong data */);
+            if (varsG1[mindex]) {
+                dp = varsG1[mindex];
+                return;
+            } else {
+                varsG1[mindex] = (dp = std::shared_ptr<G1Data>(new G1Data));
+            }
+        } else {
+            ASSERT((0 <= mindex) && (mindex < cstsG1.size()) /* Wrong data */);
+            if (cstsG1[mindex]) {
+                dp = cstsG1[mindex];
+                return;
+            } else {
+                cstsG1[mindex] = (dp = std::shared_ptr<G1Data>(new G1Data));
+            }
+        }
+        dp->type = mtype;
+        dp->index = mindex;
+        return;
+    }
+    dp = std::shared_ptr<G1Data>(new G1Data);
+    dp->type = mtype;
+    switch (mtype) {
+    case ELEMENT_CONST_VALUE:
+        stream >> dp->el;
+        return;
+    case ELEMENT_PAIR:
+        readFromStream(stream, dp->pair.first);
+        readFromStream(stream, dp->pair.second);
+        return;
+    case ELEMENT_SCALAR:
+        readFromStream(stream, dp->scalar.second);
+        readFromStream(stream, dp->scalar.first, 1);
+        return;
+    case ELEMENT_BASE:
         return;
     default:
         ASSERT(false /* Unexpected data type */);
