@@ -1225,9 +1225,9 @@ PiG2 &PiG2::operator*=(const Fp &c) {
 }
 
 enum CommitType {
-    COMMIT_PUB,
-    COMMIT_ENC,
-    COMMIT_PRIV
+    COMMIT_PUB = 0,
+    COMMIT_ENC = 1,
+    COMMIT_PRIV = 2
 };
 
 struct G1Commit {
@@ -1248,12 +1248,11 @@ struct ProofEls {
 };
 
 void addPiG1(const PiG1 &a, const PiG1 &b, PiG1 &result, const CRS &crs) {
-    if ((a.type == VALUE_Fp) && (b.type == VALUE_Fp)) {
-        result.type = VALUE_Fp;
+    result.type = ((a.type == b.type) ? a.type : VALUE_B);
+    if (result.type == VALUE_Fp) {
         result.fpValue = a.fpValue + b.fpValue;
         return;
     }
-    result.type = VALUE_B;
     if (a.type == VALUE_Fp)
         result.b1Value = B1(a.fpValue, crs);
     else
@@ -1265,12 +1264,11 @@ void addPiG1(const PiG1 &a, const PiG1 &b, PiG1 &result, const CRS &crs) {
 }
 
 void addPiG2(const PiG2 &a, const PiG2 &b, PiG2 &result, const CRS &crs) {
-    if ((a.type == VALUE_Fp) && (b.type == VALUE_Fp)) {
-        result.type = VALUE_Fp;
+    result.type = ((a.type == b.type) ? a.type : VALUE_B);
+    if (result.type == VALUE_Fp) {
         result.fpValue = a.fpValue + b.fpValue;
         return;
     }
-    result.type = VALUE_B;
     if (a.type == VALUE_Fp)
         result.b2Value = B2(a.fpValue, crs);
     else
@@ -1282,12 +1280,11 @@ void addPiG2(const PiG2 &a, const PiG2 &b, PiG2 &result, const CRS &crs) {
 }
 
 void subPiG1(const PiG1 &a, const PiG1 &b, PiG1 &result, const CRS &crs) {
-    if ((a.type == VALUE_Fp) && (b.type == VALUE_Fp)) {
-        result.type = VALUE_Fp;
+    result.type = ((a.type == b.type) ? a.type : VALUE_B);
+    if (result.type == VALUE_Fp) {
         result.fpValue = a.fpValue - b.fpValue;
         return;
     }
-    result.type = VALUE_B;
     if (a.type == VALUE_Fp)
         result.b1Value = B1(a.fpValue, crs);
     else
@@ -1299,12 +1296,11 @@ void subPiG1(const PiG1 &a, const PiG1 &b, PiG1 &result, const CRS &crs) {
 }
 
 void subPiG2(const PiG2 &a, const PiG2 &b, PiG2 &result, const CRS &crs) {
-    if ((a.type == VALUE_Fp) && (b.type == VALUE_Fp)) {
-        result.type = VALUE_Fp;
+    result.type = ((a.type == b.type) ? a.type : VALUE_B);
+    if (result.type == VALUE_Fp) {
         result.fpValue = a.fpValue - b.fpValue;
         return;
     }
-    result.type = VALUE_B;
     if (a.type == VALUE_Fp)
         result.b2Value = B2(a.fpValue, crs);
     else
@@ -1316,6 +1312,7 @@ void subPiG2(const PiG2 &a, const PiG2 &b, PiG2 &result, const CRS &crs) {
 }
 
 template <class T> void addCommitGX(const T &c1, const T &c2, T &cr) {
+    cr.type = ((c1.type < c2.type) ? c2.type : c1.type);
     switch (c1.type) {
     case COMMIT_PUB:
         switch (c2.type) {
@@ -1361,10 +1358,12 @@ template <class T> void addCommitGX(const T &c1, const T &c2, T &cr) {
 void addCommitG1(const G1Commit &c1, const G1Commit &c2, G1Commit &cr,
                  const CRS &crs) {
     addCommitGX(c1, c2, cr);
+    cr.c.type = ((c1.c.type == c2.c.type) ? c1.c.type : VALUE_B);
     if (c1.c.type == VALUE_Fp) {
         if (c2.c.type == VALUE_Fp) {
             cr.c.fpValue = c1.c.fpValue + c2.c.fpValue;
         } else {
+            cr.c.type = VALUE_Fp;
             cr.c.b1Value = B1(c1.c.fpValue, crs) + c2.c.b1Value;
         }
     } else {
@@ -1379,6 +1378,7 @@ void addCommitG1(const G1Commit &c1, const G1Commit &c2, G1Commit &cr,
 void addCommitG2(const G2Commit &c1, const G2Commit &c2, G2Commit &cr,
                  const CRS &crs) {
     addCommitGX(c1, c2, cr);
+    cr.c.type = ((c1.c.type == c2.c.type) ? c1.c.type : VALUE_B);
     if (c1.c.type == VALUE_Fp) {
         if (c2.c.type == VALUE_Fp) {
             cr.c.fpValue = c1.c.fpValue + c2.c.fpValue;
@@ -1656,30 +1656,7 @@ void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
         writeEqProof(stream, *reinterpret_cast<ProofEls*>(left.d),
                      *reinterpret_cast<ProofEls*>(right.d), tGT[i], crs);
     }
-    for (i = eqsFp.size(); i-- > 0;) {
-        const FpData &left = *eqsFp[i].first;
-        const FpData &right = *eqsFp[i].second;
-        removeProof(left);
-        removeProof(right);
-    }
-    for (i = eqsG1.size(); i-- > 0;) {
-        const G1Data &left = *eqsG1[i].first;
-        const G1Data &right = *eqsG1[i].second;
-        removeProof(left);
-        removeProof(right);
-    }
-    for (i = eqsG2.size(); i-- > 0;) {
-        const G2Data &left = *eqsG2[i].first;
-        const G2Data &right = *eqsG2[i].second;
-        removeProof(left);
-        removeProof(right);
-    }
-    for (i = eqsGT.size(); i-- > 0;) {
-        const GTData &left = *eqsGT[i].first;
-        const GTData &right = *eqsGT[i].second;
-        removeProof(left);
-        removeProof(right);
-    }
+    cleanupPE();
 }
 
 bool NIZKProof::checkInstantiation(const ProofData &instantiation) const {
@@ -1936,7 +1913,6 @@ void scalarCombine(const G1Commit &c1, const G2Commit &c2, ProofEls &p) {
     case COMMIT_PRIV:
         p.p2_w = c2.c;
         p.p2_w *= c1.s;
-        break;
     case COMMIT_ENC:
         p.p2_v = c2.c;
         p.p2_v *= c1.r;
@@ -1949,13 +1925,20 @@ void scalarCombine(const G1Commit &c1, const G2Commit &c2, ProofEls &p) {
     case COMMIT_PRIV:
         p.p1_w = c1.c;
         p.p1_w *= c2.s;
-        break;
     case COMMIT_ENC:
         p.p1_v = c1.c;
         p.p1_v *= c2.r;
     case COMMIT_PUB:
         break;
     }
+}
+
+void addAllPi(const ProofEls &el1, const ProofEls &el2, ProofEls &result,
+              const CRS &crs) {
+    addPiG1(el1.p1_v, el2.p1_v, result.p1_v, crs);
+    addPiG1(el1.p1_w, el2.p1_w, result.p1_w, crs);
+    addPiG2(el1.p2_v, el2.p2_v, result.p2_v, crs);
+    addPiG2(el1.p2_w, el2.p2_w, result.p2_w, crs);
 }
 
 void getProof(const FpData &d, const CRS &crs) {
@@ -1971,10 +1954,7 @@ void getProof(const FpData &d, const CRS &crs) {
                     *reinterpret_cast<const ProofEls*>(d.pair.first->d);
             const ProofEls &el2 =
                     *reinterpret_cast<const ProofEls*>(d.pair.second->d);
-            addPiG1(el1.p1_v, el2.p1_v, proofEl->p1_v, crs);
-            addPiG1(el1.p1_w, el2.p1_w, proofEl->p1_w, crs);
-            addPiG2(el1.p2_v, el2.p2_v, proofEl->p2_v, crs);
-            addPiG2(el1.p2_w, el2.p2_w, proofEl->p2_w, crs);
+            addAllPi(el1, el2, *proofEl, crs);
             return;
         }
     case ELEMENT_SCALAR:
@@ -2006,10 +1986,7 @@ void getProof(const G1Data &d, const CRS &crs) {
                     *reinterpret_cast<const ProofEls*>(d.pair.first->d);
             const ProofEls &el2 =
                     *reinterpret_cast<const ProofEls*>(d.pair.second->d);
-            addPiG1(el1.p1_v, el2.p1_v, proofEl->p1_v, crs);
-            addPiG1(el1.p1_w, el2.p1_w, proofEl->p1_w, crs);
-            addPiG2(el1.p2_v, el2.p2_v, proofEl->p2_v, crs);
-            addPiG2(el1.p2_w, el2.p2_w, proofEl->p2_w, crs);
+            addAllPi(el1, el2, *proofEl, crs);
             return;
         }
     case ELEMENT_SCALAR:
@@ -2017,9 +1994,9 @@ void getProof(const G1Data &d, const CRS &crs) {
             getLeft(*d.scalar.second, crs);
             getRight(*d.scalar.first, crs);
             const G1Commit &el1 =
-                    *reinterpret_cast<const G1Commit*>(d.pair.first->d);
+                    *reinterpret_cast<const G1Commit*>(d.scalar.second->d);
             const G2Commit &el2 =
-                    *reinterpret_cast<const G2Commit*>(d.pair.second->d);
+                    *reinterpret_cast<const G2Commit*>(d.scalar.first->d);
             scalarCombine(el1, el2, *proofEl);
             return;
         }
@@ -2041,10 +2018,7 @@ void getProof(const G2Data &d, const CRS &crs) {
                     *reinterpret_cast<const ProofEls*>(d.pair.first->d);
             const ProofEls &el2 =
                     *reinterpret_cast<const ProofEls*>(d.pair.second->d);
-            addPiG1(el1.p1_v, el2.p1_v, proofEl->p1_v, crs);
-            addPiG1(el1.p1_w, el2.p1_w, proofEl->p1_w, crs);
-            addPiG2(el1.p2_v, el2.p2_v, proofEl->p2_v, crs);
-            addPiG2(el1.p2_w, el2.p2_w, proofEl->p2_w, crs);
+            addAllPi(el1, el2, *proofEl, crs);
             return;
         }
     case ELEMENT_SCALAR:
@@ -2052,9 +2026,9 @@ void getProof(const G2Data &d, const CRS &crs) {
             getLeft(*d.scalar.first, crs);
             getRight(*d.scalar.second, crs);
             const G1Commit &el1 =
-                    *reinterpret_cast<const G1Commit*>(d.pair.first->d);
+                    *reinterpret_cast<const G1Commit*>(d.scalar.first->d);
             const G2Commit &el2 =
-                    *reinterpret_cast<const G2Commit*>(d.pair.second->d);
+                    *reinterpret_cast<const G2Commit*>(d.scalar.second->d);
             scalarCombine(el1, el2, *proofEl);
             return;
         }
@@ -2084,10 +2058,7 @@ void getProof(const GTData &d, const CRS &crs) {
                     *reinterpret_cast<const ProofEls*>(d.pair.first->d);
             const ProofEls &el2 =
                     *reinterpret_cast<const ProofEls*>(d.pair.second->d);
-            addPiG1(el1.p1_v, el2.p1_v, proofEl->p1_v, crs);
-            addPiG1(el1.p1_w, el2.p1_w, proofEl->p1_w, crs);
-            addPiG2(el1.p2_v, el2.p2_v, proofEl->p2_v, crs);
-            addPiG2(el1.p2_w, el2.p2_w, proofEl->p2_w, crs);
+            addAllPi(el1, el2, *proofEl, crs);
             return;
         }
     case ELEMENT_PAIRING:
@@ -2342,8 +2313,395 @@ void removeRight(const G2Data &d) {
     }
 }
 
+void getPType(const FpData &d);
+void getPType(const G1Data &d);
+void getPType(const G2Data &d);
+void getPType(const GTData &d);
+void getPTLeft(const FpData &d);
+void getPTLeft(const G1Data &d);
+void getPTRight(const FpData &d);
+void getPTRight(const G2Data &d);
+
+template <typename T> void addPiGX(const T &a, const T &b, T &result) {
+    result.type = ((a.type == b.type) ? a.type : VALUE_B);
+}
+
+void scalarCombineLight(const G1Commit &c1, const G2Commit &c2, ProofEls &p) {
+    switch (c1.type) {
+    case COMMIT_PRIV:
+        p.p2_v.type = c2.c.type;
+        p.p2_w.type = c2.c.type;
+        break;
+    case COMMIT_ENC:
+        p.p2_v.type = c2.c.type;
+        p.p2_w.type = VALUE_NULL;
+        break;
+    case COMMIT_PUB:
+        p.p2_v.type = VALUE_NULL;
+        p.p2_w.type = VALUE_NULL;
+        break;
+    }
+    switch (c2.type) {
+    case COMMIT_PRIV:
+        p.p1_v.type = c1.c.type;
+        p.p1_w.type = c1.c.type;
+        break;
+    case COMMIT_ENC:
+        p.p1_v.type = c1.c.type;
+        p.p1_w.type = VALUE_NULL;
+        break;
+    case COMMIT_PUB:
+        p.p1_v.type = VALUE_NULL;
+        p.p1_w.type = VALUE_NULL;
+        break;
+    }
+}
+
+void addAllPiLight(const ProofEls &el1, const ProofEls &el2, ProofEls &result) {
+    addPiGX(el1.p1_v, el2.p1_v, result.p1_v);
+    addPiGX(el1.p1_w, el2.p1_w, result.p1_w);
+    addPiGX(el1.p2_v, el2.p2_v, result.p2_v);
+    addPiGX(el1.p2_w, el2.p2_w, result.p2_w);
+}
+
+void getPType(const FpData &d) {
+    if (d.d) return;
+    ProofEls *proofEl = new ProofEls;
+    d.d = reinterpret_cast<void*>(proofEl);
+    switch (d.type) {
+    case ELEMENT_PAIR:
+        {
+            getPType(*d.pair.first);
+            getPType(*d.pair.second);
+            const ProofEls &el1 =
+                    *reinterpret_cast<const ProofEls*>(d.pair.first->d);
+            const ProofEls &el2 =
+                    *reinterpret_cast<const ProofEls*>(d.pair.second->d);
+            addAllPiLight(el1, el2, *proofEl);
+            return;
+        }
+    case ELEMENT_SCALAR:
+        {
+            getPTLeft(*d.pair.first);
+            getPTRight(*d.pair.second);
+            const G1Commit &el1 =
+                    *reinterpret_cast<const G1Commit*>(d.pair.first->d);
+            const G2Commit &el2 =
+                    *reinterpret_cast<const G2Commit*>(d.pair.second->d);
+            scalarCombineLight(el1, el2, *proofEl);
+            return;
+        }
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void getPType(const G1Data &d) {
+    if (d.d) return;
+    ProofEls *proofEl = new ProofEls;
+    d.d = reinterpret_cast<void*>(proofEl);
+    switch (d.type) {
+    case ELEMENT_PAIR:
+        {
+            getPType(*d.pair.first);
+            getPType(*d.pair.second);
+            const ProofEls &el1 =
+                    *reinterpret_cast<const ProofEls*>(d.pair.first->d);
+            const ProofEls &el2 =
+                    *reinterpret_cast<const ProofEls*>(d.pair.second->d);
+            addAllPiLight(el1, el2, *proofEl);
+            return;
+        }
+    case ELEMENT_SCALAR:
+        {
+            getPTLeft(*d.scalar.second);
+            getPTRight(*d.scalar.first);
+            const G1Commit &el1 =
+                    *reinterpret_cast<const G1Commit*>(d.scalar.second->d);
+            const G2Commit &el2 =
+                    *reinterpret_cast<const G2Commit*>(d.scalar.first->d);
+            scalarCombineLight(el1, el2, *proofEl);
+            return;
+        }
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void getPType(const G2Data &d) {
+    if (d.d) return;
+    ProofEls *proofEl = new ProofEls;
+    d.d = reinterpret_cast<void*>(proofEl);
+    switch (d.type) {
+    case ELEMENT_PAIR:
+        {
+            getPType(*d.pair.first);
+            getPType(*d.pair.second);
+            const ProofEls &el1 =
+                    *reinterpret_cast<const ProofEls*>(d.pair.first->d);
+            const ProofEls &el2 =
+                    *reinterpret_cast<const ProofEls*>(d.pair.second->d);
+            addAllPiLight(el1, el2, *proofEl);
+            return;
+        }
+    case ELEMENT_SCALAR:
+        {
+            getPTLeft(*d.scalar.first);
+            getPTRight(*d.scalar.second);
+            const G1Commit &el1 =
+                    *reinterpret_cast<const G1Commit*>(d.scalar.first->d);
+            const G2Commit &el2 =
+                    *reinterpret_cast<const G2Commit*>(d.scalar.second->d);
+            scalarCombineLight(el1, el2, *proofEl);
+            return;
+        }
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void getPType(const GTData &d) {
+    if (d.d) return;
+    ProofEls *proofEl = new ProofEls;
+    d.d = reinterpret_cast<void*>(proofEl);
+    switch (d.type) {
+    case ELEMENT_CONST_INDEX:
+    case ELEMENT_CONST_VALUE:
+    case ELEMENT_BASE:
+        proofEl->p1_v.type = VALUE_NULL;
+        proofEl->p1_w.type = VALUE_NULL;
+        proofEl->p2_v.type = VALUE_NULL;
+        proofEl->p2_w.type = VALUE_NULL;
+        return;
+    case ELEMENT_PAIR:
+        {
+            getPType(*d.pair.first);
+            getPType(*d.pair.second);
+            const ProofEls &el1 =
+                    *reinterpret_cast<const ProofEls*>(d.pair.first->d);
+            const ProofEls &el2 =
+                    *reinterpret_cast<const ProofEls*>(d.pair.second->d);
+            addAllPiLight(el1, el2, *proofEl);
+            return;
+        }
+    case ELEMENT_PAIRING:
+        {
+            getPTLeft(*d.pring.first);
+            getPTRight(*d.pring.second);
+            const G1Commit &el1 =
+                    *reinterpret_cast<const G1Commit*>(d.pring.first->d);
+            const G2Commit &el2 =
+                    *reinterpret_cast<const G2Commit*>(d.pring.second->d);
+            scalarCombineLight(el1, el2, *proofEl);
+            return;
+        }
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+template <typename T> void addCommitGXLight(const T &c1, const T &c2, T &cr) {
+    cr.type = ((c1.type < c2.type) ? c2.type : c1.type);
+    cr.c.type = ((c1.c.type == c2.c.type) ? c1.c.type : VALUE_B);
+}
+
+void getPTLeft(const FpData &d) {
+    if (d.d) return;
+    G1Commit *c1 = new G1Commit;
+    d.d = reinterpret_cast<void*>(c1);
+    switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        c1->type = COMMIT_PUB;
+        c1->c.type = VALUE_Fp;
+        return;
+    case ELEMENT_PAIR:
+        {
+            getPTLeft(*d.pair.first);
+            getPTLeft(*d.pair.second);
+            const G1Commit &el1 =
+                    *reinterpret_cast<const G1Commit*>(d.pair.first->d);
+            const G1Commit &el2 =
+                    *reinterpret_cast<const G1Commit*>(d.pair.second->d);
+            addCommitGXLight(el1, el2, *c1);
+            return;
+        }
+    case ELEMENT_BASE:
+        c1->type = COMMIT_PUB;
+        c1->c.type = VALUE_Fp;
+        return;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void getPTLeft(const G1Data &d) {
+    if (d.d) return;
+    G1Commit *c1 = new G1Commit;
+    d.d = reinterpret_cast<void*>(c1);
+    switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        c1->type = COMMIT_PUB;
+        c1->c.type = VALUE_G;
+        return;
+    case ELEMENT_PAIR:
+        {
+            getPTLeft(*d.pair.first);
+            getPTLeft(*d.pair.second);
+            const G1Commit &el1 =
+                    *reinterpret_cast<const G1Commit*>(d.pair.first->d);
+            const G1Commit &el2 =
+                    *reinterpret_cast<const G1Commit*>(d.pair.second->d);
+            addCommitGXLight(el1, el2, *c1);
+            return;
+        }
+    case ELEMENT_BASE:
+        c1->type = COMMIT_PUB;
+        c1->c.type = VALUE_G;
+        return;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void getPTRight(const FpData &d) {
+    if (d.d) return;
+    G2Commit *c2 = new G2Commit;
+    d.d = reinterpret_cast<void*>(c2);
+    switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        c2->type = COMMIT_PUB;
+        c2->c.type = VALUE_Fp;
+        return;
+    case ELEMENT_PAIR:
+        {
+            getPTRight(*d.pair.first);
+            getPTRight(*d.pair.second);
+            const G2Commit &el1 =
+                    *reinterpret_cast<const G2Commit*>(d.pair.first->d);
+            const G2Commit &el2 =
+                    *reinterpret_cast<const G2Commit*>(d.pair.second->d);
+            addCommitGXLight(el1, el2, *c2);
+            return;
+        }
+    case ELEMENT_BASE:
+        c2->type = COMMIT_PUB;
+        c2->c.type = VALUE_Fp;
+        return;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void getPTRight(const G2Data &d) {
+    if (d.d) return;
+    G2Commit *c2 = new G2Commit;
+    d.d = reinterpret_cast<void*>(c2);
+    switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        c2->type = COMMIT_PUB;
+        c2->c.type = VALUE_G;
+        return;
+    case ELEMENT_PAIR:
+        {
+            getPTRight(*d.pair.first);
+            getPTRight(*d.pair.second);
+            const G2Commit &el1 =
+                    *reinterpret_cast<const G2Commit*>(d.pair.first->d);
+            const G2Commit &el2 =
+                    *reinterpret_cast<const G2Commit*>(d.pair.second->d);
+            addCommitGXLight(el1, el2, *c2);
+            return;
+        }
+    case ELEMENT_BASE:
+        c2->type = COMMIT_PUB;
+        c2->c.type = VALUE_G;
+        return;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void PEToPT(const ProofEls &from, EqProofType &to) {
+    to.tv1 = (EqProofType::EqProofTypeIndividual) (int) from.p1_v.type;
+    to.tw1 = (EqProofType::EqProofTypeIndividual) (int) from.p1_w.type;
+    to.tv2 = (EqProofType::EqProofTypeIndividual) (int) from.p2_v.type;
+    to.tw2 = (EqProofType::EqProofTypeIndividual) (int) from.p2_w.type;
+}
+
 void NIZKProof::getEqProofTypes() {
-    // TODO
+    ProofEls res;
+    int i = eqsFp.size();
+    tFp.resize(i);
+    while (i-- > 0) {
+        const FpData &left = *eqsFp[i].first;
+        const FpData &right = *eqsFp[i].second;
+        getPType(left);
+        getPType(right);
+        addAllPiLight(*reinterpret_cast<ProofEls*>(left.d),
+                      *reinterpret_cast<ProofEls*>(right.d), res);
+        PEToPT(res, tFp[i]);
+    }
+    i = eqsG1.size();
+    tG1.resize(i);
+    while (i-- > 0) {
+        const G1Data &left = *eqsG1[i].first;
+        const G1Data &right = *eqsG1[i].second;
+        getPType(left);
+        getPType(right);
+        addAllPiLight(*reinterpret_cast<ProofEls*>(left.d),
+                      *reinterpret_cast<ProofEls*>(right.d), res);
+        PEToPT(res, tG1[i]);
+    }
+    i = eqsG2.size();
+    tG2.resize(i);
+    while (i-- > 0) {
+        const G2Data &left = *eqsG2[i].first;
+        const G2Data &right = *eqsG2[i].second;
+        getPType(left);
+        getPType(right);
+        addAllPiLight(*reinterpret_cast<ProofEls*>(left.d),
+                      *reinterpret_cast<ProofEls*>(right.d), res);
+        PEToPT(res, tG2[i]);
+    }
+    i = eqsGT.size();
+    tGT.resize(i);
+    while (i-- > 0) {
+        const GTData &left = *eqsGT[i].first;
+        const GTData &right = *eqsGT[i].second;
+        getPType(left);
+        getPType(right);
+        addAllPiLight(*reinterpret_cast<ProofEls*>(left.d),
+                      *reinterpret_cast<ProofEls*>(right.d), res);
+        PEToPT(res, tGT[i]);
+    }
+    cleanupPE();
+}
+
+void NIZKProof::cleanupPE() const {
+    for (int i = eqsFp.size(); i-- > 0;) {
+        const FpData &left = *eqsFp[i].first;
+        const FpData &right = *eqsFp[i].second;
+        removeProof(left);
+        removeProof(right);
+    }
+    for (int i = eqsG1.size(); i-- > 0;) {
+        const G1Data &left = *eqsG1[i].first;
+        const G1Data &right = *eqsG1[i].second;
+        removeProof(left);
+        removeProof(right);
+    }
+    for (int i = eqsG2.size(); i-- > 0;) {
+        const G2Data &left = *eqsG2[i].first;
+        const G2Data &right = *eqsG2[i].second;
+        removeProof(left);
+        removeProof(right);
+    }
+    for (int i = eqsGT.size(); i-- > 0;) {
+        const GTData &left = *eqsGT[i].first;
+        const GTData &right = *eqsGT[i].second;
+        removeProof(left);
+        removeProof(right);
+    }
 }
 
 } /* End of namespace nizk */

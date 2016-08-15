@@ -138,7 +138,7 @@ struct EqProofType {
     enum EqProofTypeIndividual {
         TYPE_NORMAL = 3,
         TYPE_SINGLE = 2,
-        TYPE_ZP     = 1
+        TYPE_FP     = 1
     } tv1, tw1, tv2, tw2;
 };
 
@@ -608,6 +608,7 @@ private:
     void readFromStream(std::istream &stream, std::shared_ptr<G2Data> &dp);
     void readFromStream(std::istream &stream, std::shared_ptr<GTData> &dp);
     void getEqProofTypes();
+    void cleanupPE() const;
 private:
     CommitType type;
     std::vector<PairFp> eqsFp;
