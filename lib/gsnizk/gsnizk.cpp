@@ -1296,6 +1296,25 @@ void addPiG2(const PiG2 &a, const PiG2 &b, PiG2 &result, const CRS &crs) {
 }
 
 void subPiG1(const PiG1 &a, const PiG1 &b, PiG1 &result, const CRS &crs) {
+    if (b.type == VALUE_NULL) {
+        result = a;
+        return;
+    }
+    if (a.type == VALUE_NULL) {
+        result = b;
+        switch (result.type) {
+        case VALUE_Fp:
+            result.fpValue = -result.fpValue;
+            break;
+        case VALUE_G:
+            result.b1Value._2 = -result.b1Value._2;
+            break;
+        case VALUE_B:
+            result.b1Value = -result.b1Value;
+            break;
+        }
+        return;
+    }
     result.type = ((a.type == b.type) ? a.type : VALUE_B);
     if (result.type == VALUE_Fp) {
         result.fpValue = a.fpValue - b.fpValue;
@@ -1312,6 +1331,25 @@ void subPiG1(const PiG1 &a, const PiG1 &b, PiG1 &result, const CRS &crs) {
 }
 
 void subPiG2(const PiG2 &a, const PiG2 &b, PiG2 &result, const CRS &crs) {
+    if (b.type == VALUE_NULL) {
+        result = a;
+        return;
+    }
+    if (a.type == VALUE_NULL) {
+        result = b;
+        switch (result.type) {
+        case VALUE_Fp:
+            result.fpValue = -result.fpValue;
+            break;
+        case VALUE_G:
+            result.b2Value._2 = -result.b2Value._2;
+            break;
+        case VALUE_B:
+            result.b2Value = -result.b2Value;
+            break;
+        }
+        return;
+    }
     result.type = ((a.type == b.type) ? a.type : VALUE_B);
     if (result.type == VALUE_Fp) {
         result.fpValue = a.fpValue - b.fpValue;
