@@ -667,7 +667,7 @@ bool NIZKProof::endEquations() {
                 --sEnc[i][j];
         }
     }
-    // TODO fill the equation proof types
+    getEqProofTypes();
     fixed = true;
     return true;
 }
@@ -1000,33 +1000,40 @@ void NIZKProof::readFromStream(std::istream &stream,
 std::ostream &operator<<(std::ostream &stream, const PairFp &p) {
     writeToStream(stream, *p.first);
     writeToStream(stream, *p.second);
+    return stream;
 }
 
 std::ostream &operator<<(std::ostream &stream, const PairG1 &p) {
     writeToStream(stream, *p.first);
     writeToStream(stream, *p.second);
+    return stream;
 }
 
 std::ostream &operator<<(std::ostream &stream, const PairG2 &p) {
     writeToStream(stream, *p.first);
     writeToStream(stream, *p.second);
+    return stream;
 }
 
 std::ostream &operator<<(std::ostream &stream, const PairGT &p) {
     writeToStream(stream, *p.first);
     writeToStream(stream, *p.second);
+    return stream;
 }
 
 inline std::ostream &operator<<(std::ostream &stream, const AdditionalFp &a) {
     writeToStream(stream, *a.formula);
+    return stream;
 }
 
 inline std::ostream &operator<<(std::ostream &stream, const AdditionalG1 &a) {
     writeToStream(stream, *a.formula);
+    return stream;
 }
 
 inline std::ostream &operator<<(std::ostream &stream, const AdditionalG2 &a) {
     writeToStream(stream, *a.formula);
+    return stream;
 }
 
 std::ostream &operator<<(std::ostream &stream, const NIZKProof &p) {
@@ -1036,19 +1043,19 @@ std::ostream &operator<<(std::ostream &stream, const NIZKProof &p) {
     stream << p.varsG1.size() << p.cstsG1.size();
     stream << p.varsG2.size() << p.cstsG2.size();
     stream << p.cstsGT.size();
-    writeVectorToStream(p.eqsFp);
-    writeVectorToStream(p.eqsG1);
-    writeVectorToStream(p.eqsG2);
-    writeVectorToStream(p.eqsGT);
+    writeVectorToStream(stream, p.eqsFp);
+    writeVectorToStream(stream, p.eqsG1);
+    writeVectorToStream(stream, p.eqsG2);
+    writeVectorToStream(stream, p.eqsGT);
     writeVectorToStream(stream, p.sEnc[0]);
     writeVectorToStream(stream, p.sEnc[1]);
     writeVectorToStream(stream, p.tFp);
     writeVectorToStream(stream, p.tG1);
     writeVectorToStream(stream, p.tG2);
     writeVectorToStream(stream, p.tGT);
-    writeVectorToStream(additionalFp);
-    writeVectorToStream(additionalG1);
-    writeVectorToStream(additionalG2);
+    writeVectorToStream(stream, p.additionalFp);
+    writeVectorToStream(stream, p.additionalG1);
+    writeVectorToStream(stream, p.additionalG2);
     return stream;
 }
 
@@ -1386,6 +1393,14 @@ void addCommitG2(const G2Commit &c1, const G2Commit &c2, G2Commit &cr,
         }
     }
 }
+void getProof(const FpData &d, const CRS &crs);
+void getProof(const G1Data &d, const CRS &crs);
+void getProof(const G2Data &d, const CRS &crs);
+void getProof(const GTData &d, const CRS &crs);
+void getLeft(const FpData &d, const CRS &crs);
+void getLeft(const G1Data &d, const CRS &crs);
+void getRight(const FpData &d, const CRS &crs);
+void getRight(const G2Data &d, const CRS &crs);
 
 void removeProof(const FpData &d);
 void removeProof(const G1Data &d);
@@ -1943,7 +1958,7 @@ void scalarCombine(const G1Commit &c1, const G2Commit &c2, ProofEls &p) {
     }
 }
 
-void NIZKProof::getProof(const FpData &d, const CRS &crs) const {
+void getProof(const FpData &d, const CRS &crs) {
     if (d.d) return;
     ProofEls *proofEl = new ProofEls;
     d.d = reinterpret_cast<void*>(proofEl);
@@ -1978,7 +1993,7 @@ void NIZKProof::getProof(const FpData &d, const CRS &crs) const {
     }
 }
 
-void NIZKProof::getProof(const G1Data &d, const CRS &crs) const {
+void getProof(const G1Data &d, const CRS &crs) {
     if (d.d) return;
     ProofEls *proofEl = new ProofEls;
     d.d = reinterpret_cast<void*>(proofEl);
@@ -2013,7 +2028,7 @@ void NIZKProof::getProof(const G1Data &d, const CRS &crs) const {
     }
 }
 
-void NIZKProof::getProof(const G2Data &d, const CRS &crs) const {
+void getProof(const G2Data &d, const CRS &crs) {
     if (d.d) return;
     ProofEls *proofEl = new ProofEls;
     d.d = reinterpret_cast<void*>(proofEl);
@@ -2048,7 +2063,7 @@ void NIZKProof::getProof(const G2Data &d, const CRS &crs) const {
     }
 }
 
-void NIZKProof::getProof(const GTData &d, const CRS &crs) const {
+void getProof(const GTData &d, const CRS &crs) {
     if (d.d) return;
     ProofEls *proofEl = new ProofEls;
     d.d = reinterpret_cast<void*>(proofEl);
@@ -2091,7 +2106,7 @@ void NIZKProof::getProof(const GTData &d, const CRS &crs) const {
     }
 }
 
-void NIZKProof::getLeft(const FpData &d, const CRS &crs) const {
+void getLeft(const FpData &d, const CRS &crs) {
     if (d.d) return;
     G1Commit *c1 = new G1Commit;
     d.d = reinterpret_cast<void*>(c1);
@@ -2122,7 +2137,7 @@ void NIZKProof::getLeft(const FpData &d, const CRS &crs) const {
     }
 }
 
-void NIZKProof::getLeft(const G1Data &d, const CRS &crs) const {
+void getLeft(const G1Data &d, const CRS &crs) {
     if (d.d) return;
     G1Commit *c1 = new G1Commit;
     d.d = reinterpret_cast<void*>(c1);
@@ -2153,7 +2168,7 @@ void NIZKProof::getLeft(const G1Data &d, const CRS &crs) const {
     }
 }
 
-void NIZKProof::getRight(const FpData &d, const CRS &crs) const {
+void getRight(const FpData &d, const CRS &crs) {
     if (d.d) return;
     G2Commit *c2 = new G2Commit;
     d.d = reinterpret_cast<void*>(c2);
@@ -2184,7 +2199,7 @@ void NIZKProof::getRight(const FpData &d, const CRS &crs) const {
     }
 }
 
-void NIZKProof::getRight(const G2Data &d, const CRS &crs) const {
+void getRight(const G2Data &d, const CRS &crs) {
     if (d.d) return;
     G2Commit *c2 = new G2Commit;
     d.d = reinterpret_cast<void*>(c2);
@@ -2325,6 +2340,10 @@ void removeRight(const G2Data &d) {
         removeRight(*d.pair.first);
         removeRight(*d.pair.second);
     }
+}
+
+void NIZKProof::getEqProofTypes() {
+    // TODO
 }
 
 } /* End of namespace nizk */

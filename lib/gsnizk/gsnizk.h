@@ -602,19 +602,12 @@ private:
                  const CRS &crs) const;
     GT real_eval(const GTData &d, const ProofData &instantiation,
                  const CRS &crs) const;
-    void getProof(const FpData &d, const CRS &crs) const;
-    void getProof(const G1Data &d, const CRS &crs) const;
-    void getProof(const G2Data &d, const CRS &crs) const;
-    void getProof(const GTData &d, const CRS &crs) const;
-    void getLeft(const FpData &d, const CRS &crs) const;
-    void getLeft(const G1Data &d, const CRS &crs) const;
-    void getRight(const FpData &d, const CRS &crs) const;
-    void getRight(const G2Data &d, const CRS &crs) const;
     void readFromStream(std::istream &stream, std::shared_ptr<FpData> &dp,
                         int side);
     void readFromStream(std::istream &stream, std::shared_ptr<G1Data> &dp);
     void readFromStream(std::istream &stream, std::shared_ptr<G2Data> &dp);
     void readFromStream(std::istream &stream, std::shared_ptr<GTData> &dp);
+    void getEqProofTypes();
 private:
     CommitType type;
     std::vector<PairFp> eqsFp;
