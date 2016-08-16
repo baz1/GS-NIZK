@@ -2769,6 +2769,15 @@ B1 calcLeft(const G1Data &d, const CRS &crs);
 B1 calcRight(const FpData &d, const CRS &crs);
 B1 calcRight(const G2Data &d, const CRS &crs);
 
+void removeCalculations(const FpData &d);
+void removeCalculations(const G1Data &d);
+void removeCalculations(const G2Data &d);
+void removeCalculations(const GTData &d);
+void removeLeftCalc(const FpData &d);
+void removeLeftCalc(const G1Data &d);
+void removeRightCalc(const FpData &d);
+void removeRightCalc(const G1Data &d);
+
 bool NIZKProof::checkProof(std::istream &stream, const CRS &crs,
                 const ProofData &instantiation) const {
     if (!fixed) return false;
@@ -2814,6 +2823,30 @@ bool NIZKProof::checkProof(std::istream &stream, const CRS &crs,
     for (int i = cstsGT.size(); i-- > 0;)
         cstsGT[i]->d = reinterpret_cast<void*>(new BT(instantiation.pubGT[i]));
     // TODO
+    for (int i = eqsFp.size(); i-- > 0;) {
+        const FpData &left = *eqsFp[i].first;
+        const FpData &right = *eqsFp[i].second;
+        removeCalculations(left);
+        removeCalculations(right);
+    }
+    for (int i = eqsG1.size(); i-- > 0;) {
+        const G1Data &left = *eqsG1[i].first;
+        const G1Data &right = *eqsG1[i].second;
+        removeCalculations(left);
+        removeCalculations(right);
+    }
+    for (int i = eqsG2.size(); i-- > 0;) {
+        const G2Data &left = *eqsG2[i].first;
+        const G2Data &right = *eqsG2[i].second;
+        removeCalculations(left);
+        removeCalculations(right);
+    }
+    for (int i = eqsGT.size(); i-- > 0;) {
+        const GTData &left = *eqsGT[i].first;
+        const GTData &right = *eqsGT[i].second;
+        removeCalculations(left);
+        removeCalculations(right);
+    }
 }
 
 BT calcExpr(const FpData &d, const CRS &crs) {
@@ -2976,6 +3009,153 @@ B2 calcRight(const G2Data &d, const CRS &crs) {
         ASSERT(false /* Unexpected data type */);
     }
     return *result;
+}
+
+void removeCalculations(const FpData &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<BT*>(d.d);
+    d.d = NULL;
+    switch (d.type) {
+    case ELEMENT_PAIR:
+        removeCalculations(*d.pair.first);
+        removeCalculations(*d.pair.second);
+        break;
+    case ELEMENT_SCALAR:
+        removeLeftCalc(*d.pair.first);
+        removeRightCalc(*d.pair.second);
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void removeCalculations(const G1Data &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<BT*>(d.d);
+    d.d = NULL;
+    switch (d.type) {
+    case ELEMENT_PAIR:
+        removeCalculations(*d.pair.first);
+        removeCalculations(*d.pair.second);
+        break;
+    case ELEMENT_SCALAR:
+        removeLeftCalc(*d.scalar.second);
+        removeRightCalc(*d.scalar.first);
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void removeCalculations(const G2Data &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<BT*>(d.d);
+    d.d = NULL;
+    switch (d.type) {
+    case ELEMENT_PAIR:
+        removeCalculations(*d.pair.first);
+        removeCalculations(*d.pair.second);
+        break;
+    case ELEMENT_SCALAR:
+        removeLeftCalc(*d.scalar.first);
+        removeRightCalc(*d.scalar.second);
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void removeCalculations(const GTData &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<BT*>(d.d);
+    d.d = NULL;
+    switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+    case ELEMENT_BASE:
+        break;
+    case ELEMENT_PAIR:
+        removeCalculations(*d.pair.first);
+        removeCalculations(*d.pair.second);
+        break;
+    case ELEMENT_PAIRING:
+        removeLeftCalc(*d.pring.first);
+        removeRightCalc(*d.pring.second);
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void removeLeftCalc(const FpData &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<B1*>(d.d);
+    d.d = NULL;
+    switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        break;
+    case ELEMENT_PAIR:
+        removeLeftCalc(*d.pair.first);
+        removeLeftCalc(*d.pair.second);
+        break;
+    case ELEMENT_BASE:
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void removeLeftCalc(const G1Data &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<B1*>(d.d);
+    d.d = NULL;
+    switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        break;
+    case ELEMENT_PAIR:
+        removeLeftCalc(*d.pair.first);
+        removeLeftCalc(*d.pair.second);
+        break;
+    case ELEMENT_BASE:
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void removeRightCalc(const FpData &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<B2*>(d.d);
+    d.d = NULL;
+    switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        break;
+    case ELEMENT_PAIR:
+        removeRightCalc(*d.pair.first);
+        removeRightCalc(*d.pair.second);
+        break;
+    case ELEMENT_BASE:
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void removeRightCalc(const G2Data &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<B2*>(d.d);
+    d.d = NULL;
+    switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        break;
+    case ELEMENT_PAIR:
+        removeRightCalc(*d.pair.first);
+        removeRightCalc(*d.pair.second);
+        break;
+    case ELEMENT_BASE:
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
 }
 
 } /* End of namespace nizk */
