@@ -597,45 +597,100 @@ void joinSAT(SAT_NODE *&main, SAT_NODE *other) {
     main = tmp;
 }
 
+void endRewrite(const FpData &d);
+void endRewrite(const G1Data &d);
+void endRewrite(const G2Data &d);
+void endRewriteLeft(const FpData &d);
+void endRewriteLeft(const G1Data &d);
+void endRewriteRight(const FpData &d);
+void endRewriteRight(const G2Data &d);
+
 bool NIZKProof::endEquations() {
     /* Subsequent calls are ignored. */
     if (fixed) return true;
+    /* Getting indexes, pointers and removing duplicates */
+    for (PairFp &p : eqsFp) {
+        getIndexes(p.first);
+        if (!p.second) continue;
+        getIndexes(p.second);
+    }
+    for (PairG1 &p : eqsG1) {
+        getIndexes(p.first);
+        if (!p.second) continue;
+        getIndexes(p.second);
+    }
+    for (PairG2 &p : eqsG2) {
+        getIndexes(p.first);
+        if (!p.second) continue;
+        getIndexes(p.second);
+    }
+    for (PairGT &p : eqsGT) {
+        getIndexes(p.first);
+        if (!p.second) continue;
+        getIndexes(p.second);
+    }
+    if (!(checkIndexesSet(varsFp) && checkIndexesSet(cstsFp) &&
+          checkIndexesSet(varsG1) && checkIndexesSet(cstsG1) &&
+          checkIndexesSet(varsG2) && checkIndexesSet(cstsG2) &&
+          checkIndexesSet(cstsGT))) {
+        varsFp.clear();
+        cstsFp.clear();
+        varsG1.clear();
+        cstsG1.clear();
+        varsG2.clear();
+        cstsG2.clear();
+        cstsGT.clear();
+        return false;
+    }
+    /* Rewrite equations */
     {
-        for (PairFp &p : eqsFp) {
-            getIndexes(p.first);
-            if (!p.second) continue;
-            getIndexes(p.second);
+        int checkedFp = 0, checkedG1 = 0, checkedG2 = 0, checkedGT = 0;
+        while (true) {
+            if ((checkedFp == (int) eqsFp.size()) &&
+                    (checkedG1 == (int) eqsG1.size()) &&
+                    (checkedG2 == (int) eqsG2.size()) &&
+                    (checkedGT == (int) eqsGT.size())) break;
+            while (checkedFp < (int) eqsFp.size()) {
+                checkoutAsFp(eqsFp[checkedFp].first);
+                checkoutAsFp(eqsFp[checkedFp].second);
+                ++checkedFp;
+            }
+            while (checkedG1 < (int) eqsG1.size()) {
+                checkoutAsG1(eqsG1[checkedG1].first);
+                checkoutAsG1(eqsG1[checkedG1].second);
+                ++checkedG1;
+            }
+            while (checkedG2 < (int) eqsG2.size()) {
+                checkoutAsG2(eqsG2[checkedG2].first);
+                checkoutAsG2(eqsG2[checkedG2].second);
+                ++checkedG2;
+            }
+            while (checkedGT < (int) eqsGT.size()) {
+                checkoutAsGT(eqsGT[checkedGT].first);
+                checkoutAsGT(eqsGT[checkedGT].second);
+                ++checkedGT;
+            }
         }
-        for (PairG1 &p : eqsG1) {
-            getIndexes(p.first);
-            if (!p.second) continue;
-            getIndexes(p.second);
+        for (int i = eqsFp.size(); i-- > 0;) {
+            const FpData &left = *eqsFp[i].first;
+            const FpData &right = *eqsFp[i].second;
+            endRewrite(left);
+            endRewrite(right);
         }
-        for (PairG2 &p : eqsG2) {
-            getIndexes(p.first);
-            if (!p.second) continue;
-            getIndexes(p.second);
+        for (int i = eqsG1.size(); i-- > 0;) {
+            const G1Data &left = *eqsG1[i].first;
+            const G1Data &right = *eqsG1[i].second;
+            endRewrite(left);
+            endRewrite(right);
         }
-        for (PairGT &p : eqsGT) {
-            getIndexes(p.first);
-            if (!p.second) continue;
-            getIndexes(p.second);
-        }
-        if (!(checkIndexesSet(varsFp) && checkIndexesSet(cstsFp) &&
-              checkIndexesSet(varsG1) && checkIndexesSet(cstsG1) &&
-              checkIndexesSet(varsG2) && checkIndexesSet(cstsG2) &&
-              checkIndexesSet(cstsGT))) {
-            varsFp.clear();
-            cstsFp.clear();
-            varsG1.clear();
-            cstsG1.clear();
-            varsG2.clear();
-            cstsG2.clear();
-            cstsGT.clear();
-            return false;
+        for (int i = eqsG2.size(); i-- > 0;) {
+            const G2Data &left = *eqsG2[i].first;
+            const G2Data &right = *eqsG2[i].second;
+            endRewrite(left);
+            endRewrite(right);
         }
     }
-    // TODO rewrite equations, etc.
+    /* Selected Encryption selection */
     if (type == SelectedEncryption) {
         SAT_NODE *root = new SAT_NODE;
         root->type = SAT_NODE_TRUE;
@@ -672,6 +727,7 @@ bool NIZKProof::endEquations() {
                 --sEnc[i][j];
         }
     }
+    /* Equation types for the proofs */
     getEqProofTypes();
     fixed = true;
     return true;
@@ -1871,6 +1927,421 @@ void NIZKProof::getIndexes(std::shared_ptr<GTData> &d) {
         getIndexes(d->pring.first);
         getIndexes(d->pring.second);
         return;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void NIZKProof::checkoutAsFp(std::shared_ptr<FpData> &d) {
+    switch (d->type) {
+    case ELEMENT_PAIR:
+        checkoutAsFp(d->pair.first);
+        checkoutAsFp(d->pair.second);
+        break;
+    case ELEMENT_SCALAR:
+        checkoutLeft(d->pair.first);
+        checkoutRight(d->pair.second);
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void NIZKProof::checkoutAsG1(std::shared_ptr<G1Data> &d) {
+    switch (d->type) {
+    case ELEMENT_PAIR:
+        checkoutAsG1(d->pair.first);
+        checkoutAsG1(d->pair.second);
+        break;
+    case ELEMENT_SCALAR:
+        checkoutLeft(d->scalar.second);
+        checkoutRight(d->scalar.first);
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void NIZKProof::checkoutAsG2(std::shared_ptr<G2Data> &d) {
+    switch (d->type) {
+    case ELEMENT_PAIR:
+        checkoutAsG2(d->pair.first);
+        checkoutAsG2(d->pair.second);
+        break;
+    case ELEMENT_SCALAR:
+        checkoutLeft(d->scalar.first);
+        checkoutRight(d->scalar.second);
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void NIZKProof::checkoutAsGT(std::shared_ptr<GTData> &d) {
+    switch (d->type) {
+    case ELEMENT_CONST_INDEX:
+    case ELEMENT_CONST_VALUE:
+    case ELEMENT_BASE:
+        break;
+    case ELEMENT_PAIR:
+        checkoutAsGT(d->pair.first);
+        checkoutAsGT(d->pair.second);
+        break;
+    case ELEMENT_SCALAR:
+        checkoutLeft(d->pring.first);
+        checkoutRight(d->pring.second);
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+PairFp getFpVarEq(const std::shared_ptr<FpData> &v1,
+                  const std::shared_ptr<FpData> &v2) {
+    FpData *left = new FpData(ELEMENT_SCALAR);
+    new (&left->pair) PairFp(v1,
+            std::shared_ptr<FpData>(new FpData(ELEMENT_BASE)));
+    FpData *right = new FpData(ELEMENT_SCALAR);
+    new (&right->pair) PairFp(
+            std::shared_ptr<FpData>(new FpData(ELEMENT_BASE)), v2);
+    return PairFp(std::shared_ptr<FpData>(left),
+                  std::shared_ptr<FpData>(right));
+}
+
+void NIZKProof::checkoutLeft(std::shared_ptr<FpData> &d) {
+    switch (d->type) {
+    case ELEMENT_VARIABLE:
+        if (d->d) {
+            if (!varsFpInB1[d->index]) {
+                int &idx = *reinterpret_cast<int*>(d->d);
+                if (idx < 0) {
+                    idx = varsFp.size();
+                    std::shared_ptr<FpData> newVar = std::shared_ptr<FpData>(
+                            new FpData(ELEMENT_VARIABLE));
+                    newVar->index = idx;
+                    newVar->d = reinterpret_cast<void*>(new int(d->index));
+                    eqsFp.push_back(getFpVarEq(newVar, d));
+                    varsFp.push_back(newVar);
+                    varsFpInB1.push_back(true);
+                    d = newVar;
+                } else {
+                    d = varsFp[idx];
+                }
+            }
+        } else {
+            varsFpInB1[d->index] = true;
+            d->d = reinterpret_cast<void*>(new int(-1));
+        }
+        break;
+    case ELEMENT_CONST_INDEX:
+        if (d->d) {
+            if (!cstsFpInB1[d->index])
+                throw "Fp constant used both in B1 and B2";
+        } else {
+            d->d = reinterpret_cast<void*>(d.get());
+            cstsFpInB1[d->index] = true;
+        }
+        break;
+    case ELEMENT_CONST_VALUE:
+        break;
+    case ELEMENT_PAIR:
+        checkoutLeft(d->pair.first);
+        checkoutLeft(d->pair.second);
+        break;
+    case ELEMENT_SCALAR:
+        if (d->d) {
+            const int &idx = *reinterpret_cast<int*>(d->d);
+            d = varsFp[idx];
+        } else {
+            std::shared_ptr<FpData> newVar = std::shared_ptr<FpData>(
+                    new FpData(ELEMENT_VARIABLE));
+            newVar->index = varsFp.size();
+            newVar->d = reinterpret_cast<void*>(new int(-1));
+            d->d = reinterpret_cast<void*>(new int(newVar->index));
+            varsFp.push_back(newVar);
+            varsFpInB1.push_back(true);
+            FpData *right = new FpData(ELEMENT_SCALAR);
+            new (&right->pair) PairFp(newVar,
+                    std::shared_ptr<FpData>(new FpData(ELEMENT_BASE)));
+            eqsFp.push_back(PairFp(d, std::shared_ptr<FpData>(right)));
+            d = newVar;
+        }
+        break;
+    case ELEMENT_BASE:
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void NIZKProof::checkoutLeft(std::shared_ptr<G1Data> &d) {
+    switch (d->type) {
+    case ELEMENT_VARIABLE:
+    case ELEMENT_CONST_INDEX:
+    case ELEMENT_CONST_VALUE:
+        break;
+    case ELEMENT_PAIR:
+        checkoutLeft(d->pair.first);
+        checkoutLeft(d->pair.second);
+        break;
+    case ELEMENT_SCALAR:
+        if (d->d) {
+            const int &idx = *reinterpret_cast<int*>(d->d);
+            d = varsG1[idx];
+        } else {
+            std::shared_ptr<G1Data> newVar = std::shared_ptr<G1Data>(
+                    new G1Data(ELEMENT_VARIABLE));
+            newVar->index = varsG1.size();
+            d->d = reinterpret_cast<void*>(new int(newVar->index));
+            varsG1.push_back(newVar);
+            G1Data *right = new G1Data(ELEMENT_SCALAR);
+            new (&right->scalar) ScalarG1(
+                    std::shared_ptr<FpData>(new FpData(ELEMENT_BASE)), newVar);
+            eqsG1.push_back(PairG1(d, std::shared_ptr<G1Data>(right)));
+            d = newVar;
+        }
+        break;
+    case ELEMENT_BASE:
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void NIZKProof::checkoutRight(std::shared_ptr<FpData> &d) {
+    switch (d->type) {
+    case ELEMENT_VARIABLE:
+        if (d->d) {
+            if (varsFpInB1[d->index]) {
+                int &idx = *reinterpret_cast<int*>(d->d);
+                if (idx < 0) {
+                    idx = varsFp.size();
+                    std::shared_ptr<FpData> newVar = std::shared_ptr<FpData>(
+                            new FpData(ELEMENT_VARIABLE));
+                    newVar->index = idx;
+                    newVar->d = reinterpret_cast<void*>(new int(d->index));
+                    eqsFp.push_back(getFpVarEq(d, newVar));
+                    varsFp.push_back(newVar);
+                    varsFpInB1.push_back(false);
+                    d = newVar;
+                } else {
+                    d = varsFp[idx];
+                }
+            }
+        } else {
+            varsFpInB1[d->index] = false;
+            d->d = reinterpret_cast<void*>(new int(-1));
+        }
+        break;
+    case ELEMENT_CONST_INDEX:
+        if (d->d) {
+            if (cstsFpInB1[d->index])
+                throw "Fp constant used both in B1 and B2";
+        } else {
+            d->d = reinterpret_cast<void*>(d.get());
+            cstsFpInB1[d->index] = false;
+        }
+        break;
+    case ELEMENT_CONST_VALUE:
+        break;
+    case ELEMENT_PAIR:
+        checkoutRight(d->pair.first);
+        checkoutRight(d->pair.second);
+        break;
+    case ELEMENT_SCALAR:
+        if (d->d) {
+            const int &idx = *reinterpret_cast<int*>(d->d);
+            d = varsFp[idx];
+        } else {
+            std::shared_ptr<FpData> newVar = std::shared_ptr<FpData>(
+                    new FpData(ELEMENT_VARIABLE));
+            newVar->index = varsFp.size();
+            newVar->d = reinterpret_cast<void*>(new int(-1));
+            d->d = reinterpret_cast<void*>(new int(newVar->index));
+            varsFp.push_back(newVar);
+            varsFpInB1.push_back(false);
+            FpData *right = new FpData(ELEMENT_SCALAR);
+            new (&right->pair) PairFp(
+                    std::shared_ptr<FpData>(new FpData(ELEMENT_BASE)), newVar);
+            eqsFp.push_back(PairFp(d, std::shared_ptr<FpData>(right)));
+            d = newVar;
+        }
+        break;
+    case ELEMENT_BASE:
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void NIZKProof::checkoutRight(std::shared_ptr<G2Data> &d) {
+    switch (d->type) {
+    case ELEMENT_VARIABLE:
+    case ELEMENT_CONST_INDEX:
+    case ELEMENT_CONST_VALUE:
+        break;
+    case ELEMENT_PAIR:
+        checkoutRight(d->pair.first);
+        checkoutRight(d->pair.second);
+        break;
+    case ELEMENT_SCALAR:
+        if (d->d) {
+            const int &idx = *reinterpret_cast<int*>(d->d);
+            d = varsG2[idx];
+        } else {
+            std::shared_ptr<G2Data> newVar = std::shared_ptr<G2Data>(
+                    new G2Data(ELEMENT_VARIABLE));
+            newVar->index = varsG2.size();
+            d->d = reinterpret_cast<void*>(new int(newVar->index));
+            varsG2.push_back(newVar);
+            G2Data *right = new G2Data(ELEMENT_SCALAR);
+            new (&right->scalar) ScalarG2(
+                    std::shared_ptr<FpData>(new FpData(ELEMENT_BASE)), newVar);
+            eqsG2.push_back(PairG2(d, std::shared_ptr<G2Data>(right)));
+            d = newVar;
+        }
+        break;
+    case ELEMENT_BASE:
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void endRewrite(const FpData &d) {
+    switch (d.type) {
+    case ELEMENT_PAIR:
+        endRewrite(*d.pair.first);
+        endRewrite(*d.pair.second);
+        break;
+    case ELEMENT_SCALAR:
+        if (d.d) {
+            delete reinterpret_cast<int*>(d.d);
+            d.d = NULL;
+        }
+        endRewriteLeft(*d.pair.first);
+        endRewriteRight(*d.pair.second);
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void endRewrite(const G1Data &d) {
+    switch (d.type) {
+    case ELEMENT_PAIR:
+        endRewrite(*d.pair.first);
+        endRewrite(*d.pair.second);
+        break;
+    case ELEMENT_SCALAR:
+        if (d.d) {
+            delete reinterpret_cast<int*>(d.d);
+            d.d = NULL;
+        }
+        endRewriteLeft(*d.scalar.second);
+        endRewriteRight(*d.scalar.first);
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void endRewrite(const G2Data &d) {
+    switch (d.type) {
+    case ELEMENT_PAIR:
+        endRewrite(*d.pair.first);
+        endRewrite(*d.pair.second);
+        break;
+    case ELEMENT_SCALAR:
+        if (d.d) {
+            delete reinterpret_cast<int*>(d.d);
+            d.d = NULL;
+        }
+        endRewriteLeft(*d.scalar.first);
+        endRewriteRight(*d.scalar.second);
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void endRewriteLeft(const FpData &d) {
+    switch (d.type) {
+    case ELEMENT_VARIABLE:
+        if (d.d) {
+            delete reinterpret_cast<int*>(d.d);
+            d.d = NULL;
+        }
+        break;
+    case ELEMENT_CONST_INDEX:
+        d.d = NULL;
+        break;
+    case ELEMENT_CONST_VALUE:
+        break;
+    case ELEMENT_PAIR:
+        endRewriteLeft(*d.pair.first);
+        endRewriteLeft(*d.pair.second);
+        break;
+    case ELEMENT_BASE:
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void endRewriteLeft(const G1Data &d) {
+    switch (d.type) {
+    case ELEMENT_VARIABLE:
+    case ELEMENT_CONST_INDEX:
+    case ELEMENT_CONST_VALUE:
+        break;
+    case ELEMENT_PAIR:
+        endRewriteLeft(*d.pair.first);
+        endRewriteLeft(*d.pair.second);
+        break;
+    case ELEMENT_BASE:
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void endRewriteRight(const FpData &d) {
+    switch (d.type) {
+    case ELEMENT_VARIABLE:
+        if (d.d) {
+            delete reinterpret_cast<int*>(d.d);
+            d.d = NULL;
+        }
+        break;
+    case ELEMENT_CONST_INDEX:
+        d.d = NULL;
+        break;
+    case ELEMENT_CONST_VALUE:
+        break;
+    case ELEMENT_PAIR:
+        endRewriteRight(*d.pair.first);
+        endRewriteRight(*d.pair.second);
+        break;
+    case ELEMENT_BASE:
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+}
+
+void endRewriteRight(const G2Data &d) {
+    switch (d.type) {
+    case ELEMENT_VARIABLE:
+    case ELEMENT_CONST_INDEX:
+    case ELEMENT_CONST_VALUE:
+        break;
+    case ELEMENT_PAIR:
+        endRewriteRight(*d.pair.first);
+        endRewriteRight(*d.pair.second);
+        break;
+    case ELEMENT_BASE:
+        break;
     default:
         ASSERT(false /* Unexpected data type */);
     }

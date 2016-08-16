@@ -610,6 +610,14 @@ private:
     void getIndexes(std::shared_ptr<G1Data> &d);
     void getIndexes(std::shared_ptr<G2Data> &d);
     void getIndexes(std::shared_ptr<GTData> &d);
+    void checkoutAsFp(std::shared_ptr<FpData> &d);
+    void checkoutAsG1(std::shared_ptr<G1Data> &d);
+    void checkoutAsG2(std::shared_ptr<G2Data> &d);
+    void checkoutAsGT(std::shared_ptr<GTData> &d);
+    void checkoutLeft(std::shared_ptr<FpData> &d);
+    void checkoutLeft(std::shared_ptr<G1Data> &d);
+    void checkoutRight(std::shared_ptr<FpData> &d);
+    void checkoutRight(std::shared_ptr<G2Data> &d);
     Fp real_eval(const FpData &d, const ProofData &instantiation,
                  const CRS &crs) const;
     G1 real_eval(const G1Data &d, const ProofData &instantiation,
