@@ -825,9 +825,11 @@ void NIZKProof::readFromStream(std::istream &stream,
                     /* Wrong data */);
             if (varsFp[mindex]) {
                 dp = varsFp[mindex];
-                ASSERT(varsFpInB1[mindex] == (side < 0) /* Wrong data */);
+                ASSERT((varsFpInB1[mindex] == (side < 0)) || (side == -2)
+                        /* Wrong data */);
                 return;
             } else {
+                ASSERT(side != -2 /* Wrong data */);
                 varsFp[mindex] = (dp = std::shared_ptr<FpData>(
                             new FpData((ElementType) mtype)));
                 varsFpInB1[mindex] = (side < 0);
@@ -837,9 +839,11 @@ void NIZKProof::readFromStream(std::istream &stream,
                     /* Wrong data */);
             if (cstsFp[mindex]) {
                 dp = cstsFp[mindex];
-                ASSERT(cstsFpInB1[mindex] == (side < 0) /* Wrong data */);
+                ASSERT((cstsFpInB1[mindex] == (side < 0)) || (side == -2)
+                        /* Wrong data */);
                 return;
             } else {
+                ASSERT(side != -2 /* Wrong data */);
                 cstsFp[mindex] = (dp = std::shared_ptr<FpData>(
                             new FpData((ElementType) mtype)));
                 cstsFpInB1[mindex] = (side < 0);
@@ -859,7 +863,7 @@ void NIZKProof::readFromStream(std::istream &stream,
         readFromStream(stream, dp->pair.second, side);
         return;
     case ELEMENT_SCALAR:
-        ASSERT(side == 0 /* Wrong data */);
+        ASSERT((side == 0) || (side == -2) /* Wrong data */);
         readFromStream(stream, dp->pair.first, -1);
         readFromStream(stream, dp->pair.second, 1);
         return;
@@ -1125,7 +1129,7 @@ NIZKProof::NIZKProof(std::istream &stream) : fixed(true) {
     stream >> s;
     additionalFp.resize(s);
     while (s-- > 0)
-        readFromStream(stream, additionalFp[s].formula, 0);
+        readFromStream(stream, additionalFp[s].formula, -2);
     stream >> s;
     additionalG1.resize(s);
     while (s-- > 0)
