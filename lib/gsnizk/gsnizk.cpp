@@ -7,6 +7,11 @@
 
 #include <set>
 
+/* Prioritize Qt's policy */
+#if defined(QT_NO_DEBUG) && defined(DEBUG)
+#undef DEBUG
+#endif
+
 #ifdef DEBUG
 #define ASSERT(X) if (!(X)) { \
     std::cerr << "Error: Assert of " << #X << " at line " \
@@ -544,7 +549,7 @@ int tryPermutation(SAT_NODE *root, std::vector<int> val[4],
     cnt[1].clear();
     cnt[1].resize(val[1].size(), 0);
     countIndexes(root, cnt);
-    int max = 0, mi, mj;
+    int max = 0, mi = 0, mj = 0;
     for (int i = 2; i--;) {
         for (int j = val[i].size(); j--;) {
             if (val[i][j]) continue;
