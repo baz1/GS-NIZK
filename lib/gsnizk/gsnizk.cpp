@@ -15,7 +15,7 @@
 #ifdef DEBUG
 #define ASSERT(X) if (!(X)) { \
     std::cerr << "Error: Assert of " << #X << " at line " \
-    << __LINE__ << " failed in gsnizk.cpp!" << endl; \
+    << __LINE__ << " failed in gsnizk.cpp!" << std::endl; \
     throw "FATAL ERROR"; \
     }
 #else
@@ -821,7 +821,8 @@ void NIZKProof::readFromStream(std::istream &stream,
         ASSERT(side != 0 /* Wrong data */);
         stream >> mindex;
         if (mtype == ELEMENT_VARIABLE) {
-            ASSERT((0 <= mindex) && (mindex < varsFp.size()) /* Wrong data */);
+            ASSERT((0 <= mindex) && (mindex < (int) varsFp.size())
+                    /* Wrong data */);
             if (varsFp[mindex]) {
                 dp = varsFp[mindex];
                 ASSERT(varsFpInB1[mindex] == (side < 0) /* Wrong data */);
@@ -832,7 +833,8 @@ void NIZKProof::readFromStream(std::istream &stream,
                 varsFpInB1[mindex] = (side < 0);
             }
         } else {
-            ASSERT((0 <= mindex) && (mindex < cstsFp.size()) /* Wrong data */);
+            ASSERT((0 <= mindex) && (mindex < (int) cstsFp.size())
+                    /* Wrong data */);
             if (cstsFp[mindex]) {
                 dp = cstsFp[mindex];
                 ASSERT(cstsFpInB1[mindex] == (side < 0) /* Wrong data */);
@@ -876,7 +878,8 @@ void NIZKProof::readFromStream(std::istream &stream,
     if (mtype <= 1) { /* ELEMENT_VARIABLE or ELEMENT_CONST_INDEX */
         stream >> mindex;
         if (mtype == ELEMENT_VARIABLE) {
-            ASSERT((0 <= mindex) && (mindex < varsG1.size()) /* Wrong data */);
+            ASSERT((0 <= mindex) && (mindex < (int) varsG1.size())
+                    /* Wrong data */);
             if (varsG1[mindex]) {
                 dp = varsG1[mindex];
                 return;
@@ -885,7 +888,8 @@ void NIZKProof::readFromStream(std::istream &stream,
                             new G1Data((ElementType) mtype)));
             }
         } else {
-            ASSERT((0 <= mindex) && (mindex < cstsG1.size()) /* Wrong data */);
+            ASSERT((0 <= mindex) && (mindex < (int) cstsG1.size())
+                    /* Wrong data */);
             if (cstsG1[mindex]) {
                 dp = cstsG1[mindex];
                 return;
@@ -924,7 +928,8 @@ void NIZKProof::readFromStream(std::istream &stream,
     if (mtype <= 1) { /* ELEMENT_VARIABLE or ELEMENT_CONST_INDEX */
         stream >> mindex;
         if (mtype == ELEMENT_VARIABLE) {
-            ASSERT((0 <= mindex) && (mindex < varsG2.size()) /* Wrong data */);
+            ASSERT((0 <= mindex) && (mindex < (int) varsG2.size())
+                    /* Wrong data */);
             if (varsG2[mindex]) {
                 dp = varsG2[mindex];
                 return;
@@ -933,7 +938,8 @@ void NIZKProof::readFromStream(std::istream &stream,
                             new G2Data((ElementType) mtype)));
             }
         } else {
-            ASSERT((0 <= mindex) && (mindex < cstsG2.size()) /* Wrong data */);
+            ASSERT((0 <= mindex) && (mindex < (int) cstsG2.size())
+                    /* Wrong data */);
             if (cstsG2[mindex]) {
                 dp = cstsG2[mindex];
                 return;
@@ -971,7 +977,8 @@ void NIZKProof::readFromStream(std::istream &stream,
     stream >> mtype;
     if (mtype == ELEMENT_CONST_INDEX) {
         stream >> mindex;
-        ASSERT((0 <= mindex) && (mindex < cstsGT.size()) /* Wrong data */);
+        ASSERT((0 <= mindex) && (mindex < (int) cstsGT.size())
+                /* Wrong data */);
         if (cstsGT[mindex]) {
             dp = cstsGT[mindex];
             return;
