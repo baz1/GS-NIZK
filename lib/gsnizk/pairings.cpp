@@ -1556,6 +1556,7 @@ GT GT::pairing(const G1 &a, const G2 &b) {
 }
 
 GT GT::pairing(const std::vector< std::pair<G1,G2> > &lst) {
+    if (lst.empty()) return GT();
     ::G1 **a = new ::G1*[lst.size()];
     ::G2 **b = new ::G2*[lst.size()];
     int i = 0;

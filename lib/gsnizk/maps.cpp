@@ -54,8 +54,9 @@ BT BT::pairing(const B1 &a, const B2 &b) {
               GT::pairing(a._2, b._1), GT::pairing(a._2, b._2));
 }
 
-BT BT::pairing(const std::vector<std::pair<B1, B2> > &lst) {
+BT BT::pairing(const std::vector< std::pair<B1,B2> > &lst) {
     // TODO precompute pairings?
+    if (lst.empty()) return BT();
     std::vector<std::pair<G1, G2> > p11, p12, p21, p22;
     p11.reserve(lst.size());
     p12.reserve(lst.size());

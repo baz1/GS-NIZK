@@ -138,7 +138,8 @@ struct EqProofType {
     enum EqProofTypeIndividual {
         TYPE_NORMAL = 3,
         TYPE_SINGLE = 2,
-        TYPE_FP     = 1
+        TYPE_FP     = 1,
+        TYPE_NONE   = 0
     } tv1, tw1, tv2, tw2;
 };
 

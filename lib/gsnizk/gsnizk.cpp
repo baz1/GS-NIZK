@@ -1309,7 +1309,7 @@ void subPiG1(const PiG1 &a, const PiG1 &b, PiG1 &result, const CRS &crs) {
         case VALUE_G:
             result.b1Value._2 = -result.b1Value._2;
             break;
-        case VALUE_B:
+        default:
             result.b1Value = -result.b1Value;
             break;
         }
@@ -1344,7 +1344,7 @@ void subPiG2(const PiG2 &a, const PiG2 &b, PiG2 &result, const CRS &crs) {
         case VALUE_G:
             result.b2Value._2 = -result.b2Value._2;
             break;
-        case VALUE_B:
+        default:
             result.b2Value = -result.b2Value;
             break;
         }
@@ -1488,8 +1488,8 @@ void writeEqProof(std::ostream &stream, const ProofEls &left,
     case VALUE_B:
         stream << result.p1_v.b1Value;
         break;
-    default:
-        ASSERT(false /* Unexpected error */);
+    case VALUE_NULL:
+        break;
     }
     switch (result.p1_w.type) {
     case VALUE_Fp:
@@ -1501,8 +1501,8 @@ void writeEqProof(std::ostream &stream, const ProofEls &left,
     case VALUE_B:
         stream << result.p1_w.b1Value;
         break;
-    default:
-        ASSERT(false /* Unexpected error */);
+    case VALUE_NULL:
+        break;
     }
     switch (result.p2_v.type) {
     case VALUE_Fp:
@@ -1514,8 +1514,8 @@ void writeEqProof(std::ostream &stream, const ProofEls &left,
     case VALUE_B:
         stream << result.p2_v.b2Value;
         break;
-    default:
-        ASSERT(false /* Unexpected error */);
+    case VALUE_NULL:
+        break;
     }
     switch (result.p2_w.type) {
     case VALUE_Fp:
@@ -1527,8 +1527,8 @@ void writeEqProof(std::ostream &stream, const ProofEls &left,
     case VALUE_B:
         stream << result.p2_w.b2Value;
         break;
-    default:
-        ASSERT(false /* Unexpected error */);
+    case VALUE_NULL:
+        break;
     }
 }
 
@@ -2766,8 +2766,8 @@ BT calcExpr(const G2Data &d, const CRS &crs);
 BT calcExpr(const GTData &d, const CRS &crs);
 B1 calcLeft(const FpData &d, const CRS &crs);
 B1 calcLeft(const G1Data &d, const CRS &crs);
-B1 calcRight(const FpData &d, const CRS &crs);
-B1 calcRight(const G2Data &d, const CRS &crs);
+B2 calcRight(const FpData &d, const CRS &crs);
+B2 calcRight(const G2Data &d, const CRS &crs);
 
 void removeCalculations(const FpData &d);
 void removeCalculations(const G1Data &d);
@@ -2776,7 +2776,126 @@ void removeCalculations(const GTData &d);
 void removeLeftCalc(const FpData &d);
 void removeLeftCalc(const G1Data &d);
 void removeRightCalc(const FpData &d);
-void removeRightCalc(const G1Data &d);
+void removeRightCalc(const G2Data &d);
+
+BT getRndProofPart(std::istream &stream, const EqProofType &t, const CRS &crs) {
+    std::vector< std::pair<B1,B2> > pairs;
+    if ((t.tv1 == EqProofType::TYPE_FP) && (t.tw1 == EqProofType::TYPE_FP)) {
+        Fp fp;
+        stream >> fp;
+        B2 b2 = fp * crs.getV2();
+        stream >> fp;
+        b2 += fp * crs.getW2();
+        pairs.push_back(std::pair<B1,B2>(crs.getB1Unit(), b2));
+    } else {
+        switch (t.tv1) {
+        case EqProofType::TYPE_NONE:
+            break;
+        case EqProofType::TYPE_FP:
+            {
+                Fp fp;
+                stream >> fp;
+                pairs.push_back(std::pair<B1,B2>(fp * crs.getB1Unit(),
+                                                 crs.getV2()));
+                break;
+            }
+        case EqProofType::TYPE_SINGLE:
+            {
+                G1 g1;
+                stream >> g1;
+                pairs.push_back(std::pair<B1,B2>(B1(g1), crs.getV2()));
+            }
+        case EqProofType::TYPE_NORMAL:
+            {
+                B1 b1;
+                stream >> b1;
+                pairs.push_back(std::pair<B1,B2>(b1, crs.getV2()));
+            }
+        }
+        switch (t.tw1) {
+        case EqProofType::TYPE_NONE:
+            break;
+        case EqProofType::TYPE_FP:
+            {
+                Fp fp;
+                stream >> fp;
+                pairs.push_back(std::pair<B1,B2>(fp * crs.getB1Unit(),
+                                                 crs.getW2()));
+                break;
+            }
+        case EqProofType::TYPE_SINGLE:
+            {
+                G1 g1;
+                stream >> g1;
+                pairs.push_back(std::pair<B1,B2>(B1(g1), crs.getW2()));
+            }
+        case EqProofType::TYPE_NORMAL:
+            {
+                B1 b1;
+                stream >> b1;
+                pairs.push_back(std::pair<B1,B2>(b1, crs.getW2()));
+            }
+        }
+    }
+    if ((t.tv2 == EqProofType::TYPE_FP) && (t.tw2 == EqProofType::TYPE_FP)) {
+        Fp fp;
+        stream >> fp;
+        B1 b1 = fp * crs.getV1();
+        stream >> fp;
+        b1 += fp * crs.getW1();
+        pairs.push_back(std::pair<B1,B2>(b1, crs.getB2Unit()));
+    } else {
+        switch (t.tv2) {
+        case EqProofType::TYPE_NONE:
+            break;
+        case EqProofType::TYPE_FP:
+            {
+                Fp fp;
+                stream >> fp;
+                pairs.push_back(std::pair<B1,B2>(crs.getV1(),
+                                                 fp * crs.getB2Unit()));
+                break;
+            }
+        case EqProofType::TYPE_SINGLE:
+            {
+                G2 g2;
+                stream >> g2;
+                pairs.push_back(std::pair<B1,B2>(crs.getV1(), B2(g2)));
+            }
+        case EqProofType::TYPE_NORMAL:
+            {
+                B2 b2;
+                stream >> b2;
+                pairs.push_back(std::pair<B1,B2>(crs.getV1(), b2));
+            }
+        }
+        switch (t.tw2) {
+        case EqProofType::TYPE_NONE:
+            break;
+        case EqProofType::TYPE_FP:
+            {
+                Fp fp;
+                stream >> fp;
+                pairs.push_back(std::pair<B1,B2>(crs.getW1(),
+                                                 fp * crs.getB2Unit()));
+                break;
+            }
+        case EqProofType::TYPE_SINGLE:
+            {
+                G2 g2;
+                stream >> g2;
+                pairs.push_back(std::pair<B1,B2>(crs.getW1(), B2(g2)));
+            }
+        case EqProofType::TYPE_NORMAL:
+            {
+                B2 b2;
+                stream >> b2;
+                pairs.push_back(std::pair<B1,B2>(crs.getW1(), b2));
+            }
+        }
+    }
+    return BT::pairing(pairs);
+}
 
 bool NIZKProof::checkProof(std::istream &stream, const CRS &crs,
                 const ProofData &instantiation) const {
@@ -2822,7 +2941,38 @@ bool NIZKProof::checkProof(std::istream &stream, const CRS &crs,
         cstsG2[i]->d = reinterpret_cast<void*>(new B2(instantiation.pubG2[i]));
     for (int i = cstsGT.size(); i-- > 0;)
         cstsGT[i]->d = reinterpret_cast<void*>(new BT(instantiation.pubGT[i]));
-    // TODO
+    bool result = false;
+    BT rndProofPart;
+    for (int i = eqsFp.size(); i-- > 0;) {
+        const FpData &left = *eqsFp[i].first;
+        const FpData &right = *eqsFp[i].second;
+        rndProofPart = getRndProofPart(stream, tFp[i], crs);
+        if (calcExpr(left, crs) != calcExpr(right, crs) * rndProofPart)
+            goto cleanup;
+    }
+    for (int i = eqsG1.size(); i-- > 0;) {
+        const G1Data &left = *eqsG1[i].first;
+        const G1Data &right = *eqsG1[i].second;
+        rndProofPart = getRndProofPart(stream, tG1[i], crs);
+        if (calcExpr(left, crs) != calcExpr(right, crs) * rndProofPart)
+            goto cleanup;
+    }
+    for (int i = eqsG2.size(); i-- > 0;) {
+        const G2Data &left = *eqsG2[i].first;
+        const G2Data &right = *eqsG2[i].second;
+        rndProofPart = getRndProofPart(stream, tG2[i], crs);
+        if (calcExpr(left, crs) != calcExpr(right, crs) * rndProofPart)
+            goto cleanup;
+    }
+    for (int i = eqsGT.size(); i-- > 0;) {
+        const GTData &left = *eqsGT[i].first;
+        const GTData &right = *eqsGT[i].second;
+        rndProofPart = getRndProofPart(stream, tGT[i], crs);
+        if (calcExpr(left, crs) != calcExpr(right, crs) * rndProofPart)
+            goto cleanup;
+    }
+    result = true;
+cleanup:
     for (int i = eqsFp.size(); i-- > 0;) {
         const FpData &left = *eqsFp[i].first;
         const FpData &right = *eqsFp[i].second;
@@ -2847,6 +2997,7 @@ bool NIZKProof::checkProof(std::istream &stream, const CRS &crs,
         removeCalculations(left);
         removeCalculations(right);
     }
+    return result;
 }
 
 BT calcExpr(const FpData &d, const CRS &crs) {
