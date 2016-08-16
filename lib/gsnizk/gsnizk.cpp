@@ -643,6 +643,8 @@ bool NIZKProof::endEquations() {
         return false;
     }
     /* Rewrite equations */
+    varsFpInB1.resize(varsFp.size());
+    cstsFpInB1.resize(cstsFp.size());
     {
         int checkedFp = 0, checkedG1 = 0, checkedG2 = 0, checkedGT = 0;
         while (true) {
