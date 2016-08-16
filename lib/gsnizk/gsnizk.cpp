@@ -2760,6 +2760,15 @@ void NIZKProof::cleanupPE() const {
     }
 }
 
+BT calcExpr(const FpData &d, const CRS &crs);
+BT calcExpr(const G1Data &d, const CRS &crs);
+BT calcExpr(const G2Data &d, const CRS &crs);
+BT calcExpr(const GTData &d, const CRS &crs);
+B1 calcLeft(const FpData &d, const CRS &crs);
+B1 calcLeft(const G1Data &d, const CRS &crs);
+B1 calcRight(const FpData &d, const CRS &crs);
+B1 calcRight(const G2Data &d, const CRS &crs);
+
 bool NIZKProof::checkProof(std::istream &stream, const CRS &crs,
                 const ProofData &instantiation) const {
     if (!fixed) return false;
@@ -2805,6 +2814,168 @@ bool NIZKProof::checkProof(std::istream &stream, const CRS &crs,
     for (int i = cstsGT.size(); i-- > 0;)
         cstsGT[i]->d = reinterpret_cast<void*>(new BT(instantiation.pubGT[i]));
     // TODO
+}
+
+BT calcExpr(const FpData &d, const CRS &crs) {
+    if (d.d) return *reinterpret_cast<BT*>(d.d);
+    BT *result = new BT;
+    d.d = reinterpret_cast<void*>(result);
+    switch (d.type) {
+    case ELEMENT_PAIR:
+        *result = calcExpr(*d.pair.first, crs) *
+                calcExpr(*d.pair.second, crs);
+        break;
+    case ELEMENT_SCALAR:
+        *result = BT::pairing(calcLeft(*d.pair.first, crs),
+                calcRight(*d.pair.second, crs));
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+    return *result;
+}
+
+BT calcExpr(const G1Data &d, const CRS &crs) {
+    if (d.d) return *reinterpret_cast<BT*>(d.d);
+    BT *result = new BT;
+    d.d = reinterpret_cast<void*>(result);
+    switch (d.type) {
+    case ELEMENT_PAIR:
+        *result = calcExpr(*d.pair.first, crs) *
+                calcExpr(*d.pair.second, crs);
+        break;
+    case ELEMENT_SCALAR:
+        *result = BT::pairing(calcLeft(*d.scalar.second, crs),
+                calcRight(*d.scalar.first, crs));
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+    return *result;
+}
+
+BT calcExpr(const G2Data &d, const CRS &crs) {
+    if (d.d) return *reinterpret_cast<BT*>(d.d);
+    BT *result = new BT;
+    d.d = reinterpret_cast<void*>(result);
+    switch (d.type) {
+    case ELEMENT_PAIR:
+        *result = calcExpr(*d.pair.first, crs) *
+                calcExpr(*d.pair.second, crs);
+        break;
+    case ELEMENT_SCALAR:
+        *result = BT::pairing(calcLeft(*d.scalar.first, crs),
+                calcRight(*d.scalar.second, crs));
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+    return *result;
+}
+
+BT calcExpr(const GTData &d, const CRS &crs) {
+    if (d.d) return *reinterpret_cast<BT*>(d.d);
+    BT *result = new BT;
+    d.d = reinterpret_cast<void*>(result);
+    switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        *result = BT(d.el);
+        break;
+    case ELEMENT_BASE:
+        *result = BT(crs.getGTBase());
+        break;
+    case ELEMENT_PAIR:
+        *result = calcExpr(*d.pair.first, crs) *
+                calcExpr(*d.pair.second, crs);
+        break;
+    case ELEMENT_PAIRING:
+        *result = BT::pairing(calcLeft(*d.pring.first, crs),
+                calcRight(*d.pring.second, crs));
+        break;
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+    return *result;
+}
+
+B1 calcLeft(const FpData &d, const CRS &crs) {
+    if (d.d) return *reinterpret_cast<B1*>(d.d);
+    B1 *result = new B1;
+    d.d = reinterpret_cast<void*>(result);
+    switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        *result = B1(d.el, crs);
+        break;
+    case ELEMENT_PAIR:
+        *result = calcLeft(*d.pair.first, crs) +
+                calcLeft(*d.pair.second, crs);
+        break;
+    case ELEMENT_BASE:
+        *result = crs.getB1Unit();
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+    return *result;
+}
+
+B1 calcLeft(const G1Data &d, const CRS &crs) {
+    if (d.d) return *reinterpret_cast<B1*>(d.d);
+    B1 *result = new B1;
+    d.d = reinterpret_cast<void*>(result);
+    switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        *result = B1(d.el);
+        break;
+    case ELEMENT_PAIR:
+        *result = calcLeft(*d.pair.first, crs) +
+                calcLeft(*d.pair.second, crs);
+        break;
+    case ELEMENT_BASE:
+        *result = B1(crs.getG1Base());
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+    return *result;
+}
+
+B2 calcRight(const FpData &d, const CRS &crs) {
+    if (d.d) return *reinterpret_cast<B2*>(d.d);
+    B2 *result = new B2;
+    d.d = reinterpret_cast<void*>(result);
+    switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        *result = B2(d.el, crs);
+        break;
+    case ELEMENT_PAIR:
+        *result = calcRight(*d.pair.first, crs) +
+                calcRight(*d.pair.second, crs);
+        break;
+    case ELEMENT_BASE:
+        *result = crs.getB2Unit();
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+    return *result;
+}
+
+B2 calcRight(const G2Data &d, const CRS &crs) {
+    if (d.d) return *reinterpret_cast<B2*>(d.d);
+    B2 *result = new B2;
+    d.d = reinterpret_cast<void*>(result);
+    switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        *result = B2(d.el);
+        break;
+    case ELEMENT_PAIR:
+        *result = calcRight(*d.pair.first, crs) +
+                calcRight(*d.pair.second, crs);
+        break;
+    case ELEMENT_BASE:
+        *result = B2(crs.getG2Base());
+    default:
+        ASSERT(false /* Unexpected data type */);
+    }
+    return *result;
 }
 
 } /* End of namespace nizk */

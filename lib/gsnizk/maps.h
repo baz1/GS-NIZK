@@ -630,6 +630,16 @@ public:
      * @return The base element.
      */
     inline GT getGTBase() const;
+    /**
+     * @brief Gets the unit element of this CRS in @f$\mathbb{B}_1@f$.
+     * @return The unit element.
+     */
+    inline B1 getB1Unit() const;
+    /**
+     * @brief Gets the unit element of this CRS in @f$\mathbb{B}_2@f$.
+     * @return The unit element.
+     */
+    inline B2 getB2Unit() const;
 private:
     void computeElements();
 private:
@@ -869,8 +879,14 @@ inline G1 CRS::getG1Base() const { return v1._2; }
 
 inline G2 CRS::getG2Base() const { return v2._2; }
 
-// TODO: optimize by pre-computing?
+/* Note: We could optimize by precomputing the following element,
+ * but we will be saving memory instead,
+ * as this is not used very often in practice. */
 inline GT CRS::getGTBase() const { return GT::pairing(v1._2, v2._2); }
+
+inline B1 CRS::getB1Unit() const { return u1; }
+
+inline B2 CRS::getB2Unit() const { return u2; }
 
 } /* End of namespace nizk */
 
