@@ -533,7 +533,6 @@ void countIndexes(SAT_NODE *node, std::vector<int> cnt[2]) {
         ++cnt[node->idx.index_type][node->idx.index];
         return;
     default:
-        ASSERT(false /* Unexpected data type */);
         return;
     }
 }
@@ -947,7 +946,6 @@ void NIZKProof::readFromStream(std::istream &stream,
     dp = std::shared_ptr<FpData>(new FpData((ElementType) mtype));
     switch (mtype) {
     case ELEMENT_CONST_VALUE:
-        ASSERT(side != 0 /* Wrong data */);
         stream >> dp->el;
         return;
     case ELEMENT_PAIR:
@@ -960,7 +958,6 @@ void NIZKProof::readFromStream(std::istream &stream,
         readFromStream(stream, dp->pair.second, 1);
         return;
     case ELEMENT_BASE:
-        ASSERT(side != 0 /* Wrong data */);
         return;
     default:
         ASSERT(false /* Unexpected data type */);
@@ -1963,6 +1960,8 @@ void NIZKProof::getIndexes(std::shared_ptr<GTData> &d) {
         getIndexes(d->pring.first);
         getIndexes(d->pring.second);
         return;
+    case ELEMENT_BASE:
+        break;
     default:
         ASSERT(false /* Unexpected data type */);
     }
@@ -1970,6 +1969,8 @@ void NIZKProof::getIndexes(std::shared_ptr<GTData> &d) {
 
 void NIZKProof::checkoutAsFp(std::shared_ptr<FpData> &d) {
     switch (d->type) {
+    case ELEMENT_CONST_VALUE:
+        break;
     case ELEMENT_PAIR:
         checkoutAsFp(d->pair.first);
         checkoutAsFp(d->pair.second);
@@ -1978,6 +1979,8 @@ void NIZKProof::checkoutAsFp(std::shared_ptr<FpData> &d) {
         checkoutLeft(d->pair.first);
         checkoutRight(d->pair.second);
         break;
+    case ELEMENT_BASE:
+        break;
     default:
         ASSERT(false /* Unexpected data type */);
     }
@@ -1985,6 +1988,8 @@ void NIZKProof::checkoutAsFp(std::shared_ptr<FpData> &d) {
 
 void NIZKProof::checkoutAsG1(std::shared_ptr<G1Data> &d) {
     switch (d->type) {
+    case ELEMENT_CONST_VALUE:
+        break;
     case ELEMENT_PAIR:
         checkoutAsG1(d->pair.first);
         checkoutAsG1(d->pair.second);
@@ -1993,6 +1998,8 @@ void NIZKProof::checkoutAsG1(std::shared_ptr<G1Data> &d) {
         checkoutLeft(d->scalar.second);
         checkoutRight(d->scalar.first);
         break;
+    case ELEMENT_BASE:
+        break;
     default:
         ASSERT(false /* Unexpected data type */);
     }
@@ -2000,6 +2007,8 @@ void NIZKProof::checkoutAsG1(std::shared_ptr<G1Data> &d) {
 
 void NIZKProof::checkoutAsG2(std::shared_ptr<G2Data> &d) {
     switch (d->type) {
+    case ELEMENT_CONST_VALUE:
+        break;
     case ELEMENT_PAIR:
         checkoutAsG2(d->pair.first);
         checkoutAsG2(d->pair.second);
@@ -2007,6 +2016,8 @@ void NIZKProof::checkoutAsG2(std::shared_ptr<G2Data> &d) {
     case ELEMENT_SCALAR:
         checkoutLeft(d->scalar.first);
         checkoutRight(d->scalar.second);
+        break;
+    case ELEMENT_BASE:
         break;
     default:
         ASSERT(false /* Unexpected data type */);
@@ -2246,6 +2257,8 @@ void NIZKProof::checkoutRight(std::shared_ptr<G2Data> &d) {
 
 void endRewrite(const FpData &d) {
     switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        break;
     case ELEMENT_PAIR:
         endRewrite(*d.pair.first);
         endRewrite(*d.pair.second);
@@ -2258,6 +2271,8 @@ void endRewrite(const FpData &d) {
         endRewriteLeft(*d.pair.first);
         endRewriteRight(*d.pair.second);
         break;
+    case ELEMENT_BASE:
+        break;
     default:
         ASSERT(false /* Unexpected data type */);
     }
@@ -2265,6 +2280,8 @@ void endRewrite(const FpData &d) {
 
 void endRewrite(const G1Data &d) {
     switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        break;
     case ELEMENT_PAIR:
         endRewrite(*d.pair.first);
         endRewrite(*d.pair.second);
@@ -2277,6 +2294,8 @@ void endRewrite(const G1Data &d) {
         endRewriteLeft(*d.scalar.second);
         endRewriteRight(*d.scalar.first);
         break;
+    case ELEMENT_BASE:
+        break;
     default:
         ASSERT(false /* Unexpected data type */);
     }
@@ -2284,6 +2303,8 @@ void endRewrite(const G1Data &d) {
 
 void endRewrite(const G2Data &d) {
     switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        break;
     case ELEMENT_PAIR:
         endRewrite(*d.pair.first);
         endRewrite(*d.pair.second);
@@ -2295,6 +2316,8 @@ void endRewrite(const G2Data &d) {
         }
         endRewriteLeft(*d.scalar.first);
         endRewriteRight(*d.scalar.second);
+        break;
+    case ELEMENT_BASE:
         break;
     default:
         ASSERT(false /* Unexpected data type */);
@@ -2519,6 +2542,13 @@ void getProof(const FpData &d, const CRS &crs) {
     ProofEls *proofEl = new ProofEls;
     d.d = reinterpret_cast<void*>(proofEl);
     switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+    case ELEMENT_BASE:
+        proofEl->p1_v.type = VALUE_NULL;
+        proofEl->p1_w.type = VALUE_NULL;
+        proofEl->p2_v.type = VALUE_NULL;
+        proofEl->p2_w.type = VALUE_NULL;
+        return;
     case ELEMENT_PAIR:
         {
             getProof(*d.pair.first, crs);
@@ -2551,6 +2581,13 @@ void getProof(const G1Data &d, const CRS &crs) {
     ProofEls *proofEl = new ProofEls;
     d.d = reinterpret_cast<void*>(proofEl);
     switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+    case ELEMENT_BASE:
+        proofEl->p1_v.type = VALUE_NULL;
+        proofEl->p1_w.type = VALUE_NULL;
+        proofEl->p2_v.type = VALUE_NULL;
+        proofEl->p2_w.type = VALUE_NULL;
+        return;
     case ELEMENT_PAIR:
         {
             getProof(*d.pair.first, crs);
@@ -2583,6 +2620,13 @@ void getProof(const G2Data &d, const CRS &crs) {
     ProofEls *proofEl = new ProofEls;
     d.d = reinterpret_cast<void*>(proofEl);
     switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+    case ELEMENT_BASE:
+        proofEl->p1_v.type = VALUE_NULL;
+        proofEl->p1_w.type = VALUE_NULL;
+        proofEl->p2_v.type = VALUE_NULL;
+        proofEl->p2_w.type = VALUE_NULL;
+        return;
     case ELEMENT_PAIR:
         {
             getProof(*d.pair.first, crs);
@@ -2615,7 +2659,6 @@ void getProof(const GTData &d, const CRS &crs) {
     ProofEls *proofEl = new ProofEls;
     d.d = reinterpret_cast<void*>(proofEl);
     switch (d.type) {
-    case ELEMENT_CONST_INDEX:
     case ELEMENT_CONST_VALUE:
     case ELEMENT_BASE:
         proofEl->p1_v.type = VALUE_NULL;
@@ -2779,6 +2822,8 @@ void removeProof(const FpData &d) {
     delete reinterpret_cast<ProofEls*>(d.d);
     d.d = NULL;
     switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        break;
     case ELEMENT_PAIR:
         removeProof(*d.pair.first);
         removeProof(*d.pair.second);
@@ -2786,6 +2831,8 @@ void removeProof(const FpData &d) {
     case ELEMENT_SCALAR:
         removeLeft(*d.pair.first);
         removeRight(*d.pair.second);
+        break;
+    case ELEMENT_BASE:
         break;
     default:
         ASSERT(false /* Unexpected data type */);
@@ -2797,6 +2844,8 @@ void removeProof(const G1Data &d) {
     delete reinterpret_cast<ProofEls*>(d.d);
     d.d = NULL;
     switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        break;
     case ELEMENT_PAIR:
         removeProof(*d.pair.first);
         removeProof(*d.pair.second);
@@ -2804,6 +2853,8 @@ void removeProof(const G1Data &d) {
     case ELEMENT_SCALAR:
         removeLeft(*d.scalar.second);
         removeRight(*d.scalar.first);
+        break;
+    case ELEMENT_BASE:
         break;
     default:
         ASSERT(false /* Unexpected data type */);
@@ -2815,6 +2866,8 @@ void removeProof(const G2Data &d) {
     delete reinterpret_cast<ProofEls*>(d.d);
     d.d = NULL;
     switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        break;
     case ELEMENT_PAIR:
         removeProof(*d.pair.first);
         removeProof(*d.pair.second);
@@ -2822,6 +2875,8 @@ void removeProof(const G2Data &d) {
     case ELEMENT_SCALAR:
         removeLeft(*d.scalar.first);
         removeRight(*d.scalar.second);
+        break;
+    case ELEMENT_BASE:
         break;
     default:
         ASSERT(false /* Unexpected data type */);
@@ -2833,6 +2888,9 @@ void removeProof(const GTData &d) {
     delete reinterpret_cast<ProofEls*>(d.d);
     d.d = NULL;
     switch (d.type) {
+    case ELEMENT_CONST_INDEX:
+    case ELEMENT_CONST_VALUE:
+        break;
     case ELEMENT_PAIR:
         removeProof(*d.pair.first);
         removeProof(*d.pair.second);
@@ -2840,6 +2898,8 @@ void removeProof(const GTData &d) {
     case ELEMENT_PAIRING:
         removeLeft(*d.pring.first);
         removeRight(*d.pring.second);
+        break;
+    case ELEMENT_BASE:
         break;
     default:
         ASSERT(false /* Unexpected data type */);
@@ -2885,15 +2945,6 @@ void removeRight(const G2Data &d) {
         removeRight(*d.pair.second);
     }
 }
-
-void getPType(const FpData &d);
-void getPType(const G1Data &d);
-void getPType(const G2Data &d);
-void getPType(const GTData &d);
-void getPTLeft(const FpData &d);
-void getPTLeft(const G1Data &d);
-void getPTRight(const FpData &d);
-void getPTRight(const G2Data &d);
 
 template <typename T> void addPiGX(const T &a, const T &b, T &result) {
     if (a.type == VALUE_NULL) {
@@ -2943,11 +2994,18 @@ void addAllPiLight(const ProofEls &el1, const ProofEls &el2, ProofEls &result) {
     addPiGX(el1.p2_w, el2.p2_w, result.p2_w);
 }
 
-void getPType(const FpData &d) {
+void NIZKProof::getPType(const FpData &d) {
     if (d.d) return;
     ProofEls *proofEl = new ProofEls;
     d.d = reinterpret_cast<void*>(proofEl);
     switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+    case ELEMENT_BASE:
+        proofEl->p1_v.type = VALUE_NULL;
+        proofEl->p1_w.type = VALUE_NULL;
+        proofEl->p2_v.type = VALUE_NULL;
+        proofEl->p2_w.type = VALUE_NULL;
+        return;
     case ELEMENT_PAIR:
         {
             getPType(*d.pair.first);
@@ -2975,11 +3033,18 @@ void getPType(const FpData &d) {
     }
 }
 
-void getPType(const G1Data &d) {
+void NIZKProof::getPType(const G1Data &d) {
     if (d.d) return;
     ProofEls *proofEl = new ProofEls;
     d.d = reinterpret_cast<void*>(proofEl);
     switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+    case ELEMENT_BASE:
+        proofEl->p1_v.type = VALUE_NULL;
+        proofEl->p1_w.type = VALUE_NULL;
+        proofEl->p2_v.type = VALUE_NULL;
+        proofEl->p2_w.type = VALUE_NULL;
+        return;
     case ELEMENT_PAIR:
         {
             getPType(*d.pair.first);
@@ -3007,11 +3072,18 @@ void getPType(const G1Data &d) {
     }
 }
 
-void getPType(const G2Data &d) {
+void NIZKProof::getPType(const G2Data &d) {
     if (d.d) return;
     ProofEls *proofEl = new ProofEls;
     d.d = reinterpret_cast<void*>(proofEl);
     switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+    case ELEMENT_BASE:
+        proofEl->p1_v.type = VALUE_NULL;
+        proofEl->p1_w.type = VALUE_NULL;
+        proofEl->p2_v.type = VALUE_NULL;
+        proofEl->p2_w.type = VALUE_NULL;
+        return;
     case ELEMENT_PAIR:
         {
             getPType(*d.pair.first);
@@ -3039,7 +3111,7 @@ void getPType(const G2Data &d) {
     }
 }
 
-void getPType(const GTData &d) {
+void NIZKProof::getPType(const GTData &d) {
     if (d.d) return;
     ProofEls *proofEl = new ProofEls;
     d.d = reinterpret_cast<void*>(proofEl);
@@ -3084,12 +3156,18 @@ template <typename T> void addCommitGXLight(const T &c1, const T &c2, T &cr) {
     cr.c.type = ((c1.c.type == c2.c.type) ? c1.c.type : VALUE_B);
 }
 
-void getPTLeft(const FpData &d) {
+void NIZKProof::getPTLeft(const FpData &d) {
     if (d.d) return;
     G1Commit *c1 = new G1Commit;
     d.d = reinterpret_cast<void*>(c1);
     switch (d.type) {
+    case ELEMENT_VARIABLE:
+        c1->type = COMMIT_ENC;
+        c1->c.type = VALUE_Fp;
+        return;
+    case ELEMENT_CONST_INDEX:
     case ELEMENT_CONST_VALUE:
+    case ELEMENT_BASE:
         c1->type = COMMIT_PUB;
         c1->c.type = VALUE_Fp;
         return;
@@ -3104,21 +3182,28 @@ void getPTLeft(const FpData &d) {
             addCommitGXLight(el1, el2, *c1);
             return;
         }
-    case ELEMENT_BASE:
-        c1->type = COMMIT_PUB;
-        c1->c.type = VALUE_Fp;
-        return;
     default:
         ASSERT(false /* Unexpected data type */);
     }
 }
 
-void getPTLeft(const G1Data &d) {
+void NIZKProof::getPTLeft(const G1Data &d) {
     if (d.d) return;
     G1Commit *c1 = new G1Commit;
     d.d = reinterpret_cast<void*>(c1);
     switch (d.type) {
+    case ELEMENT_VARIABLE:
+        c1->c.type = VALUE_G;
+        if ((type == AllEncrypted) || ((type == SelectedEncryption) &&
+                sEnc[INDEX_TYPE_G1][d.index])) {
+            c1->type = COMMIT_ENC;
+        } else {
+            c1->type = COMMIT_PRIV;
+        }
+        return;
+    case ELEMENT_CONST_INDEX:
     case ELEMENT_CONST_VALUE:
+    case ELEMENT_BASE:
         c1->type = COMMIT_PUB;
         c1->c.type = VALUE_G;
         return;
@@ -3133,21 +3218,23 @@ void getPTLeft(const G1Data &d) {
             addCommitGXLight(el1, el2, *c1);
             return;
         }
-    case ELEMENT_BASE:
-        c1->type = COMMIT_PUB;
-        c1->c.type = VALUE_G;
-        return;
     default:
         ASSERT(false /* Unexpected data type */);
     }
 }
 
-void getPTRight(const FpData &d) {
+void NIZKProof::getPTRight(const FpData &d) {
     if (d.d) return;
     G2Commit *c2 = new G2Commit;
     d.d = reinterpret_cast<void*>(c2);
     switch (d.type) {
+    case ELEMENT_VARIABLE:
+        c2->type = COMMIT_ENC;
+        c2->c.type = VALUE_B;
+        return;
+    case ELEMENT_CONST_INDEX:
     case ELEMENT_CONST_VALUE:
+    case ELEMENT_BASE:
         c2->type = COMMIT_PUB;
         c2->c.type = VALUE_Fp;
         return;
@@ -3162,20 +3249,27 @@ void getPTRight(const FpData &d) {
             addCommitGXLight(el1, el2, *c2);
             return;
         }
-    case ELEMENT_BASE:
-        c2->type = COMMIT_PUB;
-        c2->c.type = VALUE_Fp;
-        return;
     default:
         ASSERT(false /* Unexpected data type */);
     }
 }
 
-void getPTRight(const G2Data &d) {
+void NIZKProof::getPTRight(const G2Data &d) {
     if (d.d) return;
     G2Commit *c2 = new G2Commit;
     d.d = reinterpret_cast<void*>(c2);
     switch (d.type) {
+    case ELEMENT_VARIABLE:
+        c2->c.type = VALUE_B;
+        if ((type == AllEncrypted) || ((type == SelectedEncryption) &&
+                sEnc[INDEX_TYPE_G2][d.index])) {
+            c2->type = COMMIT_ENC;
+        } else {
+            c2->type = COMMIT_PRIV;
+        }
+        return;
+    case ELEMENT_CONST_INDEX:
+    case ELEMENT_BASE:
     case ELEMENT_CONST_VALUE:
         c2->type = COMMIT_PUB;
         c2->c.type = VALUE_G;
@@ -3191,10 +3285,6 @@ void getPTRight(const G2Data &d) {
             addCommitGXLight(el1, el2, *c2);
             return;
         }
-    case ELEMENT_BASE:
-        c2->type = COMMIT_PUB;
-        c2->c.type = VALUE_G;
-        return;
     default:
         ASSERT(false /* Unexpected data type */);
     }
@@ -3528,6 +3618,9 @@ BT calcExpr(const FpData &d, const CRS &crs) {
     BT *result = new BT;
     d.d = reinterpret_cast<void*>(result);
     switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        *result = BT(d.el, crs);
+        break;
     case ELEMENT_PAIR:
         *result = calcExpr(*d.pair.first, crs) *
                 calcExpr(*d.pair.second, crs);
@@ -3535,6 +3628,10 @@ BT calcExpr(const FpData &d, const CRS &crs) {
     case ELEMENT_SCALAR:
         *result = BT::pairing(calcLeft(*d.pair.first, crs),
                 calcRight(*d.pair.second, crs));
+        break;
+    case ELEMENT_BASE:
+        /* Note: Could be precomputed, but not often used in practice */
+        *result = BT(Fp::getUnit(), crs);
         break;
     default:
         ASSERT(false /* Unexpected data type */);
@@ -3547,6 +3644,9 @@ BT calcExpr(const G1Data &d, const CRS &crs) {
     BT *result = new BT;
     d.d = reinterpret_cast<void*>(result);
     switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        *result = BT(d.el, crs);
+        break;
     case ELEMENT_PAIR:
         *result = calcExpr(*d.pair.first, crs) *
                 calcExpr(*d.pair.second, crs);
@@ -3554,6 +3654,10 @@ BT calcExpr(const G1Data &d, const CRS &crs) {
     case ELEMENT_SCALAR:
         *result = BT::pairing(calcLeft(*d.scalar.second, crs),
                 calcRight(*d.scalar.first, crs));
+        break;
+    case ELEMENT_BASE:
+        /* Note: Could be precomputed, but not often used in practice */
+        *result = BT(crs.getG1Base(), crs);
         break;
     default:
         ASSERT(false /* Unexpected data type */);
@@ -3566,6 +3670,9 @@ BT calcExpr(const G2Data &d, const CRS &crs) {
     BT *result = new BT;
     d.d = reinterpret_cast<void*>(result);
     switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        *result = BT(d.el, crs);
+        break;
     case ELEMENT_PAIR:
         *result = calcExpr(*d.pair.first, crs) *
                 calcExpr(*d.pair.second, crs);
@@ -3573,6 +3680,10 @@ BT calcExpr(const G2Data &d, const CRS &crs) {
     case ELEMENT_SCALAR:
         *result = BT::pairing(calcLeft(*d.scalar.first, crs),
                 calcRight(*d.scalar.second, crs));
+        break;
+    case ELEMENT_BASE:
+        /* Note: Could be precomputed, but not often used in practice */
+        *result = BT(crs.getG2Base(), crs);
         break;
     default:
         ASSERT(false /* Unexpected data type */);
@@ -3588,9 +3699,6 @@ BT calcExpr(const GTData &d, const CRS &crs) {
     case ELEMENT_CONST_VALUE:
         *result = BT(d.el);
         break;
-    case ELEMENT_BASE:
-        *result = BT(crs.getGTBase());
-        break;
     case ELEMENT_PAIR:
         *result = calcExpr(*d.pair.first, crs) *
                 calcExpr(*d.pair.second, crs);
@@ -3598,6 +3706,9 @@ BT calcExpr(const GTData &d, const CRS &crs) {
     case ELEMENT_PAIRING:
         *result = BT::pairing(calcLeft(*d.pring.first, crs),
                 calcRight(*d.pring.second, crs));
+        break;
+    case ELEMENT_BASE:
+        *result = BT(crs.getGTBase());
         break;
     default:
         ASSERT(false /* Unexpected data type */);
@@ -3690,6 +3801,8 @@ void removeCalculations(const FpData &d) {
     delete reinterpret_cast<BT*>(d.d);
     d.d = NULL;
     switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        break;
     case ELEMENT_PAIR:
         removeCalculations(*d.pair.first);
         removeCalculations(*d.pair.second);
@@ -3697,6 +3810,8 @@ void removeCalculations(const FpData &d) {
     case ELEMENT_SCALAR:
         removeLeftCalc(*d.pair.first);
         removeRightCalc(*d.pair.second);
+        break;
+    case ELEMENT_BASE:
         break;
     default:
         ASSERT(false /* Unexpected data type */);
@@ -3708,6 +3823,8 @@ void removeCalculations(const G1Data &d) {
     delete reinterpret_cast<BT*>(d.d);
     d.d = NULL;
     switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        break;
     case ELEMENT_PAIR:
         removeCalculations(*d.pair.first);
         removeCalculations(*d.pair.second);
@@ -3715,6 +3832,8 @@ void removeCalculations(const G1Data &d) {
     case ELEMENT_SCALAR:
         removeLeftCalc(*d.scalar.second);
         removeRightCalc(*d.scalar.first);
+        break;
+    case ELEMENT_BASE:
         break;
     default:
         ASSERT(false /* Unexpected data type */);
@@ -3726,6 +3845,8 @@ void removeCalculations(const G2Data &d) {
     delete reinterpret_cast<BT*>(d.d);
     d.d = NULL;
     switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        break;
     case ELEMENT_PAIR:
         removeCalculations(*d.pair.first);
         removeCalculations(*d.pair.second);
@@ -3733,6 +3854,8 @@ void removeCalculations(const G2Data &d) {
     case ELEMENT_SCALAR:
         removeLeftCalc(*d.scalar.first);
         removeRightCalc(*d.scalar.second);
+        break;
+    case ELEMENT_BASE:
         break;
     default:
         ASSERT(false /* Unexpected data type */);
@@ -3744,6 +3867,7 @@ void removeCalculations(const GTData &d) {
     delete reinterpret_cast<BT*>(d.d);
     d.d = NULL;
     switch (d.type) {
+    case ELEMENT_CONST_INDEX:
     case ELEMENT_CONST_VALUE:
     case ELEMENT_BASE:
         break;
@@ -3765,6 +3889,8 @@ void removeLeftCalc(const FpData &d) {
     delete reinterpret_cast<B1*>(d.d);
     d.d = NULL;
     switch (d.type) {
+    case ELEMENT_VARIABLE:
+    case ELEMENT_CONST_INDEX:
     case ELEMENT_CONST_VALUE:
         break;
     case ELEMENT_PAIR:
@@ -3783,6 +3909,8 @@ void removeLeftCalc(const G1Data &d) {
     delete reinterpret_cast<B1*>(d.d);
     d.d = NULL;
     switch (d.type) {
+    case ELEMENT_VARIABLE:
+    case ELEMENT_CONST_INDEX:
     case ELEMENT_CONST_VALUE:
         break;
     case ELEMENT_PAIR:
@@ -3801,6 +3929,8 @@ void removeRightCalc(const FpData &d) {
     delete reinterpret_cast<B2*>(d.d);
     d.d = NULL;
     switch (d.type) {
+    case ELEMENT_VARIABLE:
+    case ELEMENT_CONST_INDEX:
     case ELEMENT_CONST_VALUE:
         break;
     case ELEMENT_PAIR:
@@ -3819,6 +3949,8 @@ void removeRightCalc(const G2Data &d) {
     delete reinterpret_cast<B2*>(d.d);
     d.d = NULL;
     switch (d.type) {
+    case ELEMENT_VARIABLE:
+    case ELEMENT_CONST_INDEX:
     case ELEMENT_CONST_VALUE:
         break;
     case ELEMENT_PAIR:

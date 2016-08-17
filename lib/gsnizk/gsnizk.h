@@ -631,6 +631,14 @@ private:
     void readFromStream(std::istream &stream, std::shared_ptr<G1Data> &dp);
     void readFromStream(std::istream &stream, std::shared_ptr<G2Data> &dp);
     void readFromStream(std::istream &stream, std::shared_ptr<GTData> &dp);
+    void getPType(const FpData &d);
+    void getPType(const G1Data &d);
+    void getPType(const G2Data &d);
+    void getPType(const GTData &d);
+    void getPTLeft(const FpData &d);
+    void getPTLeft(const G1Data &d);
+    void getPTRight(const FpData &d);
+    void getPTRight(const G2Data &d);
     void getEqProofTypes();
     void cleanupPE() const;
 private:
