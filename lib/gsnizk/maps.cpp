@@ -146,6 +146,13 @@ std::istream &operator>>(std::istream &stream, CRS &crs) {
         crs.v2._1.precomputeForMult();
         crs.v2._2.precomputeForMult();
         crs.w2._2.precomputeForMult();
+        /* Precomputations for proof verification */
+        crs.u2._1.precomputeForPairing();
+        crs.u2._2.precomputeForPairing();
+        crs.v2._1.precomputeForPairing();
+        crs.v2._2.precomputeForPairing();
+        crs.w2._1.precomputeForPairing();
+        crs.w2._2.precomputeForPairing();
 #endif
     } else if (crs.type == CRS_TYPE_PRIVATE) {
         stream >> crs.v1 >> crs.v2;
@@ -212,6 +219,13 @@ void CRS::computeElements() {
     /* Precomputations for commitments of group elements */
     w1._2.precomputeForMult();
     w2._2.precomputeForMult();
+    /* Precomputations for proof verification */
+    u2._1.precomputeForPairing();
+    u2._2.precomputeForPairing();
+    v2._1.precomputeForPairing();
+    v2._2.precomputeForPairing();
+    w2._1.precomputeForPairing();
+    w2._2.precomputeForPairing();
 #endif
 }
 

@@ -7,7 +7,7 @@
 
 #include <set>
 
-/* Prioritize Qt's policy */
+/* Prioritize Qt's no-debug policy, if existent */
 #if defined(QT_NO_DEBUG) && defined(DEBUG)
 #undef DEBUG
 #endif
@@ -20,7 +20,7 @@
     throw Y; \
     }
 #else
-#define ASSERT(X) /* noop */
+#define ASSERT(X,Y) /* noop */
 #endif
 
 namespace gsnizk {
