@@ -228,8 +228,8 @@ void testPairings() {
     h2.clear();
     t1 = GT::getRand();
     t2.clear();
-    {
-        ofstream out("test.test");
+    /*{
+        ofstream out("test1.test");
         out << v1 << v2;
         out << g1 << g2;
         out << h1 << h2;
@@ -237,7 +237,7 @@ void testPairings() {
         out.close();
     }
     {
-        ifstream in("test.test");
+        ifstream in("test1.test");
         in >> v3 >> v4;
         in >> g3 >> g4;
         in >> h3 >> h4;
@@ -251,7 +251,7 @@ void testPairings() {
     ASSERT(h1 == h3);
     ASSERT(h2 == h4);
     ASSERT(t1 == t3);
-    ASSERT(t2 == t4);
+    ASSERT(t2 == t4);*/ // TODO:uncomment when done with tests
 }
 
 void testProofs() {
@@ -262,7 +262,7 @@ void testProofs() {
     CRS crs(true);
     NIZKProof proof;
     proof.addEquation(FpVar(0) * G1Const(0), FpUnit() * G1Const(1));
-    proof.endEquations();
+    ASSERT(proof.endEquations());
 
     ProofData d;
     d.privFp.push_back(k);
@@ -270,6 +270,17 @@ void testProofs() {
     d.pubG1.push_back(b);
 
     ASSERT(proof.verifySolution(d));
+
+    {
+        ofstream out("test2.test");
+        proof.writeProof(out, crs, d);
+        out.close();
+    }
+    {
+        ifstream in("test2.test");
+        ASSERT(proof.checkProof(in, crs, d));
+        in.close();
+    }
 }
 
 int main() {

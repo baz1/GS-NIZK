@@ -1658,8 +1658,8 @@ void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
     c1.c.type = VALUE_Fp;
     c2.type = COMMIT_ENC;
     c2.c.type = VALUE_B;
-    while ((--j, i--) > 0) {
-        if (varsFpInB1[j]) {
+    while (i-- > 0) {
+        if (varsFpInB1[--j]) {
             c1.r = Fp::getRand();
             c1.c.fpValue = additionalFp[i].value;
             varsFp[j]->d = reinterpret_cast<void*>(new G1Commit(c1));
@@ -1687,7 +1687,8 @@ void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
     j = varsG1.size();
     i = additionalG1.size();
     c1.c.type = VALUE_G;
-    while ((--j, i--) > 0) {
+    while (i-- > 0) {
+        --j;
         c1.r = Fp::getRand();
         c1.c.b1Value._2 = additionalG1[i].value;
         if ((type == AllEncrypted) ||
@@ -1718,7 +1719,8 @@ void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
     j = varsG2.size();
     i = additionalG2.size();
     c2.c.type = VALUE_B;
-    while ((--j, i--) > 0) {
+    while (i-- > 0) {
+        --j;
         c2.r = Fp::getRand();
         if ((type == AllEncrypted) ||
                 ((type == SelectedEncryption) && sEnc[INDEX_TYPE_G2][j])) {
@@ -3417,12 +3419,14 @@ BT getRndProofPart(std::istream &stream, const EqProofType &t, const CRS &crs) {
                 G1 g1;
                 stream >> g1;
                 pairs.push_back(std::pair<B1,B2>(B1(g1), crs.getV2()));
+                break;
             }
         case EqProofType::TYPE_NORMAL:
             {
                 B1 b1;
                 stream >> b1;
                 pairs.push_back(std::pair<B1,B2>(b1, crs.getV2()));
+                break;
             }
         }
         switch (t.tw1) {
@@ -3441,12 +3445,14 @@ BT getRndProofPart(std::istream &stream, const EqProofType &t, const CRS &crs) {
                 G1 g1;
                 stream >> g1;
                 pairs.push_back(std::pair<B1,B2>(B1(g1), crs.getW2()));
+                break;
             }
         case EqProofType::TYPE_NORMAL:
             {
                 B1 b1;
                 stream >> b1;
                 pairs.push_back(std::pair<B1,B2>(b1, crs.getW2()));
+                break;
             }
         }
     }
@@ -3474,12 +3480,14 @@ BT getRndProofPart(std::istream &stream, const EqProofType &t, const CRS &crs) {
                 G2 g2;
                 stream >> g2;
                 pairs.push_back(std::pair<B1,B2>(crs.getV1(), B2(g2)));
+                break;
             }
         case EqProofType::TYPE_NORMAL:
             {
                 B2 b2;
                 stream >> b2;
                 pairs.push_back(std::pair<B1,B2>(crs.getV1(), b2));
+                break;
             }
         }
         switch (t.tw2) {
@@ -3498,12 +3506,14 @@ BT getRndProofPart(std::istream &stream, const EqProofType &t, const CRS &crs) {
                 G2 g2;
                 stream >> g2;
                 pairs.push_back(std::pair<B1,B2>(crs.getW1(), B2(g2)));
+                break;
             }
         case EqProofType::TYPE_NORMAL:
             {
                 B2 b2;
                 stream >> b2;
                 pairs.push_back(std::pair<B1,B2>(crs.getW1(), b2));
+                break;
             }
         }
     }
@@ -3730,6 +3740,7 @@ B1 calcLeft(const FpData &d, const CRS &crs) {
         break;
     case ELEMENT_BASE:
         *result = crs.getB1Unit();
+        break;
     default:
         ASSERT(false /* Unexpected data type */);
     }
@@ -3750,6 +3761,7 @@ B1 calcLeft(const G1Data &d, const CRS &crs) {
         break;
     case ELEMENT_BASE:
         *result = B1(crs.getG1Base());
+        break;
     default:
         ASSERT(false /* Unexpected data type */);
     }
@@ -3770,6 +3782,7 @@ B2 calcRight(const FpData &d, const CRS &crs) {
         break;
     case ELEMENT_BASE:
         *result = crs.getB2Unit();
+        break;
     default:
         ASSERT(false /* Unexpected data type */);
     }
@@ -3790,6 +3803,7 @@ B2 calcRight(const G2Data &d, const CRS &crs) {
         break;
     case ELEMENT_BASE:
         *result = B2(crs.getG2Base());
+        break;
     default:
         ASSERT(false /* Unexpected data type */);
     }
