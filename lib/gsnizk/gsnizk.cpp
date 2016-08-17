@@ -13,10 +13,11 @@
 #endif
 
 #ifdef DEBUG
-#define ASSERT(X) if (!(X)) { \
+#define ASSERT(X,Y) if (!(X)) { \
     std::cerr << "Error: Assert of " << #X << " at line " \
-    << __LINE__ << " failed in gsnizk.cpp!" << std::endl; \
-    throw "FATAL ERROR"; \
+    << __LINE__ << " failed in gsnizk.cpp!" << std::endl \
+    << Y << std::endl; \
+    throw Y; \
     }
 #else
 #define ASSERT(X) /* noop */
@@ -321,7 +322,7 @@ SAT_NODE *getSAT(const FpData &d) {
         node->type = SAT_NODE_OR;
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
         return node;
     }
     node->pair.left = getSAT(*d.pair.first);
@@ -355,7 +356,7 @@ SAT_NODE *getSAT(const G1Data &d) {
         node->type = SAT_NODE_TRUE;
         return node;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
         return node;
     }
 }
@@ -386,7 +387,7 @@ SAT_NODE *getSAT(const G2Data &d) {
         node->type = SAT_NODE_TRUE;
         return node;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
         return node;
     }
 }
@@ -409,7 +410,7 @@ SAT_NODE *getSAT(const GTData &d) {
         node->pair.right = getSAT(*d.pring.second);
         return node;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
         return node;
     }
 }
@@ -554,7 +555,8 @@ SAT_NODE *duplicateNode(const SAT_NODE *node) {
 
 void instanciateIndex(SAT_NODE *node, int i_type, int i_value,
                       SAT_NODE_TYPE value) {
-    ASSERT((value == SAT_NODE_TRUE) || (value == SAT_NODE_FALSE));
+    ASSERT((value == SAT_NODE_TRUE) || (value == SAT_NODE_FALSE),
+           "Wrong value");
     switch (node->type) {
     case SAT_NODE_AND:
     case SAT_NODE_OR:
@@ -602,7 +604,7 @@ int tryPermutation(SAT_NODE *root, std::vector<int> val[4],
         case SAT_NODE_TRUE:
             return 0;
         default:
-            ASSERT(false /* Unexpected error */);
+            ASSERT(false, "Unexpected error");
             return -1;
         }
     }
@@ -824,7 +826,7 @@ void writeToStream(std::ostream &stream, const FpData &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -849,7 +851,7 @@ void writeToStream(std::ostream &stream, const G1Data &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -874,7 +876,7 @@ void writeToStream(std::ostream &stream, const G2Data &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -899,7 +901,7 @@ void writeToStream(std::ostream &stream, const GTData &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -909,32 +911,32 @@ void NIZKProof::readFromStream(std::istream &stream,
     int mtype, mindex;
     stream >> mtype;
     if (mtype <= 1) { /* ELEMENT_VARIABLE or ELEMENT_CONST_INDEX */
-        ASSERT(side != 0 /* Wrong data */);
+        ASSERT(side != 0, "Wrong data");
         stream >> mindex;
         if (mtype == ELEMENT_VARIABLE) {
-            ASSERT((0 <= mindex) && (mindex < (int) varsFp.size())
-                    /* Wrong data */);
+            ASSERT((0 <= mindex) && (mindex < (int) varsFp.size()),
+                    "Wrong data");
             if (varsFp[mindex]) {
                 dp = varsFp[mindex];
-                ASSERT((varsFpInB1[mindex] == (side < 0)) || (side == -2)
-                        /* Wrong data */);
+                ASSERT((varsFpInB1[mindex] == (side < 0)) || (side == -2),
+                        "Wrong data");
                 return;
             } else {
-                ASSERT(side != -2 /* Wrong data */);
+                ASSERT(side != -2, "Wrong data");
                 varsFp[mindex] = (dp = std::shared_ptr<FpData>(
                             new FpData((ElementType) mtype)));
                 varsFpInB1[mindex] = (side < 0);
             }
         } else {
-            ASSERT((0 <= mindex) && (mindex < (int) cstsFp.size())
-                    /* Wrong data */);
+            ASSERT((0 <= mindex) && (mindex < (int) cstsFp.size()),
+                    "Wrong data");
             if (cstsFp[mindex]) {
                 dp = cstsFp[mindex];
-                ASSERT((cstsFpInB1[mindex] == (side < 0)) || (side == -2)
-                        /* Wrong data */);
+                ASSERT((cstsFpInB1[mindex] == (side < 0)) || (side == -2),
+                        "Wrong data");
                 return;
             } else {
-                ASSERT(side != -2 /* Wrong data */);
+                ASSERT(side != -2, "Wrong data");
                 cstsFp[mindex] = (dp = std::shared_ptr<FpData>(
                             new FpData((ElementType) mtype)));
                 cstsFpInB1[mindex] = (side < 0);
@@ -953,14 +955,14 @@ void NIZKProof::readFromStream(std::istream &stream,
         readFromStream(stream, dp->pair.second, side);
         return;
     case ELEMENT_SCALAR:
-        ASSERT((side == 0) || (side == -2) /* Wrong data */);
+        ASSERT((side == 0) || (side == -2), "Wrong data");
         readFromStream(stream, dp->pair.first, -1);
         readFromStream(stream, dp->pair.second, 1);
         return;
     case ELEMENT_BASE:
         return;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -971,8 +973,8 @@ void NIZKProof::readFromStream(std::istream &stream,
     if (mtype <= 1) { /* ELEMENT_VARIABLE or ELEMENT_CONST_INDEX */
         stream >> mindex;
         if (mtype == ELEMENT_VARIABLE) {
-            ASSERT((0 <= mindex) && (mindex < (int) varsG1.size())
-                    /* Wrong data */);
+            ASSERT((0 <= mindex) && (mindex < (int) varsG1.size()),
+                    "Wrong data");
             if (varsG1[mindex]) {
                 dp = varsG1[mindex];
                 return;
@@ -981,8 +983,8 @@ void NIZKProof::readFromStream(std::istream &stream,
                             new G1Data((ElementType) mtype)));
             }
         } else {
-            ASSERT((0 <= mindex) && (mindex < (int) cstsG1.size())
-                    /* Wrong data */);
+            ASSERT((0 <= mindex) && (mindex < (int) cstsG1.size()),
+                    "Wrong data");
             if (cstsG1[mindex]) {
                 dp = cstsG1[mindex];
                 return;
@@ -1010,7 +1012,7 @@ void NIZKProof::readFromStream(std::istream &stream,
     case ELEMENT_BASE:
         return;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -1021,8 +1023,8 @@ void NIZKProof::readFromStream(std::istream &stream,
     if (mtype <= 1) { /* ELEMENT_VARIABLE or ELEMENT_CONST_INDEX */
         stream >> mindex;
         if (mtype == ELEMENT_VARIABLE) {
-            ASSERT((0 <= mindex) && (mindex < (int) varsG2.size())
-                    /* Wrong data */);
+            ASSERT((0 <= mindex) && (mindex < (int) varsG2.size()),
+                    "Wrong data");
             if (varsG2[mindex]) {
                 dp = varsG2[mindex];
                 return;
@@ -1031,8 +1033,8 @@ void NIZKProof::readFromStream(std::istream &stream,
                             new G2Data((ElementType) mtype)));
             }
         } else {
-            ASSERT((0 <= mindex) && (mindex < (int) cstsG2.size())
-                    /* Wrong data */);
+            ASSERT((0 <= mindex) && (mindex < (int) cstsG2.size()),
+                    "Wrong data");
             if (cstsG2[mindex]) {
                 dp = cstsG2[mindex];
                 return;
@@ -1060,7 +1062,7 @@ void NIZKProof::readFromStream(std::istream &stream,
     case ELEMENT_BASE:
         return;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -1070,8 +1072,8 @@ void NIZKProof::readFromStream(std::istream &stream,
     stream >> mtype;
     if (mtype == ELEMENT_CONST_INDEX) {
         stream >> mindex;
-        ASSERT((0 <= mindex) && (mindex < (int) cstsGT.size())
-                /* Wrong data */);
+        ASSERT((0 <= mindex) && (mindex < (int) cstsGT.size()),
+                "Wrong data");
         if (cstsGT[mindex]) {
             dp = cstsGT[mindex];
             return;
@@ -1098,7 +1100,7 @@ void NIZKProof::readFromStream(std::istream &stream,
     case ELEMENT_BASE:
         return;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -1576,13 +1578,17 @@ void writeEqProof(std::ostream &stream, const ProofEls &left,
     (void) expectedType; /* (prevent warning when no debugging) */
     ProofEls result;
     subPiG1(left.p1_v, right.p1_v, result.p1_v, crs);
-    ASSERT((int) result.p1_v.type == (int) expectedType.tv1);
+    ASSERT((int) result.p1_v.type == (int) expectedType.tv1,
+            "Equation types do not match");
     subPiG1(left.p1_w, right.p1_w, result.p1_w, crs);
-    ASSERT((int) result.p1_w.type == (int) expectedType.tw1);
+    ASSERT((int) result.p1_w.type == (int) expectedType.tw1,
+            "Equation types do not match");
     subPiG2(left.p2_v, right.p2_v, result.p2_v, crs);
-    ASSERT((int) result.p2_v.type == (int) expectedType.tv2);
+    ASSERT((int) result.p2_v.type == (int) expectedType.tv2,
+            "Equation types do not match");
     subPiG2(left.p2_w, right.p2_w, result.p2_w, crs);
-    ASSERT((int) result.p2_w.type == (int) expectedType.tw2);
+    ASSERT((int) result.p2_w.type == (int) expectedType.tw2,
+            "Equation types do not match");
     switch (result.p1_v.type) {
     case VALUE_Fp:
         stream << result.p1_v.fpValue;
@@ -1649,8 +1655,8 @@ void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
         aG1.value = real_eval(*aG1.formula, instantiation, crs);
     for (const AdditionalG2 &aG2 : additionalG2)
         aG2.value = real_eval(*aG2.formula, instantiation, crs);
-    ASSERT(varsFp.size() == varsFpInB1.size());
-    ASSERT(cstsFp.size() == cstsFpInB1.size());
+    ASSERT(varsFp.size() == varsFpInB1.size(), "Array sizes do not match");
+    ASSERT(cstsFp.size() == cstsFpInB1.size(), "Array sizes do not match");
     G1Commit c1;
     G2Commit c2;
     int j = varsFp.size(), i = additionalFp.size();
@@ -1858,7 +1864,7 @@ void NIZKProof::getIndexes(std::shared_ptr<FpData> &d) {
     case ELEMENT_BASE:
         return;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -1897,7 +1903,7 @@ void NIZKProof::getIndexes(std::shared_ptr<G1Data> &d) {
     case ELEMENT_BASE:
         return;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -1936,7 +1942,7 @@ void NIZKProof::getIndexes(std::shared_ptr<G2Data> &d) {
     case ELEMENT_BASE:
         return;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -1965,7 +1971,7 @@ void NIZKProof::getIndexes(std::shared_ptr<GTData> &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -1984,7 +1990,7 @@ void NIZKProof::checkoutAsFp(std::shared_ptr<FpData> &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -2003,7 +2009,7 @@ void NIZKProof::checkoutAsG1(std::shared_ptr<G1Data> &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -2022,7 +2028,7 @@ void NIZKProof::checkoutAsG2(std::shared_ptr<G2Data> &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -2041,7 +2047,7 @@ void NIZKProof::checkoutAsGT(std::shared_ptr<GTData> &d) {
         checkoutRight(d->pring.second);
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -2119,7 +2125,7 @@ void NIZKProof::checkoutLeft(std::shared_ptr<FpData> &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -2153,7 +2159,7 @@ void NIZKProof::checkoutLeft(std::shared_ptr<G1Data> &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -2219,7 +2225,7 @@ void NIZKProof::checkoutRight(std::shared_ptr<FpData> &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -2253,7 +2259,7 @@ void NIZKProof::checkoutRight(std::shared_ptr<G2Data> &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -2276,7 +2282,7 @@ void endRewrite(const FpData &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -2299,7 +2305,7 @@ void endRewrite(const G1Data &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -2322,7 +2328,7 @@ void endRewrite(const G2Data &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -2346,7 +2352,7 @@ void endRewriteLeft(const FpData &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -2363,7 +2369,7 @@ void endRewriteLeft(const G1Data &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -2387,7 +2393,7 @@ void endRewriteRight(const FpData &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -2404,7 +2410,7 @@ void endRewriteRight(const G2Data &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -2428,7 +2434,7 @@ Fp NIZKProof::real_eval(const FpData &d, const ProofData &instantiation,
     case ELEMENT_BASE:
         return Fp::getUnit();
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
         return Fp();
     }
 }
@@ -2453,7 +2459,7 @@ G1 NIZKProof::real_eval(const G1Data &d, const ProofData &instantiation,
     case ELEMENT_BASE:
         return crs.getG1Base();
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
         return G1();
     }
 }
@@ -2478,7 +2484,7 @@ G2 NIZKProof::real_eval(const G2Data &d, const ProofData &instantiation,
     case ELEMENT_BASE:
         return crs.getG2Base();
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
         return G2();
     }
 }
@@ -2499,7 +2505,7 @@ GT NIZKProof::real_eval(const GTData &d, const ProofData &instantiation,
     case ELEMENT_BASE:
         return crs.getGTBase();
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
         return GT();
     }
 }
@@ -2574,7 +2580,7 @@ void getProof(const FpData &d, const CRS &crs) {
             return;
         }
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -2613,7 +2619,7 @@ void getProof(const G1Data &d, const CRS &crs) {
             return;
         }
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -2652,7 +2658,7 @@ void getProof(const G2Data &d, const CRS &crs) {
             return;
         }
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -2691,7 +2697,7 @@ void getProof(const GTData &d, const CRS &crs) {
             return;
         }
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -2722,7 +2728,7 @@ void getLeft(const FpData &d, const CRS &crs) {
         c1->c.fpValue = Fp::getUnit();
         return;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -2753,7 +2759,7 @@ void getLeft(const G1Data &d, const CRS &crs) {
         c1->c.b1Value._2 = crs.getG1Base();
         return;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -2784,7 +2790,7 @@ void getRight(const FpData &d, const CRS &crs) {
         c2->c.fpValue = Fp::getUnit();
         return;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -2815,7 +2821,7 @@ void getRight(const G2Data &d, const CRS &crs) {
         c2->c.b2Value._2 = crs.getG2Base();
         return;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -2837,7 +2843,7 @@ void removeProof(const FpData &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -2859,7 +2865,7 @@ void removeProof(const G1Data &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -2881,7 +2887,7 @@ void removeProof(const G2Data &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -2904,7 +2910,7 @@ void removeProof(const GTData &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -3031,7 +3037,7 @@ void NIZKProof::getPType(const FpData &d) {
             return;
         }
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -3070,7 +3076,7 @@ void NIZKProof::getPType(const G1Data &d) {
             return;
         }
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -3109,7 +3115,7 @@ void NIZKProof::getPType(const G2Data &d) {
             return;
         }
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -3149,7 +3155,7 @@ void NIZKProof::getPType(const GTData &d) {
             return;
         }
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -3185,7 +3191,7 @@ void NIZKProof::getPTLeft(const FpData &d) {
             return;
         }
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -3221,7 +3227,7 @@ void NIZKProof::getPTLeft(const G1Data &d) {
             return;
         }
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -3252,7 +3258,7 @@ void NIZKProof::getPTRight(const FpData &d) {
             return;
         }
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -3288,7 +3294,7 @@ void NIZKProof::getPTRight(const G2Data &d) {
             return;
         }
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -3528,8 +3534,8 @@ bool NIZKProof::checkProof(std::istream &stream, const CRS &crs,
             (instantiation.pubG2.size() != cstsG2.size()) ||
             (instantiation.pubGT.size() != cstsGT.size()))
         return false;
-    ASSERT(varsFp.size() == varsFpInB1.size());
-    ASSERT(cstsFp.size() == cstsFpInB1.size());
+    ASSERT(varsFp.size() == varsFpInB1.size(), "Array sizes do not match");
+    ASSERT(cstsFp.size() == cstsFpInB1.size(), "Array sizes do not match");
     B1 b1;
     B2 b2;
     for (int i = varsFp.size(); i-- > 0;) {
@@ -3644,7 +3650,7 @@ BT calcExpr(const FpData &d, const CRS &crs) {
         *result = BT(Fp::getUnit(), crs);
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
     return *result;
 }
@@ -3670,7 +3676,7 @@ BT calcExpr(const G1Data &d, const CRS &crs) {
         *result = BT(crs.getG1Base(), crs);
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
     return *result;
 }
@@ -3696,7 +3702,7 @@ BT calcExpr(const G2Data &d, const CRS &crs) {
         *result = BT(crs.getG2Base(), crs);
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
     return *result;
 }
@@ -3721,7 +3727,7 @@ BT calcExpr(const GTData &d, const CRS &crs) {
         *result = BT(crs.getGTBase());
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
     return *result;
 }
@@ -3742,7 +3748,7 @@ B1 calcLeft(const FpData &d, const CRS &crs) {
         *result = crs.getB1Unit();
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
     return *result;
 }
@@ -3763,7 +3769,7 @@ B1 calcLeft(const G1Data &d, const CRS &crs) {
         *result = B1(crs.getG1Base());
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
     return *result;
 }
@@ -3784,7 +3790,7 @@ B2 calcRight(const FpData &d, const CRS &crs) {
         *result = crs.getB2Unit();
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
     return *result;
 }
@@ -3805,7 +3811,7 @@ B2 calcRight(const G2Data &d, const CRS &crs) {
         *result = B2(crs.getG2Base());
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
     return *result;
 }
@@ -3828,7 +3834,7 @@ void removeCalculations(const FpData &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -3850,7 +3856,7 @@ void removeCalculations(const G1Data &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -3872,7 +3878,7 @@ void removeCalculations(const G2Data &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -3894,7 +3900,7 @@ void removeCalculations(const GTData &d) {
         removeRightCalc(*d.pring.second);
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -3914,7 +3920,7 @@ void removeLeftCalc(const FpData &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -3934,7 +3940,7 @@ void removeLeftCalc(const G1Data &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -3954,7 +3960,7 @@ void removeRightCalc(const FpData &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
@@ -3974,7 +3980,7 @@ void removeRightCalc(const G2Data &d) {
     case ELEMENT_BASE:
         break;
     default:
-        ASSERT(false /* Unexpected data type */);
+        ASSERT(false, "Unexpected data type");
     }
 }
 
