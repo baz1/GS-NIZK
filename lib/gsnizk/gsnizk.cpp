@@ -1815,10 +1815,10 @@ void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
 }
 
 bool NIZKProof::checkInstantiation(const ProofData &instantiation) const {
-    return (instantiation.pubFp.size() != cstsFp.size()) &&
-        (instantiation.pubG1.size() != cstsG1.size()) &&
-        (instantiation.pubG2.size() != cstsG2.size()) &&
-        (instantiation.pubGT.size() != cstsGT.size()) &&
+    return (instantiation.pubFp.size() == cstsFp.size()) &&
+        (instantiation.pubG1.size() == cstsG1.size()) &&
+        (instantiation.pubG2.size() == cstsG2.size()) &&
+        (instantiation.pubGT.size() == cstsGT.size()) &&
         (instantiation.privFp.size() + additionalFp.size() == varsFp.size()) &&
         (instantiation.privG1.size() + additionalG1.size() == varsG1.size()) &&
         (instantiation.privG2.size() + additionalG2.size() == varsG2.size());
