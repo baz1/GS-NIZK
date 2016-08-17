@@ -482,6 +482,40 @@ void simplify(SAT_NODE *node) {
     case SAT_NODE_OR:
         simplify(node->pair.left);
         simplify(node->pair.right);
+        switch (node->pair.left->type) {
+        case SAT_NODE_FALSE:
+        {
+            delete node->pair.left;
+            SAT_NODE *tmp = node->pair.right;
+            *node = *tmp;
+            delete tmp;
+            return;
+        }
+        case SAT_NODE_TRUE:
+            delete node->pair.left;
+            delNode(node->pair.right);
+            node->type = SAT_NODE_TRUE;
+            return;
+        default:
+            break;
+        }
+        switch (node->pair.right->type) {
+        case SAT_NODE_FALSE:
+        {
+            delete node->pair.right;
+            SAT_NODE *tmp = node->pair.left;
+            *node = *tmp;
+            delete tmp;
+            return;
+        }
+        case SAT_NODE_TRUE:
+            delNode(node->pair.left);
+            delete node->pair.right;
+            node->type = SAT_NODE_TRUE;
+            return;
+        default:
+            break;
+        }
         return;
     default:
         return;

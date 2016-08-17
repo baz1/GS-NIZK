@@ -2,11 +2,12 @@
 #include <fstream>
 #include <cstdlib>
 
-#include "pairings.h"
+#include "gsnizk.h"
 
 using namespace std;
-using namespace pairings;
+using namespace gsnizk;
 
+static int n_err = 0;
 #define ASSERT(X) if (!(X)) (cerr << "Error: Assert of " << #X << " at line " \
     << __LINE__ << " failed!" << endl, ++n_err)
 
@@ -20,22 +21,21 @@ bool checkDataSize(int size, int line) {
     if (size > DATA_SIZE) {
         cerr << "Error: Please increase DATA_SIZE for the tests (size " << size
              << " required at line " << line << ")." << endl;
-        terminate_pairings();
+        pairings::terminate_pairings();
         return false;
     }
     return true;
 }
 
-#define CHECK_DATA_SIZE(s) if (!checkDataSize((s), __LINE__)) return 0
+#define CHECK_DATA_SIZE(s) if (!checkDataSize((s), __LINE__)) return
 
-int main() {
-    int len, n_err = 0;
-    initialize_pairings(0, 0);
+void testPairings() {
+    int len;
     char data[DATA_SIZE], *data2;
 
     /* -------------------- Hash prerequisite -------------------- */
-    char *hash = new char[getHashLen()];
-    getHash("hello", 5, hash);
+    char *hash = new char[pairings::getHashLen()];
+    pairings::getHash("hello", 5, hash);
 
     /* -------------------- Tests for Fp -------------------- */
     Fp v1, v2(0), v3(42), v4(1764);
@@ -252,8 +252,33 @@ int main() {
     ASSERT(h2 == h4);
     ASSERT(t1 == t3);
     ASSERT(t2 == t4);
+}
 
-    terminate_pairings();
+void testProofs() {
+    G1 a = G1::getRand();
+    Fp k = Fp::getRand();
+    G1 b = k * a;
+
+    CRS crs(true);
+    NIZKProof proof;
+    proof.addEquation(FpVar(0) * G1Const(0), FpUnit() * G1Const(1));
+    proof.endEquations();
+
+    ProofData d;
+    d.privFp.push_back(k);
+    d.pubG1.push_back(a);
+    d.pubG1.push_back(b);
+
+    ASSERT(proof.verifySolution(d));
+}
+
+int main() {
+    pairings::initialize_pairings(0, 0);
+
+    testPairings();
+    testProofs();
+
+    pairings::terminate_pairings();
     if (n_err) {
         cout << "Done; " << n_err << " error(s) have occured!" << endl;
     } else {
