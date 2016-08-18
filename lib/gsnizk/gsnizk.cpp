@@ -251,6 +251,11 @@ GTElement GTConst(GT value) {
     return GTElement(std::shared_ptr<GTData>(d));
 }
 
+GTElement GTBase() {
+    GTData *d = new GTData(ELEMENT_BASE);
+    return GTElement(std::shared_ptr<GTData>(d));
+}
+
 void NIZKProof::addEquation(const FpElement &leftHandSide,
                             const FpElement &rightHandSide) {
     if (fixed) throw "Unexpected use of gsnizk::addEquation";
@@ -408,6 +413,9 @@ SAT_NODE *getSAT(const GTData &d) {
         node->type = SAT_NODE_OR;
         node->pair.left = getSAT(*d.pring.first);
         node->pair.right = getSAT(*d.pring.second);
+        return node;
+    case ELEMENT_BASE:
+        node->type = SAT_NODE_TRUE;
         return node;
     default:
         ASSERT(false, "Unexpected data type");
@@ -572,6 +580,83 @@ void instanciateIndex(SAT_NODE *node, int i_type, int i_value,
     }
 }
 
+bool isZK(const FpData &d) {
+    switch (d.type) {
+    case ELEMENT_VARIABLE:
+    case ELEMENT_BASE:
+        return true;
+    case ELEMENT_CONST_INDEX:
+    case ELEMENT_CONST_VALUE:
+        return false;
+    case ELEMENT_PAIR:
+        return isZK(*d.pair.first) && isZK(*d.pair.second);
+    case ELEMENT_SCALAR:
+        return isZK(*d.pair.first) || isZK(*d.pair.second);
+    default:
+        ASSERT(false, "Unexpected data type");
+        return false;
+    }
+}
+
+bool isZK(const G1Data &d, bool normalCommit) {
+    switch (d.type) {
+    case ELEMENT_VARIABLE:
+        return normalCommit;
+    case ELEMENT_CONST_INDEX:
+    case ELEMENT_CONST_VALUE:
+        return false;
+    case ELEMENT_PAIR:
+        return isZK(*d.pair.first, normalCommit) &&
+                isZK(*d.pair.second, normalCommit);
+    case ELEMENT_SCALAR:
+        return isZK(*d.scalar.first) || isZK(*d.scalar.second, normalCommit);
+    case ELEMENT_BASE:
+        return true;
+    default:
+        ASSERT(false, "Unexpected data type");
+        return false;
+    }
+}
+
+bool isZK(const G2Data &d, bool normalCommit) {
+    switch (d.type) {
+    case ELEMENT_VARIABLE:
+        return normalCommit;
+    case ELEMENT_CONST_INDEX:
+    case ELEMENT_CONST_VALUE:
+        return false;
+    case ELEMENT_PAIR:
+        return isZK(*d.pair.first, normalCommit) &&
+                isZK(*d.pair.second, normalCommit);
+    case ELEMENT_SCALAR:
+        return isZK(*d.scalar.first) || isZK(*d.scalar.second, normalCommit);
+    case ELEMENT_BASE:
+        return true;
+    default:
+        ASSERT(false, "Unexpected data type");
+        return false;
+    }
+}
+
+bool isZK(const GTData &d, bool normalCommit) {
+    switch (d.type) {
+    case ELEMENT_CONST_INDEX:
+    case ELEMENT_CONST_VALUE:
+        return false;
+    case ELEMENT_PAIR:
+        return isZK(*d.pair.first, normalCommit) &&
+                isZK(*d.pair.second, normalCommit);
+    case ELEMENT_PAIRING:
+        return isZK(*d.pring.first, normalCommit) ||
+                isZK(*d.pring.second, normalCommit);
+    case ELEMENT_BASE:
+        return true;
+    default:
+        ASSERT(false, "Unexpected data type");
+        return false;
+    }
+}
+
 #define SAT_VALUE_UNSET 0
 #define SAT_VALUE_TRUE  1
 #define SAT_VALUE_FALSE 2
@@ -728,6 +813,7 @@ bool NIZKProof::endEquations() {
         }
     }
     /* Selected Encryption selection */
+    zk = true;
     if (type == SelectedEncryption) {
         SAT_NODE *root = new SAT_NODE;
         root->type = SAT_NODE_TRUE;
@@ -763,6 +849,37 @@ bool NIZKProof::endEquations() {
             for (int j = sEnc[i].size(); j--;)
                 --sEnc[i][j];
         }
+    } else {
+        bool normalCommit = (type == NormalCommit);
+        for (const PairFp &p : eqsFp) {
+            if ((!isZK(*p.first)) || (p.second && (!isZK(*p.second)))) {
+                zk = false;
+                goto endZKTests;
+            }
+        }
+        for (const PairG1 &p : eqsG1) {
+            if ((!isZK(*p.first, normalCommit)) ||
+                    (p.second && (!isZK(*p.second, normalCommit)))) {
+                zk = false;
+                goto endZKTests;
+            }
+        }
+        for (const PairG2 &p : eqsG2) {
+            if ((!isZK(*p.first, normalCommit)) ||
+                    (p.second && (!isZK(*p.second, normalCommit)))) {
+                zk = false;
+                goto endZKTests;
+            }
+        }
+        for (const PairGT &p : eqsGT) {
+            if ((!isZK(*p.first, normalCommit)) ||
+                    (p.second && (!isZK(*p.second, normalCommit)))) {
+                zk = false;
+                goto endZKTests;
+            }
+        }
+endZKTests:
+        ;
     }
     /* Equation types for the proofs */
     getEqProofTypes();
@@ -1146,6 +1263,7 @@ inline std::ostream &operator<<(std::ostream &stream, const AdditionalG2 &a) {
 std::ostream &operator<<(std::ostream &stream, const NIZKProof &p) {
     if (!p.fixed) return stream;
     stream << ((int) p.type);
+    stream << p.zk;
     stream << p.varsFp.size() << p.cstsFp.size();
     stream << p.varsG1.size() << p.cstsG1.size();
     stream << p.varsG2.size() << p.cstsG2.size();
@@ -1170,6 +1288,7 @@ NIZKProof::NIZKProof(std::istream &stream) : fixed(true) {
     int mtype;
     stream >> mtype;
     type = (CommitType) mtype;
+    stream >> zk;
     size_t s;
     stream >> s;
     varsFp.resize(s);

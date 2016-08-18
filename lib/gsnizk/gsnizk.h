@@ -130,6 +130,7 @@ G2Element G2Const(G2 value);
 G2Element G2Base();
 GTElement GTConst(int index);
 GTElement GTConst(GT value);
+GTElement GTBase();
 G1Element operator*(const FpElement &s, const G1Element &e);
 G2Element operator*(const FpElement &s, const G2Element &e);
 GTElement e(const G1Element &a, const G2Element &b);
@@ -420,6 +421,14 @@ public:
      * @return The constant element.
      */
     friend GTElement GTConst(GT value);
+    /**
+     * @brief Creates the special constant that is the base element of
+     *   @f$\mathbb{G}_T@f$.
+     * @note This is the pairing product of the two base elements of
+     *   @f$\mathbb{G}_1@f$ and @f$\mathbb{G}_2@f$.
+     * @return The base element.
+     */
+    friend GTElement GTBase();
 private:
     std::shared_ptr<GTData> data;
 };
@@ -643,6 +652,7 @@ private:
     void cleanupPE() const;
 private:
     CommitType type;
+    bool zk;
     std::vector<PairFp> eqsFp;
     std::vector<PairG1> eqsG1;
     std::vector<PairG2> eqsG2;
