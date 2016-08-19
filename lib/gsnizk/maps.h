@@ -545,12 +545,21 @@ public:
 #define CRS_TYPE_PRIVATE    3 /* Binding key with efficiency parameters */
 
 /**
+ * @cond INTERNAL_DATA_STRUCT
+ */
+class NIZKProof;
+/**
+ * @endcond
+ */
+
+/**
  * @brief The Common Reference String.
  */
 class CRS {
     friend class B1;
     friend class B2;
     friend class BT;
+    friend class NIZKProof;
 public:
     /**
      * @brief CRS dummmy constructor.
@@ -641,29 +650,10 @@ public:
      */
     inline B2 getB2Unit() const;
     /**
-     * @brief Gets the element @f$\hat{v}@f$ of this CRS.
-     * @note Notation from the article @cite Escala2016.
-     * @return The element.
+     * @brief Checks whether or not this CRS has private hiding parameters.
+     * @return `true` if yes, `false` otherwise.
      */
-    inline B1 getV1() const;
-    /**
-     * @brief Gets the element @f$\hat{w}@f$ of this CRS.
-     * @note Notation from the article @cite Escala2016.
-     * @return The element.
-     */
-    inline B1 getW1() const;
-    /**
-     * @brief Gets the element @f$\check{v}@f$ of this CRS.
-     * @note Notation from the article @cite Escala2016.
-     * @return The element.
-     */
-    inline B2 getV2() const;
-    /**
-     * @brief Gets the element @f$\check{w}@f$ of this CRS.
-     * @note Notation from the article @cite Escala2016.
-     * @return The element.
-     */
-    inline B2 getW2() const;
+    inline bool isSimulationReady() const;
 private:
     void computeElements();
 private:
@@ -912,13 +902,9 @@ inline B1 CRS::getB1Unit() const { return u1; }
 
 inline B2 CRS::getB2Unit() const { return u2; }
 
-inline B1 CRS::getV1() const { return v1; }
-
-inline B1 CRS::getW1() const { return w1; }
-
-inline B2 CRS::getV2() const { return v2; }
-
-inline B2 CRS::getW2() const { return w2; }
+inline bool CRS::isSimulationReady() const {
+    return type == CRS_TYPE_ZK;
+}
 
 } /* End of namespace nizk */
 

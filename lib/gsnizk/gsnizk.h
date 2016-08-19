@@ -12,6 +12,7 @@
 #include <utility>
 #include <vector>
 #include <iostream>
+#include <set>
 
 /**
  * @file gsnizk.h
@@ -135,13 +136,50 @@ G1Element operator*(const FpElement &s, const G1Element &e);
 G2Element operator*(const FpElement &s, const G2Element &e);
 GTElement e(const G1Element &a, const G2Element &b);
 
-struct EqProofType {
-    enum EqProofTypeIndividual {
-        TYPE_NORMAL = 3,
-        TYPE_SINGLE = 2,
-        TYPE_FP     = 1,
-        TYPE_NONE   = 0
-    } tv1, tw1, tv2, tw2;
+/* Element types : see @cite Escala2016. */
+enum EL_TYPE_PT {
+    /* Elements in G1 */
+    EL_TYPE_BASE_G,
+    EL_TYPE_PUB_G,
+    EL_TYPE_ENC_G,
+    EL_TYPE_COM_G,
+    /* Elements in G2 */
+    EL_TYPE_BASE_H,
+    EL_TYPE_PUB_H,
+    EL_TYPE_ENC_H,
+    EL_TYPE_COM_H,
+    /* Left elements in Fp */
+    EL_TYPE_UNIT_G,
+    EL_TYPE_SCA_G,
+    /* Right elements in Fp */
+    EL_TYPE_UNIT_H,
+    EL_TYPE_SCA_H
+};
+
+typedef std::set<EL_TYPE_PT> ElTypeSet;
+
+/* Equation proof types : see @cite Escala2016. */
+enum EqProofType {
+    /* Equations in GT */
+    EQ_TYPE_PPE         = 0,
+    EQ_TYPE_PEnc_G      = 1,
+    EQ_TYPE_PConst_G    = 2,
+    EQ_TYPE_PEnc_H      = 3,
+    EQ_TYPE_PConst_H    = 4,
+    /* Equations in G1 */
+    EQ_TYPE_ME_G        = 5,
+    EQ_TYPE_MEnc_G      = 6,
+    EQ_TYPE_MConst_G    = 7,
+    EQ_TYPE_MLin_G      = 8,
+    /* Equations in G2 */
+    EQ_TYPE_ME_H        = 9,
+    EQ_TYPE_MEnc_H      = 10,
+    EQ_TYPE_MConst_H    = 11,
+    EQ_TYPE_MLin_H      = 12,
+    /* Equations in Fp */
+    EQ_TYPE_QE          = 13,
+    EQ_TYPE_QConst_G    = 14,
+    EQ_TYPE_QConst_H    = 15
 };
 
 struct AdditionalFp {
@@ -583,7 +621,7 @@ public:
     bool verifySolution(const ProofData &instantiation,
                         const CRS &crs = CRS()) const;
     /**
-     * @brief Write a NIZK proof to a stream.
+     * @brief Writes a NIZK proof to a stream.
      * @warning The user should call the function @ref endEquations()
      *   before calling this function.
      * @warning It is assumed that the given values are a solution of the
@@ -613,6 +651,34 @@ public:
      */
     bool checkProof(std::istream &stream, const CRS &crs,
                     const ProofData &instantiation) const;
+    /**
+     * @brief Checks if the system of equations is Zero-Knowledge.
+     * @note This function always returns `false` if the system has not
+     *   been fixed yet, i.e. if the function @ref endEquations() has
+     *   not been called yet.
+     * @return `true` if it is, `false` otherwise.
+     * @sa NIZKProof::endEquations()
+     */
+    inline bool isZeroKnowledge();
+    /**
+     * @brief Writes a simulated proof to a stream.
+     * @warning The user should call the function @ref endEquations()
+     *   before calling this function.
+     * @warning The system of equations is supposed to be Zero-Knowledge.
+     *   This can be checked with the function @ref isZeroKnowledge().
+     * @param stream Output stream to which the NIZK proof shall be written.
+     * @param crs Common Reference String that is assumed to be a
+     *   private hiding one. If it is not, nothing will be written to the
+     *   stream.
+     * @param instantiation Instantiation values for the constants.
+     * @note The instantiation vectors for the variables are ignored.
+     * @sa NIZKProof::endEquations()
+     * @sa NIZKProof::isZeroKnowledge()
+     * @sa CRS::isSimulationReady()
+     * @sa NIZKProof::checkProof(std::istream&,const CRS&, const ProofData&)
+     */
+    void simulateProof(std::ostream &stream, const CRS &crs,
+                       const ProofData &instantiation) const;
 private:
     bool checkInstantiation(const ProofData &instantiation) const;
     void getIndexes(std::shared_ptr<FpData> &d);
@@ -640,16 +706,28 @@ private:
     void readFromStream(std::istream &stream, std::shared_ptr<G1Data> &dp);
     void readFromStream(std::istream &stream, std::shared_ptr<G2Data> &dp);
     void readFromStream(std::istream &stream, std::shared_ptr<GTData> &dp);
-    void getPType(const FpData &d);
-    void getPType(const G1Data &d);
-    void getPType(const G2Data &d);
-    void getPType(const GTData &d);
-    void getPTLeft(const FpData &d);
-    void getPTLeft(const G1Data &d);
-    void getPTRight(const FpData &d);
-    void getPTRight(const G2Data &d);
+    std::pair<ElTypeSet,ElTypeSet> getPType(const FpData &d);
+    std::pair<ElTypeSet,ElTypeSet> getPType(const G1Data &d);
+    std::pair<ElTypeSet,ElTypeSet> getPType(const G2Data &d);
+    std::pair<ElTypeSet,ElTypeSet> getPType(const GTData &d);
+    ElTypeSet getPTLeft(const FpData &d);
+    ElTypeSet getPTLeft(const G1Data &d);
+    ElTypeSet getPTRight(const FpData &d);
+    ElTypeSet getPTRight(const G2Data &d);
+    void writeEqProof(std::ostream &stream, const void *leftp,
+                      const void *rightp, EqProofType expectedType,
+                      const CRS &crs) const;
     void getEqProofTypes();
-    void cleanupPE() const;
+    BT getRndProofPart(std::istream &stream, EqProofType t,
+                       const CRS &crs) const;
+    void getProofZK(const FpData &d, const CRS &crs, EqProofType t) const;
+    void getProofZK(const G1Data &d, const CRS &crs, EqProofType t) const;
+    void getProofZK(const G2Data &d, const CRS &crs, EqProofType t) const;
+    void getProofZK(const GTData &d, const CRS &crs, EqProofType t) const;
+    void getLeftZK(const FpData &d, const CRS &crs, EqProofType t) const;
+    void getLeftZK(const G1Data &d, const CRS &crs, EqProofType t) const;
+    void getRightZK(const FpData &d, const CRS &crs, EqProofType t) const;
+    void getRightZK(const G2Data &d, const CRS &crs, EqProofType t) const;
 private:
     CommitType type;
     bool zk;
@@ -692,7 +770,10 @@ inline GTElement::GTElement() {}
 
 inline GTElement::GTElement(std::shared_ptr<GTData> d) : data(d) {}
 
-inline NIZKProof::NIZKProof(CommitType type) : type(type), fixed(false) {}
+inline NIZKProof::NIZKProof(CommitType type)
+    : type(type), zk(false), fixed(false) {}
+
+inline bool NIZKProof::isZeroKnowledge() { return zk; }
 
 } /* End of namespace nizk */
 

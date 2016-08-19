@@ -5,8 +5,6 @@
 
 #include "gsnizk.h"
 
-#include <set>
-
 /* Prioritize Qt's no-debug policy, if existent */
 #if defined(QT_NO_DEBUG) && defined(DEBUG)
 #undef DEBUG
@@ -888,23 +886,14 @@ endZKTests:
 }
 
 std::ostream &operator<<(std::ostream &stream, const EqProofType &t) {
-    stream << ((int) t.tv1);
-    stream << ((int) t.tw1);
-    stream << ((int) t.tv2);
-    stream << ((int) t.tw2);
+    stream << ((int) t);
     return stream;
 }
 
 std::istream &operator>>(std::istream &stream, EqProofType &t) {
     int i;
     stream >> i;
-    t.tv1 = (EqProofType::EqProofTypeIndividual) i;
-    stream >> i;
-    t.tw1 = (EqProofType::EqProofTypeIndividual) i;
-    stream >> i;
-    t.tv2 = (EqProofType::EqProofTypeIndividual) i;
-    stream >> i;
-    t.tw2 = (EqProofType::EqProofTypeIndividual) i;
+    t = (EqProofType) i;
     return stream;
 }
 
@@ -1673,6 +1662,7 @@ void addCommitG2(const G2Commit &c1, const G2Commit &c2, G2Commit &cr,
         }
     }
 }
+
 void getProof(const FpData &d, const CRS &crs);
 void getProof(const G1Data &d, const CRS &crs);
 void getProof(const G2Data &d, const CRS &crs);
@@ -1691,74 +1681,215 @@ void removeLeft(const G1Data &d);
 void removeRight(const FpData &d);
 void removeRight(const G2Data &d);
 
-void writeEqProof(std::ostream &stream, const ProofEls &left,
-                  const ProofEls &right, EqProofType expectedType,
-                  const CRS &crs) {
-    (void) expectedType; /* (prevent warning when no debugging) */
+void convToB(PiG1 &v, const CRS &crs) {
+    switch (v.type) {
+    case VALUE_NULL:
+        break;
+    case VALUE_Fp:
+        v.b1Value = v.fpValue * crs.getB1Unit();
+        break;
+    case VALUE_G:
+        break;
+    case VALUE_B:
+        return;
+    }
+    v.type = VALUE_B;
+}
+
+void convToB(PiG2 &v, const CRS &crs) {
+    switch (v.type) {
+    case VALUE_NULL:
+        break;
+    case VALUE_Fp:
+        v.b2Value = v.fpValue * crs.getB2Unit();
+        break;
+    case VALUE_G:
+        break;
+    case VALUE_B:
+        return;
+    }
+    v.type = VALUE_B;
+}
+
+void NIZKProof::writeEqProof(std::ostream &stream, const void *leftp,
+                  const void *rightp, EqProofType expectedType,
+                  const CRS &crs) const {
+    const ProofEls &left = *reinterpret_cast<const ProofEls*>(leftp);
+    const ProofEls &right = *reinterpret_cast<const ProofEls*>(rightp);
     ProofEls result;
     subPiG1(left.p1_v, right.p1_v, result.p1_v, crs);
-    ASSERT((int) result.p1_v.type == (int) expectedType.tv1,
-            "Equation types do not match");
     subPiG1(left.p1_w, right.p1_w, result.p1_w, crs);
-    ASSERT((int) result.p1_w.type == (int) expectedType.tw1,
-            "Equation types do not match");
     subPiG2(left.p2_v, right.p2_v, result.p2_v, crs);
-    ASSERT((int) result.p2_v.type == (int) expectedType.tv2,
-            "Equation types do not match");
     subPiG2(left.p2_w, right.p2_w, result.p2_w, crs);
-    ASSERT((int) result.p2_w.type == (int) expectedType.tw2,
-            "Equation types do not match");
-    switch (result.p1_v.type) {
-    case VALUE_Fp:
-        stream << result.p1_v.fpValue;
-        break;
-    case VALUE_G:
-        stream << result.p1_v.b1Value._2;
-        break;
-    case VALUE_B:
+    switch (expectedType) {
+    case EQ_TYPE_PPE:
+    {
+        Fp alpha = Fp::getRand(), beta = Fp::getRand();
+        Fp gamma = Fp::getRand(), delta = Fp::getRand();
+        convToB(result.p1_v, crs);
+        convToB(result.p1_w, crs);
+        convToB(result.p2_v, crs);
+        convToB(result.p2_w, crs);
+        if (crs.type == CRS_TYPE_PRIVATE) {
+            result.p2_v.b2Value += (alpha + crs.i2 * beta) * crs.v2;
+            result.p2_w.b2Value += (gamma + crs.i2 * delta) * crs.v2;
+            result.p1_v.b1Value -= (alpha + crs.i1 * gamma) * crs.v1;
+            result.p1_w.b1Value -= (beta + crs.i1 * delta) * crs.v1;
+        } else {
+            result.p2_v.b2Value += alpha * crs.v2 + beta * crs.w2;
+            result.p2_w.b2Value += gamma * crs.v2 + delta * crs.w2;
+            result.p1_v.b1Value -= alpha * crs.v1 + gamma * crs.w1;
+            result.p1_w.b1Value -= beta * crs.v1 + delta * crs.w1;
+        }
         stream << result.p1_v.b1Value;
-        break;
-    case VALUE_NULL:
-        break;
-    }
-    switch (result.p1_w.type) {
-    case VALUE_Fp:
-        stream << result.p1_w.fpValue;
-        break;
-    case VALUE_G:
-        stream << result.p1_w.b1Value._2;
-        break;
-    case VALUE_B:
         stream << result.p1_w.b1Value;
-        break;
-    case VALUE_NULL:
-        break;
-    }
-    switch (result.p2_v.type) {
-    case VALUE_Fp:
-        stream << result.p2_v.fpValue;
-        break;
-    case VALUE_G:
-        stream << result.p2_v.b2Value._2;
-        break;
-    case VALUE_B:
         stream << result.p2_v.b2Value;
-        break;
-    case VALUE_NULL:
-        break;
-    }
-    switch (result.p2_w.type) {
-    case VALUE_Fp:
-        stream << result.p2_w.fpValue;
-        break;
-    case VALUE_G:
-        stream << result.p2_w.b2Value._2;
-        break;
-    case VALUE_B:
         stream << result.p2_w.b2Value;
         break;
-    case VALUE_NULL:
+    }
+    case EQ_TYPE_PEnc_G:
+    case EQ_TYPE_ME_H:
+    {
+        Fp alpha = Fp::getRand(), beta = Fp::getRand();
+        convToB(result.p1_v, crs);
+        convToB(result.p1_w, crs);
+        convToB(result.p2_v, crs);
+        ASSERT(result.p2_w.type == VALUE_NULL, "Unexpected type");
+        if (crs.type == CRS_TYPE_PRIVATE) {
+            result.p2_v.b2Value += (alpha + crs.i2 * beta) * crs.v2;
+        } else {
+            result.p2_v.b2Value += alpha * crs.v2 + beta * crs.w2;
+        }
+        result.p1_v.b1Value -= alpha * crs.v1;
+        result.p1_w.b1Value -= beta * crs.v1;
+        stream << result.p1_v.b1Value;
+        stream << result.p1_w.b1Value;
+        stream << result.p2_v.b2Value;
         break;
+    }
+    case EQ_TYPE_PConst_G:
+    {
+        ASSERT((result.p1_v.type == VALUE_NULL) ||
+                (result.p1_v.type == VALUE_G), "Unexpected type");
+        ASSERT((result.p1_w.type == VALUE_NULL) ||
+                (result.p1_w.type == VALUE_G), "Unexpected type");
+        ASSERT(result.p2_v.type == VALUE_NULL, "Unexpected type");
+        ASSERT(result.p2_w.type == VALUE_NULL, "Unexpected type");
+        stream << result.p1_v.b1Value._2;
+        stream << result.p1_w.b1Value._2;
+        break;
+    }
+    case EQ_TYPE_PEnc_H:
+    case EQ_TYPE_ME_G:
+    {
+        Fp alpha = Fp::getRand(), gamma = Fp::getRand();
+        convToB(result.p1_v, crs);
+        ASSERT(result.p1_w.type == VALUE_NULL, "Unexpected type");
+        convToB(result.p2_v, crs);
+        convToB(result.p2_w, crs);
+        result.p2_v.b2Value += alpha * crs.v2;
+        result.p2_w.b2Value += gamma * crs.v2;
+        if (crs.type == CRS_TYPE_PRIVATE) {
+            result.p1_v.b1Value -= (alpha + crs.i1 * gamma) * crs.v1;
+        } else {
+            result.p1_v.b1Value -= alpha * crs.v1 + gamma * crs.w1;
+        }
+        stream << result.p1_v.b1Value;
+        stream << result.p2_v.b2Value;
+        stream << result.p2_w.b2Value;
+        break;
+    }
+    case EQ_TYPE_PConst_H:
+    {
+        ASSERT(result.p1_v.type == VALUE_NULL, "Unexpected type");
+        ASSERT(result.p1_w.type == VALUE_NULL, "Unexpected type");
+        ASSERT((result.p2_v.type == VALUE_NULL) ||
+                (result.p2_v.type == VALUE_G), "Unexpected type");
+        ASSERT((result.p2_w.type == VALUE_NULL) ||
+                (result.p2_w.type == VALUE_G), "Unexpected type");
+        stream << result.p2_v.b2Value._2;
+        stream << result.p2_w.b2Value._2;
+        break;
+    }
+    case EQ_TYPE_MEnc_G:
+    case EQ_TYPE_MEnc_H:
+    case EQ_TYPE_QE:
+    {
+        Fp alpha = Fp::getRand();
+        convToB(result.p1_v, crs);
+        ASSERT(result.p1_w.type == VALUE_NULL, "Unexpected type");
+        convToB(result.p2_v, crs);
+        ASSERT(result.p2_w.type == VALUE_NULL, "Unexpected type");
+        result.p2_v.b2Value += alpha * crs.v2;
+        result.p1_v.b1Value -= alpha * crs.v1;
+        stream << result.p1_v.b1Value;
+        stream << result.p2_v.b2Value;
+        break;
+    }
+    case EQ_TYPE_MConst_G:
+    {
+        ASSERT((result.p1_v.type == VALUE_NULL) ||
+                (result.p1_v.type == VALUE_G), "Unexpected type");
+        ASSERT(result.p1_w.type == VALUE_NULL, "Unexpected type");
+        ASSERT(result.p2_v.type == VALUE_NULL, "Unexpected type");
+        ASSERT(result.p2_w.type == VALUE_NULL, "Unexpected type");
+        stream << result.p1_v.b1Value._2;
+        break;
+    }
+    case EQ_TYPE_MLin_G:
+    {
+        ASSERT(result.p1_v.type == VALUE_NULL, "Unexpected type");
+        ASSERT(result.p1_w.type == VALUE_NULL, "Unexpected type");
+        ASSERT((result.p2_v.type == VALUE_NULL) ||
+                (result.p2_v.type == VALUE_Fp), "Unexpected type");
+        ASSERT((result.p2_w.type == VALUE_NULL) ||
+                (result.p2_w.type == VALUE_Fp), "Unexpected type");
+        stream << result.p2_v.fpValue;
+        stream << result.p2_w.fpValue;
+        break;
+    }
+    case EQ_TYPE_MConst_H:
+    {
+        ASSERT(result.p1_v.type == VALUE_NULL, "Unexpected type");
+        ASSERT(result.p1_w.type == VALUE_NULL, "Unexpected type");
+        ASSERT((result.p2_v.type == VALUE_NULL) ||
+                (result.p2_v.type == VALUE_G), "Unexpected type");
+        ASSERT(result.p2_w.type == VALUE_NULL, "Unexpected type");
+        stream << result.p2_v.b2Value._2;
+        break;
+    }
+    case EQ_TYPE_MLin_H:
+    {
+        ASSERT((result.p1_v.type == VALUE_NULL) ||
+                (result.p1_v.type == VALUE_Fp), "Unexpected type");
+        ASSERT((result.p1_w.type == VALUE_NULL) ||
+                (result.p1_w.type == VALUE_Fp), "Unexpected type");
+        ASSERT(result.p2_v.type == VALUE_NULL, "Unexpected type");
+        ASSERT(result.p2_w.type == VALUE_NULL, "Unexpected type");
+        stream << result.p1_v.fpValue;
+        stream << result.p1_w.fpValue;
+        break;
+    }
+    case EQ_TYPE_QConst_G:
+    {
+        ASSERT((result.p1_v.type == VALUE_NULL) ||
+                (result.p1_v.type == VALUE_Fp), "Unexpected type");
+        ASSERT(result.p1_w.type == VALUE_NULL, "Unexpected type");
+        ASSERT(result.p2_v.type == VALUE_NULL, "Unexpected type");
+        ASSERT(result.p2_w.type == VALUE_NULL, "Unexpected type");
+        stream << result.p1_v.fpValue;
+        break;
+    }
+    case EQ_TYPE_QConst_H:
+    {
+        ASSERT(result.p1_v.type == VALUE_NULL, "Unexpected type");
+        ASSERT(result.p1_w.type == VALUE_NULL, "Unexpected type");
+        ASSERT((result.p2_v.type == VALUE_NULL) ||
+                (result.p2_v.type == VALUE_Fp), "Unexpected type");
+        ASSERT(result.p2_w.type == VALUE_NULL, "Unexpected type");
+        stream << result.p2_v.fpValue;
+        break;
+    }
     }
 }
 
@@ -1911,34 +2042,53 @@ void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
         const FpData &right = *eqsFp[i].second;
         getProof(left, crs);
         getProof(right, crs);
-        writeEqProof(stream, *reinterpret_cast<ProofEls*>(left.d),
-                     *reinterpret_cast<ProofEls*>(right.d), tFp[i], crs);
+        writeEqProof(stream, left.d, right.d, tFp[i], crs);
     }
     for (i = eqsG1.size(); i-- > 0;) {
         const G1Data &left = *eqsG1[i].first;
         const G1Data &right = *eqsG1[i].second;
         getProof(left, crs);
         getProof(right, crs);
-        writeEqProof(stream, *reinterpret_cast<ProofEls*>(left.d),
-                     *reinterpret_cast<ProofEls*>(right.d), tG1[i], crs);
+        writeEqProof(stream, left.d, right.d, tG1[i], crs);
     }
     for (i = eqsG2.size(); i-- > 0;) {
         const G2Data &left = *eqsG2[i].first;
         const G2Data &right = *eqsG2[i].second;
         getProof(left, crs);
         getProof(right, crs);
-        writeEqProof(stream, *reinterpret_cast<ProofEls*>(left.d),
-                     *reinterpret_cast<ProofEls*>(right.d), tG2[i], crs);
+        writeEqProof(stream, left.d, right.d, tG2[i], crs);
     }
     for (i = eqsGT.size(); i-- > 0;) {
         const GTData &left = *eqsGT[i].first;
         const GTData &right = *eqsGT[i].second;
         getProof(left, crs);
         getProof(right, crs);
-        writeEqProof(stream, *reinterpret_cast<ProofEls*>(left.d),
-                     *reinterpret_cast<ProofEls*>(right.d), tGT[i], crs);
+        writeEqProof(stream, left.d, right.d, tGT[i], crs);
     }
-    cleanupPE();
+    for (int i = eqsFp.size(); i-- > 0;) {
+        const FpData &left = *eqsFp[i].first;
+        const FpData &right = *eqsFp[i].second;
+        removeProof(left);
+        removeProof(right);
+    }
+    for (int i = eqsG1.size(); i-- > 0;) {
+        const G1Data &left = *eqsG1[i].first;
+        const G1Data &right = *eqsG1[i].second;
+        removeProof(left);
+        removeProof(right);
+    }
+    for (int i = eqsG2.size(); i-- > 0;) {
+        const G2Data &left = *eqsG2[i].first;
+        const G2Data &right = *eqsG2[i].second;
+        removeProof(left);
+        removeProof(right);
+    }
+    for (int i = eqsGT.size(); i-- > 0;) {
+        const GTData &left = *eqsGT[i].first;
+        const GTData &right = *eqsGT[i].second;
+        removeProof(left);
+        removeProof(right);
+    }
 }
 
 bool NIZKProof::checkInstantiation(const ProofData &instantiation) const {
@@ -3073,430 +3223,335 @@ void removeRight(const G2Data &d) {
     }
 }
 
-template <typename T> void addPiGX(const T &a, const T &b, T &result) {
-    if (a.type == VALUE_NULL) {
-        result.type = b.type;
-    } else if (b.type == VALUE_NULL) {
-        result.type = a.type;
-    } else {
-        result.type = ((a.type == b.type) ? a.type : VALUE_B);
-    }
+void combinePTResults(std::pair<ElTypeSet,ElTypeSet> &result,
+                      const std::pair<ElTypeSet,ElTypeSet> &other) {
+    for (const EL_TYPE_PT &el : other.first)
+        result.first.insert(el);
+    for (const EL_TYPE_PT &el : other.second)
+        result.second.insert(el);
 }
 
-void scalarCombineLight(const G1Commit &c1, const G2Commit &c2, ProofEls &p) {
-    switch (c1.type) {
-    case COMMIT_PRIV:
-        p.p2_v.type = c2.c.type;
-        p.p2_w.type = c2.c.type;
-        break;
-    case COMMIT_ENC:
-        p.p2_v.type = c2.c.type;
-        p.p2_w.type = VALUE_NULL;
-        break;
-    case COMMIT_PUB:
-        p.p2_v.type = VALUE_NULL;
-        p.p2_w.type = VALUE_NULL;
-        break;
-    }
-    switch (c2.type) {
-    case COMMIT_PRIV:
-        p.p1_v.type = c1.c.type;
-        p.p1_w.type = c1.c.type;
-        break;
-    case COMMIT_ENC:
-        p.p1_v.type = c1.c.type;
-        p.p1_w.type = VALUE_NULL;
-        break;
-    case COMMIT_PUB:
-        p.p1_v.type = VALUE_NULL;
-        p.p1_w.type = VALUE_NULL;
-        break;
-    }
-}
-
-void addAllPiLight(const ProofEls &el1, const ProofEls &el2, ProofEls &result) {
-    addPiGX(el1.p1_v, el2.p1_v, result.p1_v);
-    addPiGX(el1.p1_w, el2.p1_w, result.p1_w);
-    addPiGX(el1.p2_v, el2.p2_v, result.p2_v);
-    addPiGX(el1.p2_w, el2.p2_w, result.p2_w);
-}
-
-void NIZKProof::getPType(const FpData &d) {
-    if (d.d) return;
-    ProofEls *proofEl = new ProofEls;
-    d.d = reinterpret_cast<void*>(proofEl);
+std::pair<ElTypeSet,ElTypeSet> NIZKProof::getPType(const FpData &d) {
+    std::pair<ElTypeSet,ElTypeSet> result;
     switch (d.type) {
     case ELEMENT_CONST_VALUE:
     case ELEMENT_BASE:
-        proofEl->p1_v.type = VALUE_NULL;
-        proofEl->p1_w.type = VALUE_NULL;
-        proofEl->p2_v.type = VALUE_NULL;
-        proofEl->p2_w.type = VALUE_NULL;
-        return;
+        result.first.insert(EL_TYPE_UNIT_G);
+        result.second.insert(EL_TYPE_UNIT_H);
+        break;
     case ELEMENT_PAIR:
         {
-            getPType(*d.pair.first);
-            getPType(*d.pair.second);
-            const ProofEls &el1 =
-                    *reinterpret_cast<const ProofEls*>(d.pair.first->d);
-            const ProofEls &el2 =
-                    *reinterpret_cast<const ProofEls*>(d.pair.second->d);
-            addAllPiLight(el1, el2, *proofEl);
-            return;
+            result = getPType(*d.pair.first);
+            combinePTResults(result, getPType(*d.pair.second));
+            break;
         }
     case ELEMENT_SCALAR:
-        {
-            getPTLeft(*d.pair.first);
-            getPTRight(*d.pair.second);
-            const G1Commit &el1 =
-                    *reinterpret_cast<const G1Commit*>(d.pair.first->d);
-            const G2Commit &el2 =
-                    *reinterpret_cast<const G2Commit*>(d.pair.second->d);
-            scalarCombineLight(el1, el2, *proofEl);
-            return;
-        }
+        result.first = getPTLeft(*d.pair.first);
+        result.second = getPTRight(*d.pair.second);
+        break;
     default:
         ASSERT(false, "Unexpected data type");
     }
+    return result;
 }
 
-void NIZKProof::getPType(const G1Data &d) {
-    if (d.d) return;
-    ProofEls *proofEl = new ProofEls;
-    d.d = reinterpret_cast<void*>(proofEl);
+std::pair<ElTypeSet,ElTypeSet> NIZKProof::getPType(const G1Data &d) {
+    std::pair<ElTypeSet,ElTypeSet> result;
     switch (d.type) {
     case ELEMENT_CONST_VALUE:
+        result.first.insert(EL_TYPE_PUB_G);
+        result.second.insert(EL_TYPE_UNIT_H);
+        break;
     case ELEMENT_BASE:
-        proofEl->p1_v.type = VALUE_NULL;
-        proofEl->p1_w.type = VALUE_NULL;
-        proofEl->p2_v.type = VALUE_NULL;
-        proofEl->p2_w.type = VALUE_NULL;
-        return;
+        result.first.insert(EL_TYPE_BASE_G);
+        result.second.insert(EL_TYPE_UNIT_H);
+        break;
     case ELEMENT_PAIR:
         {
-            getPType(*d.pair.first);
-            getPType(*d.pair.second);
-            const ProofEls &el1 =
-                    *reinterpret_cast<const ProofEls*>(d.pair.first->d);
-            const ProofEls &el2 =
-                    *reinterpret_cast<const ProofEls*>(d.pair.second->d);
-            addAllPiLight(el1, el2, *proofEl);
-            return;
+            result = getPType(*d.pair.first);
+            combinePTResults(result, getPType(*d.pair.second));
+            break;
         }
     case ELEMENT_SCALAR:
-        {
-            getPTLeft(*d.scalar.second);
-            getPTRight(*d.scalar.first);
-            const G1Commit &el1 =
-                    *reinterpret_cast<const G1Commit*>(d.scalar.second->d);
-            const G2Commit &el2 =
-                    *reinterpret_cast<const G2Commit*>(d.scalar.first->d);
-            scalarCombineLight(el1, el2, *proofEl);
-            return;
-        }
+        result.first = getPTLeft(*d.scalar.second);
+        result.second = getPTRight(*d.scalar.first);
+        break;
     default:
         ASSERT(false, "Unexpected data type");
     }
+    return result;
 }
 
-void NIZKProof::getPType(const G2Data &d) {
-    if (d.d) return;
-    ProofEls *proofEl = new ProofEls;
-    d.d = reinterpret_cast<void*>(proofEl);
+std::pair<ElTypeSet,ElTypeSet> NIZKProof::getPType(const G2Data &d) {
+    std::pair<ElTypeSet,ElTypeSet> result;
     switch (d.type) {
     case ELEMENT_CONST_VALUE:
+        result.first.insert(EL_TYPE_UNIT_G);
+        result.second.insert(EL_TYPE_PUB_H);
+        break;
     case ELEMENT_BASE:
-        proofEl->p1_v.type = VALUE_NULL;
-        proofEl->p1_w.type = VALUE_NULL;
-        proofEl->p2_v.type = VALUE_NULL;
-        proofEl->p2_w.type = VALUE_NULL;
-        return;
+        result.first.insert(EL_TYPE_UNIT_G);
+        result.second.insert(EL_TYPE_BASE_H);
+        break;
     case ELEMENT_PAIR:
         {
-            getPType(*d.pair.first);
-            getPType(*d.pair.second);
-            const ProofEls &el1 =
-                    *reinterpret_cast<const ProofEls*>(d.pair.first->d);
-            const ProofEls &el2 =
-                    *reinterpret_cast<const ProofEls*>(d.pair.second->d);
-            addAllPiLight(el1, el2, *proofEl);
-            return;
+            result = getPType(*d.pair.first);
+            combinePTResults(result, getPType(*d.pair.second));
+            break;
         }
     case ELEMENT_SCALAR:
-        {
-            getPTLeft(*d.scalar.first);
-            getPTRight(*d.scalar.second);
-            const G1Commit &el1 =
-                    *reinterpret_cast<const G1Commit*>(d.scalar.first->d);
-            const G2Commit &el2 =
-                    *reinterpret_cast<const G2Commit*>(d.scalar.second->d);
-            scalarCombineLight(el1, el2, *proofEl);
-            return;
-        }
+        result.first = getPTLeft(*d.scalar.first);
+        result.second = getPTRight(*d.scalar.second);
+        break;
     default:
         ASSERT(false, "Unexpected data type");
     }
+    return result;
 }
 
-void NIZKProof::getPType(const GTData &d) {
-    if (d.d) return;
-    ProofEls *proofEl = new ProofEls;
-    d.d = reinterpret_cast<void*>(proofEl);
+std::pair<ElTypeSet,ElTypeSet> NIZKProof::getPType(const GTData &d) {
+    std::pair<ElTypeSet,ElTypeSet> result;
     switch (d.type) {
     case ELEMENT_CONST_INDEX:
     case ELEMENT_CONST_VALUE:
+        result.first.insert(EL_TYPE_PUB_G);
+        result.second.insert(EL_TYPE_PUB_H);
+        break;
     case ELEMENT_BASE:
-        proofEl->p1_v.type = VALUE_NULL;
-        proofEl->p1_w.type = VALUE_NULL;
-        proofEl->p2_v.type = VALUE_NULL;
-        proofEl->p2_w.type = VALUE_NULL;
-        return;
+        result.first.insert(EL_TYPE_BASE_G);
+        result.second.insert(EL_TYPE_BASE_H);
+        break;
     case ELEMENT_PAIR:
         {
-            getPType(*d.pair.first);
-            getPType(*d.pair.second);
-            const ProofEls &el1 =
-                    *reinterpret_cast<const ProofEls*>(d.pair.first->d);
-            const ProofEls &el2 =
-                    *reinterpret_cast<const ProofEls*>(d.pair.second->d);
-            addAllPiLight(el1, el2, *proofEl);
-            return;
+            result = getPType(*d.pair.first);
+            combinePTResults(result, getPType(*d.pair.second));
+            break;
         }
     case ELEMENT_PAIRING:
-        {
-            getPTLeft(*d.pring.first);
-            getPTRight(*d.pring.second);
-            const G1Commit &el1 =
-                    *reinterpret_cast<const G1Commit*>(d.pring.first->d);
-            const G2Commit &el2 =
-                    *reinterpret_cast<const G2Commit*>(d.pring.second->d);
-            scalarCombineLight(el1, el2, *proofEl);
-            return;
-        }
+        result.first = getPTLeft(*d.pring.first);
+        result.second = getPTRight(*d.pring.second);
+        break;
     default:
         ASSERT(false, "Unexpected data type");
     }
+    return result;
 }
 
-template <typename T> void addCommitGXLight(const T &c1, const T &c2, T &cr) {
-    cr.type = ((c1.type < c2.type) ? c2.type : c1.type);
-    cr.c.type = ((c1.c.type == c2.c.type) ? c1.c.type : VALUE_B);
-}
-
-void NIZKProof::getPTLeft(const FpData &d) {
-    if (d.d) return;
-    G1Commit *c1 = new G1Commit;
-    d.d = reinterpret_cast<void*>(c1);
+ElTypeSet NIZKProof::getPTLeft(const FpData &d) {
+    ElTypeSet result;
     switch (d.type) {
     case ELEMENT_VARIABLE:
-        c1->type = COMMIT_ENC;
-        c1->c.type = VALUE_Fp;
-        return;
+        result.insert(EL_TYPE_SCA_G);
+        break;
     case ELEMENT_CONST_INDEX:
     case ELEMENT_CONST_VALUE:
     case ELEMENT_BASE:
-        c1->type = COMMIT_PUB;
-        c1->c.type = VALUE_Fp;
-        return;
+        result.insert(EL_TYPE_UNIT_G);
+        break;
     case ELEMENT_PAIR:
-        {
-            getPTLeft(*d.pair.first);
-            getPTLeft(*d.pair.second);
-            const G1Commit &el1 =
-                    *reinterpret_cast<const G1Commit*>(d.pair.first->d);
-            const G1Commit &el2 =
-                    *reinterpret_cast<const G1Commit*>(d.pair.second->d);
-            addCommitGXLight(el1, el2, *c1);
-            return;
-        }
+        result = getPTLeft(*d.pair.first);
+        for (const EL_TYPE_PT &el : getPTLeft(*d.pair.second))
+            result.insert(el);
+        break;
     default:
         ASSERT(false, "Unexpected data type");
     }
+    return result;
 }
 
-void NIZKProof::getPTLeft(const G1Data &d) {
-    if (d.d) return;
-    G1Commit *c1 = new G1Commit;
-    d.d = reinterpret_cast<void*>(c1);
+ElTypeSet NIZKProof::getPTLeft(const G1Data &d) {
+    ElTypeSet result;
     switch (d.type) {
     case ELEMENT_VARIABLE:
-        c1->c.type = VALUE_G;
         if ((type == AllEncrypted) || ((type == SelectedEncryption) &&
                 sEnc[INDEX_TYPE_G1][d.index])) {
-            c1->type = COMMIT_ENC;
+            result.insert(EL_TYPE_ENC_G);
         } else {
-            c1->type = COMMIT_PRIV;
+            result.insert(EL_TYPE_COM_G);
         }
-        return;
+        break;
     case ELEMENT_CONST_INDEX:
     case ELEMENT_CONST_VALUE:
+        result.insert(EL_TYPE_PUB_G);
+        break;
     case ELEMENT_BASE:
-        c1->type = COMMIT_PUB;
-        c1->c.type = VALUE_G;
-        return;
+        result.insert(EL_TYPE_BASE_G);
+        break;
     case ELEMENT_PAIR:
-        {
-            getPTLeft(*d.pair.first);
-            getPTLeft(*d.pair.second);
-            const G1Commit &el1 =
-                    *reinterpret_cast<const G1Commit*>(d.pair.first->d);
-            const G1Commit &el2 =
-                    *reinterpret_cast<const G1Commit*>(d.pair.second->d);
-            addCommitGXLight(el1, el2, *c1);
-            return;
-        }
+        result = getPTLeft(*d.pair.first);
+        for (const EL_TYPE_PT &el : getPTLeft(*d.pair.second))
+            result.insert(el);
+        break;
     default:
         ASSERT(false, "Unexpected data type");
     }
+    return result;
 }
 
-void NIZKProof::getPTRight(const FpData &d) {
-    if (d.d) return;
-    G2Commit *c2 = new G2Commit;
-    d.d = reinterpret_cast<void*>(c2);
+ElTypeSet NIZKProof::getPTRight(const FpData &d) {
+    ElTypeSet result;
     switch (d.type) {
     case ELEMENT_VARIABLE:
-        c2->type = COMMIT_ENC;
-        c2->c.type = VALUE_B;
-        return;
+        result.insert(EL_TYPE_SCA_H);
+        break;
     case ELEMENT_CONST_INDEX:
     case ELEMENT_CONST_VALUE:
     case ELEMENT_BASE:
-        c2->type = COMMIT_PUB;
-        c2->c.type = VALUE_Fp;
-        return;
+        result.insert(EL_TYPE_UNIT_H);
+        break;
     case ELEMENT_PAIR:
-        {
-            getPTRight(*d.pair.first);
-            getPTRight(*d.pair.second);
-            const G2Commit &el1 =
-                    *reinterpret_cast<const G2Commit*>(d.pair.first->d);
-            const G2Commit &el2 =
-                    *reinterpret_cast<const G2Commit*>(d.pair.second->d);
-            addCommitGXLight(el1, el2, *c2);
-            return;
-        }
+        result = getPTRight(*d.pair.first);
+        for (const EL_TYPE_PT &el : getPTRight(*d.pair.second))
+            result.insert(el);
+        break;
     default:
         ASSERT(false, "Unexpected data type");
     }
+    return result;
 }
 
-void NIZKProof::getPTRight(const G2Data &d) {
-    if (d.d) return;
-    G2Commit *c2 = new G2Commit;
-    d.d = reinterpret_cast<void*>(c2);
+ElTypeSet NIZKProof::getPTRight(const G2Data &d) {
+    ElTypeSet result;
     switch (d.type) {
     case ELEMENT_VARIABLE:
-        c2->c.type = VALUE_B;
         if ((type == AllEncrypted) || ((type == SelectedEncryption) &&
                 sEnc[INDEX_TYPE_G2][d.index])) {
-            c2->type = COMMIT_ENC;
+            result.insert(EL_TYPE_ENC_H);
         } else {
-            c2->type = COMMIT_PRIV;
+            result.insert(EL_TYPE_COM_H);
         }
-        return;
+        break;
     case ELEMENT_CONST_INDEX:
-    case ELEMENT_BASE:
     case ELEMENT_CONST_VALUE:
-        c2->type = COMMIT_PUB;
-        c2->c.type = VALUE_G;
-        return;
+        result.insert(EL_TYPE_PUB_H);
+        break;
+    case ELEMENT_BASE:
+        result.insert(EL_TYPE_BASE_H);
+        break;
     case ELEMENT_PAIR:
-        {
-            getPTRight(*d.pair.first);
-            getPTRight(*d.pair.second);
-            const G2Commit &el1 =
-                    *reinterpret_cast<const G2Commit*>(d.pair.first->d);
-            const G2Commit &el2 =
-                    *reinterpret_cast<const G2Commit*>(d.pair.second->d);
-            addCommitGXLight(el1, el2, *c2);
-            return;
-        }
+        result = getPTRight(*d.pair.first);
+        for (const EL_TYPE_PT &el : getPTRight(*d.pair.second))
+            result.insert(el);
+        break;
     default:
         ASSERT(false, "Unexpected data type");
     }
+    return result;
 }
 
-void PEToPT(const ProofEls &from, EqProofType &to) {
-    to.tv1 = (EqProofType::EqProofTypeIndividual) (int) from.p1_v.type;
-    to.tw1 = (EqProofType::EqProofTypeIndividual) (int) from.p1_w.type;
-    to.tv2 = (EqProofType::EqProofTypeIndividual) (int) from.p2_v.type;
-    to.tw2 = (EqProofType::EqProofTypeIndividual) (int) from.p2_w.type;
+bool ElTSContains(const ElTypeSet &ets, EL_TYPE_PT el) {
+    return ets.find(el) != ets.cend();
 }
 
 void NIZKProof::getEqProofTypes() {
-    ProofEls res;
+    std::pair<ElTypeSet,ElTypeSet> result;
     int i = eqsFp.size();
     tFp.resize(i);
     while (i-- > 0) {
         const FpData &left = *eqsFp[i].first;
         const FpData &right = *eqsFp[i].second;
-        getPType(left);
-        getPType(right);
-        addAllPiLight(*reinterpret_cast<ProofEls*>(left.d),
-                      *reinterpret_cast<ProofEls*>(right.d), res);
-        PEToPT(res, tFp[i]);
+        result = getPType(left);
+        combinePTResults(result, getPType(right));
+        if (!ElTSContains(result.first, EL_TYPE_SCA_G)) {
+            tFp[i] = EQ_TYPE_QConst_G;
+        } else if (!ElTSContains(result.second, EL_TYPE_SCA_H)) {
+            tFp[i] = EQ_TYPE_QConst_H;
+        } else {
+            tFp[i] = EQ_TYPE_QE;
+        }
     }
     i = eqsG1.size();
     tG1.resize(i);
     while (i-- > 0) {
         const G1Data &left = *eqsG1[i].first;
         const G1Data &right = *eqsG1[i].second;
-        getPType(left);
-        getPType(right);
-        addAllPiLight(*reinterpret_cast<ProofEls*>(left.d),
-                      *reinterpret_cast<ProofEls*>(right.d), res);
-        PEToPT(res, tG1[i]);
+        result = getPType(left);
+        combinePTResults(result, getPType(right));
+        if (ElTSContains(result.second, EL_TYPE_SCA_H) ||
+                ElTSContains(result.first, EL_TYPE_PUB_G)) {
+            if (ElTSContains(result.first, EL_TYPE_COM_G)) {
+                tG1[i] = EQ_TYPE_ME_G;
+            } else if (ElTSContains(result.first, EL_TYPE_ENC_G)) {
+                tG1[i] = EQ_TYPE_MEnc_G;
+            } else {
+                tG1[i] = EQ_TYPE_MConst_G;
+            }
+        } else {
+            if (ElTSContains(result.first, EL_TYPE_ENC_G)) {
+                tG1[i] = EQ_TYPE_MEnc_G;
+            } else {
+                tG1[i] = EQ_TYPE_MLin_G;
+            }
+        }
     }
     i = eqsG2.size();
     tG2.resize(i);
     while (i-- > 0) {
         const G2Data &left = *eqsG2[i].first;
         const G2Data &right = *eqsG2[i].second;
-        getPType(left);
-        getPType(right);
-        addAllPiLight(*reinterpret_cast<ProofEls*>(left.d),
-                      *reinterpret_cast<ProofEls*>(right.d), res);
-        PEToPT(res, tG2[i]);
+        result = getPType(left);
+        combinePTResults(result, getPType(right));
+        if (ElTSContains(result.first, EL_TYPE_SCA_G) ||
+                ElTSContains(result.second, EL_TYPE_PUB_H)) {
+            if (ElTSContains(result.second, EL_TYPE_COM_H)) {
+                tG1[i] = EQ_TYPE_ME_H;
+            } else if (ElTSContains(result.second, EL_TYPE_ENC_H)) {
+                tG1[i] = EQ_TYPE_MEnc_H;
+            } else {
+                tG1[i] = EQ_TYPE_MConst_H;
+            }
+        } else {
+            if (ElTSContains(result.second, EL_TYPE_ENC_H)) {
+                tG1[i] = EQ_TYPE_MEnc_H;
+            } else {
+                tG1[i] = EQ_TYPE_MLin_H;
+            }
+        }
     }
     i = eqsGT.size();
     tGT.resize(i);
     while (i-- > 0) {
         const GTData &left = *eqsGT[i].first;
         const GTData &right = *eqsGT[i].second;
-        getPType(left);
-        getPType(right);
-        addAllPiLight(*reinterpret_cast<ProofEls*>(left.d),
-                      *reinterpret_cast<ProofEls*>(right.d), res);
-        PEToPT(res, tGT[i]);
-    }
-    cleanupPE();
-}
-
-void NIZKProof::cleanupPE() const {
-    for (int i = eqsFp.size(); i-- > 0;) {
-        const FpData &left = *eqsFp[i].first;
-        const FpData &right = *eqsFp[i].second;
-        removeProof(left);
-        removeProof(right);
-    }
-    for (int i = eqsG1.size(); i-- > 0;) {
-        const G1Data &left = *eqsG1[i].first;
-        const G1Data &right = *eqsG1[i].second;
-        removeProof(left);
-        removeProof(right);
-    }
-    for (int i = eqsG2.size(); i-- > 0;) {
-        const G2Data &left = *eqsG2[i].first;
-        const G2Data &right = *eqsG2[i].second;
-        removeProof(left);
-        removeProof(right);
-    }
-    for (int i = eqsGT.size(); i-- > 0;) {
-        const GTData &left = *eqsGT[i].first;
-        const GTData &right = *eqsGT[i].second;
-        removeProof(left);
-        removeProof(right);
+        result = getPType(left);
+        combinePTResults(result, getPType(right));
+        bool pubL = ElTSContains(result.first, EL_TYPE_PUB_G) ||
+                ElTSContains(result.second, EL_TYPE_COM_H);
+        bool pubR = ElTSContains(result.second, EL_TYPE_PUB_H) ||
+                ElTSContains(result.first, EL_TYPE_COM_G);
+        if (pubL && pubR) {
+            tGT[i] = EQ_TYPE_PPE;
+        } else if (pubL) {
+            if (ElTSContains(result.second, EL_TYPE_ENC_H)) {
+                tGT[i] = EQ_TYPE_PPE;
+            } else if (ElTSContains(result.first, EL_TYPE_ENC_G)) {
+                tGT[i] = EQ_TYPE_PEnc_G;
+            } else {
+                tGT[i] = EQ_TYPE_PConst_G;
+            }
+        } else if (pubR) {
+            if (ElTSContains(result.first, EL_TYPE_ENC_G)) {
+                tGT[i] = EQ_TYPE_PPE;
+            } else if (ElTSContains(result.second, EL_TYPE_ENC_H)) {
+                tGT[i] = EQ_TYPE_PEnc_H;
+            } else {
+                tGT[i] = EQ_TYPE_PConst_H;
+            }
+        } else {
+            if (ElTSContains(result.first, EL_TYPE_ENC_G)) {
+                if (ElTSContains(result.second, EL_TYPE_ENC_H)) {
+                    tGT[i] = EQ_TYPE_PPE;
+                } else {
+                    tGT[i] = EQ_TYPE_PEnc_G;
+                }
+            } else {
+                if (ElTSContains(result.second, EL_TYPE_ENC_H)) {
+                    tGT[i] = EQ_TYPE_PEnc_H;
+                } else {
+                    tGT[i] = EQ_TYPE_PConst_G; // or EQ_TYPE_PConst_H
+                }
+            }
+        }
     }
 }
 
@@ -3518,131 +3573,147 @@ void removeLeftCalc(const G1Data &d);
 void removeRightCalc(const FpData &d);
 void removeRightCalc(const G2Data &d);
 
-BT getRndProofPart(std::istream &stream, const EqProofType &t, const CRS &crs) {
-    std::vector< std::pair<B1,B2> > pairs;
-    if ((t.tv1 == EqProofType::TYPE_FP) && (t.tw1 == EqProofType::TYPE_FP)) {
-        Fp fp;
-        stream >> fp;
-        B2 b2 = fp * crs.getV2();
-        stream >> fp;
-        b2 += fp * crs.getW2();
-        pairs.push_back(std::pair<B1,B2>(crs.getB1Unit(), b2));
-    } else {
-        switch (t.tv1) {
-        case EqProofType::TYPE_NONE:
-            break;
-        case EqProofType::TYPE_FP:
-            {
-                Fp fp;
-                stream >> fp;
-                pairs.push_back(std::pair<B1,B2>(fp * crs.getB1Unit(),
-                                                 crs.getV2()));
-                break;
-            }
-        case EqProofType::TYPE_SINGLE:
-            {
-                G1 g1;
-                stream >> g1;
-                pairs.push_back(std::pair<B1,B2>(B1(g1), crs.getV2()));
-                break;
-            }
-        case EqProofType::TYPE_NORMAL:
-            {
-                B1 b1;
-                stream >> b1;
-                pairs.push_back(std::pair<B1,B2>(b1, crs.getV2()));
-                break;
-            }
+BT NIZKProof::getRndProofPart(std::istream &stream, EqProofType t,
+                              const CRS &crs) const {
+    switch (t) {
+    case EQ_TYPE_PPE:
+    {
+        std::vector< std::pair<B1,B2> > pairs;
+        {
+            B1 b1;
+            stream >> b1;
+            pairs.push_back(std::pair<B1,B2>(b1, crs.v2));
+            stream >> b1;
+            pairs.push_back(std::pair<B1,B2>(b1, crs.w2));
         }
-        switch (t.tw1) {
-        case EqProofType::TYPE_NONE:
-            break;
-        case EqProofType::TYPE_FP:
-            {
-                Fp fp;
-                stream >> fp;
-                pairs.push_back(std::pair<B1,B2>(fp * crs.getB1Unit(),
-                                                 crs.getW2()));
-                break;
-            }
-        case EqProofType::TYPE_SINGLE:
-            {
-                G1 g1;
-                stream >> g1;
-                pairs.push_back(std::pair<B1,B2>(B1(g1), crs.getW2()));
-                break;
-            }
-        case EqProofType::TYPE_NORMAL:
-            {
-                B1 b1;
-                stream >> b1;
-                pairs.push_back(std::pair<B1,B2>(b1, crs.getW2()));
-                break;
-            }
+        {
+            B2 b2;
+            stream >> b2;
+            pairs.push_back(std::pair<B1,B2>(crs.v1, b2));
+            stream >> b2;
+            pairs.push_back(std::pair<B1,B2>(crs.w1, b2));
         }
+        return BT::pairing(pairs);
     }
-    if ((t.tv2 == EqProofType::TYPE_FP) && (t.tw2 == EqProofType::TYPE_FP)) {
-        Fp fp;
-        stream >> fp;
-        B1 b1 = fp * crs.getV1();
-        stream >> fp;
-        b1 += fp * crs.getW1();
-        pairs.push_back(std::pair<B1,B2>(b1, crs.getB2Unit()));
-    } else {
-        switch (t.tv2) {
-        case EqProofType::TYPE_NONE:
-            break;
-        case EqProofType::TYPE_FP:
-            {
-                Fp fp;
-                stream >> fp;
-                pairs.push_back(std::pair<B1,B2>(crs.getV1(),
-                                                 fp * crs.getB2Unit()));
-                break;
-            }
-        case EqProofType::TYPE_SINGLE:
-            {
-                G2 g2;
-                stream >> g2;
-                pairs.push_back(std::pair<B1,B2>(crs.getV1(), B2(g2)));
-                break;
-            }
-        case EqProofType::TYPE_NORMAL:
-            {
-                B2 b2;
-                stream >> b2;
-                pairs.push_back(std::pair<B1,B2>(crs.getV1(), b2));
-                break;
-            }
+    case EQ_TYPE_PEnc_G:
+    case EQ_TYPE_ME_H:
+    {
+        std::vector< std::pair<B1,B2> > pairs;
+        {
+            B1 b1;
+            stream >> b1;
+            pairs.push_back(std::pair<B1,B2>(b1, crs.v2));
+            stream >> b1;
+            pairs.push_back(std::pair<B1,B2>(b1, crs.w2));
         }
-        switch (t.tw2) {
-        case EqProofType::TYPE_NONE:
-            break;
-        case EqProofType::TYPE_FP:
-            {
-                Fp fp;
-                stream >> fp;
-                pairs.push_back(std::pair<B1,B2>(crs.getW1(),
-                                                 fp * crs.getB2Unit()));
-                break;
-            }
-        case EqProofType::TYPE_SINGLE:
-            {
-                G2 g2;
-                stream >> g2;
-                pairs.push_back(std::pair<B1,B2>(crs.getW1(), B2(g2)));
-                break;
-            }
-        case EqProofType::TYPE_NORMAL:
-            {
-                B2 b2;
-                stream >> b2;
-                pairs.push_back(std::pair<B1,B2>(crs.getW1(), b2));
-                break;
-            }
+        {
+            B2 b2;
+            stream >> b2;
+            pairs.push_back(std::pair<B1,B2>(crs.v1, b2));
         }
+        return BT::pairing(pairs);
     }
-    return BT::pairing(pairs);
+    case EQ_TYPE_PConst_G:
+    {
+        std::vector< std::pair<B1,B2> > pairs;
+        G1 g1;
+        stream >> g1;
+        pairs.push_back(std::pair<B1,B2>(B1(g1), crs.v2));
+        stream >> g1;
+        pairs.push_back(std::pair<B1,B2>(B1(g1), crs.w2));
+        return BT::pairing(pairs);
+    }
+    case EQ_TYPE_PEnc_H:
+    case EQ_TYPE_ME_G:
+    {
+        std::vector< std::pair<B1,B2> > pairs;
+        {
+            B1 b1;
+            stream >> b1;
+            pairs.push_back(std::pair<B1,B2>(b1, crs.v2));
+        }
+        {
+            B2 b2;
+            stream >> b2;
+            pairs.push_back(std::pair<B1,B2>(crs.v1, b2));
+            stream >> b2;
+            pairs.push_back(std::pair<B1,B2>(crs.w1, b2));
+        }
+        return BT::pairing(pairs);
+    }
+    case EQ_TYPE_PConst_H:
+    {
+        std::vector< std::pair<B1,B2> > pairs;
+        G2 g2;
+        stream >> g2;
+        pairs.push_back(std::pair<B1,B2>(crs.v1, B2(g2)));
+        stream >> g2;
+        pairs.push_back(std::pair<B1,B2>(crs.w1, B2(g2)));
+        return BT::pairing(pairs);
+    }
+    case EQ_TYPE_MEnc_G:
+    case EQ_TYPE_MEnc_H:
+    case EQ_TYPE_QE:
+    {
+        std::vector< std::pair<B1,B2> > pairs;
+        {
+            B1 b1;
+            stream >> b1;
+            pairs.push_back(std::pair<B1,B2>(b1, crs.v2));
+        }
+        {
+            B2 b2;
+            stream >> b2;
+            pairs.push_back(std::pair<B1,B2>(crs.v1, b2));
+        }
+        return BT::pairing(pairs);
+    }
+    case EQ_TYPE_MConst_G:
+    {
+        G1 g1;
+        stream >> g1;
+        return BT::pairing(B1(g1), crs.v2);
+    }
+    case EQ_TYPE_MLin_G:
+    {
+        Fp k;
+        stream >> k;
+        B1 b1 = k * crs.v1;
+        stream >> k;
+        b1 += k * crs.w1;
+        return BT::pairing(b1, crs.u2);
+    }
+    case EQ_TYPE_MConst_H:
+    {
+        G2 g2;
+        stream >> g2;
+        return BT::pairing(crs.v1, B2(g2));
+    }
+    case EQ_TYPE_MLin_H:
+    {
+        Fp k;
+        stream >> k;
+        B2 b2 = k * crs.v2;
+        stream >> k;
+        b2 += k * crs.w2;
+        return BT::pairing(crs.u1, b2);
+    }
+    case EQ_TYPE_QConst_G:
+    {
+        Fp k;
+        stream >> k;
+        return BT::pairing(k * crs.u1, crs.v2);
+    }
+    case EQ_TYPE_QConst_H:
+    {
+        Fp k;
+        stream >> k;
+        return BT::pairing(k * crs.v1, crs.u2);
+    }
+    default:
+        ASSERT(false, "Unexpected data type");
+        return BT();
+    }
 }
 
 bool NIZKProof::checkProof(std::istream &stream, const CRS &crs,
@@ -4100,6 +4171,705 @@ void removeRightCalc(const G2Data &d) {
         break;
     default:
         ASSERT(false, "Unexpected data type");
+    }
+}
+
+struct ZKG1Commit {
+    G1Commit nc;
+    bool nativeZK;
+    G1Commit *builtZK;
+};
+
+struct ZKG2Commit {
+    G2Commit nc;
+    bool nativeZK;
+    G2Commit *builtZK;
+};
+
+void removeProofZK(const FpData &d);
+void removeProofZK(const G1Data &d);
+void removeProofZK(const G2Data &d);
+void removeProofZK(const GTData &d);
+void removeLeftZK(const FpData &d);
+void removeLeftZK(const G1Data &d);
+void removeRightZK(const FpData &d);
+void removeRightZK(const G2Data &d);
+
+void NIZKProof::simulateProof(std::ostream &stream, const CRS &crs,
+                              const ProofData &instantiation) const {
+    if ((!zk) || (!crs.isSimulationReady())) return;
+    if ((instantiation.pubFp.size() != cstsFp.size()) ||
+            (instantiation.pubG1.size() != cstsG1.size()) ||
+            (instantiation.pubG2.size() != cstsG2.size()) ||
+            (instantiation.pubGT.size() != cstsGT.size()))
+        throw "Wrong instantiation in NIZKProof::simulateProof!";
+    ASSERT(varsFp.size() == varsFpInB1.size(), "Array sizes do not match");
+    ASSERT(cstsFp.size() == cstsFpInB1.size(), "Array sizes do not match");
+    ASSERT(cstsGT.empty(), "Unexpected non-ZK property");
+    ZKG1Commit c1;
+    ZKG2Commit c2;
+    int j = varsFp.size(), i = additionalFp.size();
+    c1.nativeZK = true;
+    c1.nc.type = COMMIT_ENC;
+    c1.nc.c.type = VALUE_Fp;
+    c1.builtZK = NULL;
+    c2.nativeZK = true;
+    c2.nc.type = COMMIT_ENC;
+    c2.nc.c.type = VALUE_B;
+    c2.builtZK = NULL;
+    while (i-- > 0) {
+        if (varsFpInB1[--j]) {
+            c1.nc.r = Fp::getRand();
+            varsFp[j]->d = reinterpret_cast<void*>(new ZKG1Commit(c1));
+            stream << B1::commit(c1.nc.c.fpValue, c1.nc.r, crs);
+        } else {
+            c2.nc.r = Fp::getRand();
+            c2.nc.c.b2Value = B2::commit(Fp(), c2.nc.r, crs);
+            varsFp[j]->d = reinterpret_cast<void*>(new ZKG2Commit(c2));
+            stream << c2.nc.c.b2Value;
+        }
+    }
+    while (j-- > 0) {
+        if (varsFpInB1[j]) {
+            c1.nc.r = Fp::getRand();
+            varsFp[j]->d = reinterpret_cast<void*>(new ZKG1Commit(c1));
+            stream << B1::commit(c1.nc.c.fpValue, c1.nc.r, crs);
+        } else {
+            c2.nc.r = Fp::getRand();
+            c2.nc.c.b2Value = B2::commit(Fp(), c2.nc.r, crs);
+            varsFp[j]->d = reinterpret_cast<void*>(new ZKG2Commit(c2));
+            stream << c2.nc.c.b2Value;
+        }
+    }
+    j = varsG1.size();
+    i = additionalG1.size();
+    c1.nc.c.type = VALUE_G;
+    while (i-- > 0) {
+        --j;
+        c1.nc.r = Fp::getRand();
+        if ((type == AllEncrypted) ||
+                ((type == SelectedEncryption) && sEnc[INDEX_TYPE_G1][j])) {
+            c1.nc.type = COMMIT_ENC;
+            stream << B1::commit(c1.nc.c.b1Value, c1.nc.r, crs);
+        } else {
+            c1.nc.type = COMMIT_PRIV;
+            c1.nc.s = Fp::getRand();
+            stream << B1::commit(c1.nc.c.b1Value, c1.nc.r, c1.nc.s, crs);
+        }
+        varsG1[j]->d = reinterpret_cast<void*>(new ZKG1Commit(c1));
+    }
+    while (j-- > 0) {
+        c1.nc.r = Fp::getRand();
+        if ((type == AllEncrypted) ||
+                ((type == SelectedEncryption) && sEnc[INDEX_TYPE_G1][j])) {
+            c1.nc.type = COMMIT_ENC;
+            stream << B1::commit(c1.nc.c.b1Value, c1.nc.r, crs);
+        } else {
+            c1.nc.type = COMMIT_PRIV;
+            c1.nc.s = Fp::getRand();
+            stream << B1::commit(c1.nc.c.b1Value, c1.nc.r, c1.nc.s, crs);
+        }
+        varsG1[j]->d = reinterpret_cast<void*>(new ZKG1Commit(c1));
+    }
+    j = varsG2.size();
+    i = additionalG2.size();
+    c2.nc.c.type = VALUE_B;
+    while (i-- > 0) {
+        --j;
+        c2.nc.r = Fp::getRand();
+        if ((type == AllEncrypted) ||
+                ((type == SelectedEncryption) && sEnc[INDEX_TYPE_G2][j])) {
+            c2.nc.type = COMMIT_ENC;
+            c2.nc.c.b2Value = B2::commit(G2(), c2.nc.r, crs);
+        } else {
+            c2.nc.type = COMMIT_PRIV;
+            c2.nc.s = Fp::getRand();
+            c2.nc.c.b2Value = B2::commit(G2(), c2.nc.r, c2.nc.s, crs);
+        }
+        stream << c2.nc.c.b2Value;
+        varsG2[j]->d = reinterpret_cast<void*>(new ZKG2Commit(c2));
+    }
+    while (j-- > 0) {
+        c2.nc.r = Fp::getRand();
+        if ((type == AllEncrypted) ||
+                ((type == SelectedEncryption) && sEnc[INDEX_TYPE_G2][j])) {
+            c2.nc.type = COMMIT_ENC;
+            c2.nc.c.b2Value = B2::commit(G2(), c2.nc.r, crs);
+        } else {
+            c2.nc.type = COMMIT_PRIV;
+            c2.nc.s = Fp::getRand();
+            c2.nc.c.b2Value = B2::commit(G2(), c2.nc.r, c2.nc.s, crs);
+        }
+        stream << c2.nc.c.b2Value;
+        varsG2[j]->d = reinterpret_cast<void*>(new ZKG2Commit(c2));
+    }
+    c1.nativeZK = false;
+    c1.nc.type = COMMIT_PUB;
+    c1.nc.c.type = VALUE_G;
+    for (j = cstsG1.size(); j-- > 0;) {
+        c1.nc.c.b1Value._2 = instantiation.pubG1[j];
+        cstsG1[j]->d = reinterpret_cast<void*>(new ZKG1Commit(c1));
+    }
+    c2.nativeZK = false;
+    c2.nc.type = COMMIT_PUB;
+    c2.nc.c.type = VALUE_G;
+    for (j = cstsG2.size(); j-- > 0;) {
+        c2.nc.c.b2Value._2 = instantiation.pubG2[j];
+        cstsG2[j]->d = reinterpret_cast<void*>(new ZKG2Commit(c2));
+    }
+    for (i = eqsFp.size(); i-- > 0;) {
+        const FpData &left = *eqsFp[i].first;
+        const FpData &right = *eqsFp[i].second;
+        getProofZK(left, crs, tFp[i]);
+        getProofZK(right, crs, tFp[i]);
+        writeEqProof(stream, left.d, right.d, tFp[i], crs);
+    }
+    for (i = eqsG1.size(); i-- > 0;) {
+        const G1Data &left = *eqsG1[i].first;
+        const G1Data &right = *eqsG1[i].second;
+        getProofZK(left, crs, tG1[i]);
+        getProofZK(right, crs, tG1[i]);
+        writeEqProof(stream, left.d, right.d, tG1[i], crs);
+    }
+    for (i = eqsG2.size(); i-- > 0;) {
+        const G2Data &left = *eqsG2[i].first;
+        const G2Data &right = *eqsG2[i].second;
+        getProofZK(left, crs, tG2[i]);
+        getProofZK(right, crs, tG2[i]);
+        writeEqProof(stream, left.d, right.d, tG2[i], crs);
+    }
+    for (i = eqsGT.size(); i-- > 0;) {
+        const GTData &left = *eqsGT[i].first;
+        const GTData &right = *eqsGT[i].second;
+        getProofZK(left, crs, tGT[i]);
+        getProofZK(right, crs, tGT[i]);
+        writeEqProof(stream, left.d, right.d, tGT[i], crs);
+    }
+    for (int i = eqsFp.size(); i-- > 0;) {
+        const FpData &left = *eqsFp[i].first;
+        const FpData &right = *eqsFp[i].second;
+        removeProofZK(left);
+        removeProofZK(right);
+    }
+    for (int i = eqsG1.size(); i-- > 0;) {
+        const G1Data &left = *eqsG1[i].first;
+        const G1Data &right = *eqsG1[i].second;
+        removeProofZK(left);
+        removeProofZK(right);
+    }
+    for (int i = eqsG2.size(); i-- > 0;) {
+        const G2Data &left = *eqsG2[i].first;
+        const G2Data &right = *eqsG2[i].second;
+        removeProofZK(left);
+        removeProofZK(right);
+    }
+    for (int i = eqsGT.size(); i-- > 0;) {
+        const GTData &left = *eqsGT[i].first;
+        const GTData &right = *eqsGT[i].second;
+        removeProofZK(left);
+        removeProofZK(right);
+    }
+}
+
+void NIZKProof::getProofZK(const FpData &d, const CRS &crs,
+                           EqProofType t) const {
+    if (d.d) return;
+    ProofEls *proofEl = new ProofEls;
+    d.d = reinterpret_cast<void*>(proofEl);
+    switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        if (t == EQ_TYPE_QConst_H) {
+            proofEl->p2_v.type = VALUE_Fp;
+            proofEl->p2_v.fpValue = d.el * crs.i1;
+            proofEl->p1_v.type = VALUE_NULL;
+        } else {
+            proofEl->p1_v.type = VALUE_Fp;
+            proofEl->p1_v.fpValue = d.el * crs.i2;
+            proofEl->p2_v.type = VALUE_NULL;
+        }
+        break;
+    case ELEMENT_BASE:
+        if (t == EQ_TYPE_QConst_H) {
+            proofEl->p2_v.type = VALUE_Fp;
+            proofEl->p2_v.fpValue = crs.i1;
+            proofEl->p1_v.type = VALUE_NULL;
+        } else {
+            proofEl->p1_v.type = VALUE_Fp;
+            proofEl->p1_v.fpValue = crs.i2;
+            proofEl->p2_v.type = VALUE_NULL;
+        }
+        break;
+    case ELEMENT_PAIR:
+        {
+            getProofZK(*d.pair.first, crs, t);
+            getProofZK(*d.pair.second, crs, t);
+            const ProofEls &el1 =
+                    *reinterpret_cast<const ProofEls*>(d.pair.first->d);
+            const ProofEls &el2 =
+                    *reinterpret_cast<const ProofEls*>(d.pair.second->d);
+            addAllPi(el1, el2, *proofEl, crs);
+            return;
+        }
+    case ELEMENT_SCALAR:
+        {
+            getLeftZK(*d.pair.first, crs, t);
+            getRightZK(*d.pair.second, crs, t);
+            const ZKG1Commit &el1 =
+                    *reinterpret_cast<const ZKG1Commit*>(d.pair.first->d);
+            const ZKG2Commit &el2 =
+                    *reinterpret_cast<const ZKG2Commit*>(d.pair.second->d);
+            if (el1.nativeZK || el2.nativeZK) {
+                scalarCombine(el1.nc, el2.nc, *proofEl);
+            } else if (el1.builtZK) {
+                scalarCombine(*el1.builtZK, el2.nc, *proofEl);
+            } else {
+                ASSERT(el2.builtZK, "Unexpected impossibility to get ZK");
+                scalarCombine(el1.nc, *el2.builtZK, *proofEl);
+            }
+            return;
+        }
+    default:
+        ASSERT(false, "Unexpected data type");
+    }
+    proofEl->p1_w.type = VALUE_NULL;
+    proofEl->p2_w.type = VALUE_NULL;
+}
+
+void NIZKProof::getProofZK(const G1Data &d, const CRS &crs,
+                           EqProofType t) const {
+    if (d.d) return;
+    ProofEls *proofEl = new ProofEls;
+    d.d = reinterpret_cast<void*>(proofEl);
+    switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        proofEl->p1_v.type = VALUE_G;
+        proofEl->p1_v.b1Value._2 = crs.i2 * d.el;
+        break;
+    case ELEMENT_BASE:
+        if (t != EQ_TYPE_MLin_G) {
+            proofEl->p1_v.type = VALUE_G;
+            proofEl->p1_v.b1Value._2 = crs.i2 * d.el;
+            break;
+        } else {
+            proofEl->p1_v.type = VALUE_NULL;
+            proofEl->p1_w.type = VALUE_NULL;
+            proofEl->p2_v.type = VALUE_Fp;
+            proofEl->p2_v.fpValue = crs.i1;
+            proofEl->p2_w.type = VALUE_Fp;
+            proofEl->p2_w.fpValue = Fp(-1);
+        }
+        return;
+    case ELEMENT_PAIR:
+        {
+            getProofZK(*d.pair.first, crs, t);
+            getProofZK(*d.pair.second, crs, t);
+            const ProofEls &el1 =
+                    *reinterpret_cast<const ProofEls*>(d.pair.first->d);
+            const ProofEls &el2 =
+                    *reinterpret_cast<const ProofEls*>(d.pair.second->d);
+            addAllPi(el1, el2, *proofEl, crs);
+            return;
+        }
+    case ELEMENT_SCALAR:
+        {
+            getLeftZK(*d.scalar.second, crs, t);
+            getRightZK(*d.scalar.first, crs, t);
+            const ZKG1Commit &el1 =
+                    *reinterpret_cast<const ZKG1Commit*>(d.scalar.second->d);
+            const ZKG2Commit &el2 =
+                    *reinterpret_cast<const ZKG2Commit*>(d.scalar.first->d);
+            if (el1.nativeZK || el2.nativeZK) {
+                scalarCombine(el1.nc, el2.nc, *proofEl);
+            } else if (el1.builtZK) {
+                scalarCombine(*el1.builtZK, el2.nc, *proofEl);
+            } else {
+                ASSERT(el2.builtZK, "Unexpected impossibility to get ZK");
+                scalarCombine(el1.nc, *el2.builtZK, *proofEl);
+            }
+            return;
+        }
+    default:
+        ASSERT(false, "Unexpected data type");
+    }
+    proofEl->p1_w.type = VALUE_NULL;
+    proofEl->p2_v.type = VALUE_NULL;
+    proofEl->p2_w.type = VALUE_NULL;
+}
+
+void NIZKProof::getProofZK(const G2Data &d, const CRS &crs,
+                           EqProofType t) const {
+    if (d.d) return;
+    ProofEls *proofEl = new ProofEls;
+    d.d = reinterpret_cast<void*>(proofEl);
+    switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        proofEl->p2_v.type = VALUE_G;
+        proofEl->p2_v.b2Value._2 = crs.i1 * d.el;
+        break;
+    case ELEMENT_BASE:
+        if (t != EQ_TYPE_MLin_H) {
+            proofEl->p2_v.type = VALUE_G;
+            proofEl->p2_v.b2Value._2 = crs.i1 * d.el;
+            break;
+        } else {
+            proofEl->p1_v.type = VALUE_Fp;
+            proofEl->p1_v.fpValue = crs.i2;
+            proofEl->p1_w.type = VALUE_Fp;
+            proofEl->p1_w.fpValue = Fp(-1);
+            proofEl->p2_v.type = VALUE_NULL;
+            proofEl->p2_w.type = VALUE_NULL;
+        }
+        return;
+    case ELEMENT_PAIR:
+        {
+            getProofZK(*d.pair.first, crs, t);
+            getProofZK(*d.pair.second, crs, t);
+            const ProofEls &el1 =
+                    *reinterpret_cast<const ProofEls*>(d.pair.first->d);
+            const ProofEls &el2 =
+                    *reinterpret_cast<const ProofEls*>(d.pair.second->d);
+            addAllPi(el1, el2, *proofEl, crs);
+            return;
+        }
+    case ELEMENT_SCALAR:
+        {
+            getLeftZK(*d.scalar.first, crs, t);
+            getRightZK(*d.scalar.second, crs, t);
+            const ZKG1Commit &el1 =
+                    *reinterpret_cast<const ZKG1Commit*>(d.scalar.first->d);
+            const ZKG2Commit &el2 =
+                    *reinterpret_cast<const ZKG2Commit*>(d.scalar.second->d);
+            if (el1.nativeZK || el2.nativeZK) {
+                scalarCombine(el1.nc, el2.nc, *proofEl);
+            } else if (el1.builtZK) {
+                scalarCombine(*el1.builtZK, el2.nc, *proofEl);
+            } else {
+                ASSERT(el2.builtZK, "Unexpected impossibility to get ZK");
+                scalarCombine(el1.nc, *el2.builtZK, *proofEl);
+            }
+            return;
+        }
+    default:
+        ASSERT(false, "Unexpected data type");
+    }
+    proofEl->p1_v.type = VALUE_NULL;
+    proofEl->p1_w.type = VALUE_NULL;
+    proofEl->p2_w.type = VALUE_NULL;
+}
+
+void NIZKProof::getProofZK(const GTData &d, const CRS &crs,
+                           EqProofType t) const {
+    if (d.d) return;
+    ProofEls *proofEl = new ProofEls;
+    d.d = reinterpret_cast<void*>(proofEl);
+    switch (d.type) {
+    case ELEMENT_BASE:
+        if ((t == EQ_TYPE_PEnc_G) || (t == EQ_TYPE_PConst_G)) {
+            proofEl->p1_v.type = VALUE_G;
+            proofEl->p1_v.b1Value._2 = crs.i2 * crs.getG1Base();
+            proofEl->p1_w.type = VALUE_G;
+            proofEl->p1_w.b1Value._2 = -crs.getG1Base();
+            proofEl->p2_v.type = VALUE_NULL;
+            proofEl->p2_w.type = VALUE_NULL;
+        } else {
+            proofEl->p1_v.type = VALUE_NULL;
+            proofEl->p1_w.type = VALUE_NULL;
+            proofEl->p2_v.type = VALUE_G;
+            proofEl->p2_v.b2Value._2 = crs.i1 * crs.getG2Base();
+            proofEl->p2_w.type = VALUE_G;
+            proofEl->p2_w.b2Value._2 = -crs.getG2Base();
+        }
+        return;
+    case ELEMENT_PAIR:
+        {
+            getProofZK(*d.pair.first, crs, t);
+            getProofZK(*d.pair.second, crs, t);
+            const ProofEls &el1 =
+                    *reinterpret_cast<const ProofEls*>(d.pair.first->d);
+            const ProofEls &el2 =
+                    *reinterpret_cast<const ProofEls*>(d.pair.second->d);
+            addAllPi(el1, el2, *proofEl, crs);
+            return;
+        }
+    case ELEMENT_PAIRING:
+        {
+            getLeftZK(*d.pring.first, crs, t);
+            getRightZK(*d.pring.second, crs, t);
+            const ZKG1Commit &el1 =
+                    *reinterpret_cast<const ZKG1Commit*>(d.pring.first->d);
+            const ZKG2Commit &el2 =
+                    *reinterpret_cast<const ZKG2Commit*>(d.pring.second->d);
+            if (el1.nativeZK || el2.nativeZK) {
+                scalarCombine(el1.nc, el2.nc, *proofEl);
+            } else if (el1.builtZK) {
+                scalarCombine(*el1.builtZK, el2.nc, *proofEl);
+            } else {
+                ASSERT(el2.builtZK, "Unexpected impossibility to get ZK");
+                scalarCombine(el1.nc, *el2.builtZK, *proofEl);
+            }
+            return;
+        }
+    default:
+        ASSERT(false, "Unexpected data type");
+    }
+}
+
+// TODO finish ZK functions (below)
+
+void NIZKProof::getLeftZK(const FpData &d, const CRS &crs,
+                          EqProofType t) const {
+    if (d.d) return;
+    G1Commit *c1 = new G1Commit;
+    d.d = reinterpret_cast<void*>(c1);
+    switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        c1->type = COMMIT_PUB;
+        c1->c.type = VALUE_Fp;
+        c1->c.fpValue = d.el;
+        return;
+    case ELEMENT_PAIR:
+        {
+            getLeft(*d.pair.first, crs);
+            getLeft(*d.pair.second, crs);
+            const G1Commit &el1 =
+                    *reinterpret_cast<const G1Commit*>(d.pair.first->d);
+            const G1Commit &el2 =
+                    *reinterpret_cast<const G1Commit*>(d.pair.second->d);
+            addCommitG1(el1, el2, *c1, crs);
+            return;
+        }
+    case ELEMENT_BASE:
+        c1->type = COMMIT_PUB;
+        c1->c.type = VALUE_Fp;
+        c1->c.fpValue = Fp::getUnit();
+        return;
+    default:
+        ASSERT(false, "Unexpected data type");
+    }
+}
+
+void NIZKProof::getLeftZK(const G1Data &d, const CRS &crs,
+                          EqProofType t) const {
+    if (d.d) return;
+    G1Commit *c1 = new G1Commit;
+    d.d = reinterpret_cast<void*>(c1);
+    switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        c1->type = COMMIT_PUB;
+        c1->c.type = VALUE_G;
+        c1->c.b1Value._2 = d.el;
+        return;
+    case ELEMENT_PAIR:
+        {
+            getLeft(*d.pair.first, crs);
+            getLeft(*d.pair.second, crs);
+            const G1Commit &el1 =
+                    *reinterpret_cast<const G1Commit*>(d.pair.first->d);
+            const G1Commit &el2 =
+                    *reinterpret_cast<const G1Commit*>(d.pair.second->d);
+            addCommitG1(el1, el2, *c1, crs);
+            return;
+        }
+    case ELEMENT_BASE:
+        c1->type = COMMIT_PUB;
+        c1->c.type = VALUE_G;
+        c1->c.b1Value._2 = crs.getG1Base();
+        return;
+    default:
+        ASSERT(false, "Unexpected data type");
+    }
+}
+
+void NIZKProof::getRightZK(const FpData &d, const CRS &crs,
+                           EqProofType t) const {
+    if (d.d) return;
+    G2Commit *c2 = new G2Commit;
+    d.d = reinterpret_cast<void*>(c2);
+    switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        c2->type = COMMIT_PUB;
+        c2->c.type = VALUE_Fp;
+        c2->c.fpValue = d.el;
+        return;
+    case ELEMENT_PAIR:
+        {
+            getRight(*d.pair.first, crs);
+            getRight(*d.pair.second, crs);
+            const G2Commit &el1 =
+                    *reinterpret_cast<const G2Commit*>(d.pair.first->d);
+            const G2Commit &el2 =
+                    *reinterpret_cast<const G2Commit*>(d.pair.second->d);
+            addCommitG2(el1, el2, *c2, crs);
+            return;
+        }
+    case ELEMENT_BASE:
+        c2->type = COMMIT_PUB;
+        c2->c.type = VALUE_Fp;
+        c2->c.fpValue = Fp::getUnit();
+        return;
+    default:
+        ASSERT(false, "Unexpected data type");
+    }
+}
+
+void NIZKProof::getRightZK(const G2Data &d, const CRS &crs,
+                           EqProofType t) const {
+    if (d.d) return;
+    G2Commit *c2 = new G2Commit;
+    d.d = reinterpret_cast<void*>(c2);
+    switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        c2->type = COMMIT_PUB;
+        c2->c.type = VALUE_G;
+        c2->c.b2Value._2 = d.el;
+        return;
+    case ELEMENT_PAIR:
+        {
+            getRight(*d.pair.first, crs);
+            getRight(*d.pair.second, crs);
+            const G2Commit &el1 =
+                    *reinterpret_cast<const G2Commit*>(d.pair.first->d);
+            const G2Commit &el2 =
+                    *reinterpret_cast<const G2Commit*>(d.pair.second->d);
+            addCommitG2(el1, el2, *c2, crs);
+            return;
+        }
+    case ELEMENT_BASE:
+        c2->type = COMMIT_PUB;
+        c2->c.type = VALUE_G;
+        c2->c.b2Value._2 = crs.getG2Base();
+        return;
+    default:
+        ASSERT(false, "Unexpected data type");
+    }
+}
+
+void removeProofZK(const FpData &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<ProofEls*>(d.d);
+    d.d = NULL;
+    switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        break;
+    case ELEMENT_PAIR:
+        removeProof(*d.pair.first);
+        removeProof(*d.pair.second);
+        break;
+    case ELEMENT_SCALAR:
+        removeLeft(*d.pair.first);
+        removeRight(*d.pair.second);
+        break;
+    case ELEMENT_BASE:
+        break;
+    default:
+        ASSERT(false, "Unexpected data type");
+    }
+}
+
+void removeProofZK(const G1Data &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<ProofEls*>(d.d);
+    d.d = NULL;
+    switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        break;
+    case ELEMENT_PAIR:
+        removeProof(*d.pair.first);
+        removeProof(*d.pair.second);
+        break;
+    case ELEMENT_SCALAR:
+        removeLeft(*d.scalar.second);
+        removeRight(*d.scalar.first);
+        break;
+    case ELEMENT_BASE:
+        break;
+    default:
+        ASSERT(false, "Unexpected data type");
+    }
+}
+
+void removeProofZK(const G2Data &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<ProofEls*>(d.d);
+    d.d = NULL;
+    switch (d.type) {
+    case ELEMENT_CONST_VALUE:
+        break;
+    case ELEMENT_PAIR:
+        removeProof(*d.pair.first);
+        removeProof(*d.pair.second);
+        break;
+    case ELEMENT_SCALAR:
+        removeLeft(*d.scalar.first);
+        removeRight(*d.scalar.second);
+        break;
+    case ELEMENT_BASE:
+        break;
+    default:
+        ASSERT(false, "Unexpected data type");
+    }
+}
+
+void removeProofZK(const GTData &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<ProofEls*>(d.d);
+    d.d = NULL;
+    switch (d.type) {
+    case ELEMENT_CONST_INDEX:
+    case ELEMENT_CONST_VALUE:
+        break;
+    case ELEMENT_PAIR:
+        removeProof(*d.pair.first);
+        removeProof(*d.pair.second);
+        break;
+    case ELEMENT_PAIRING:
+        removeLeft(*d.pring.first);
+        removeRight(*d.pring.second);
+        break;
+    case ELEMENT_BASE:
+        break;
+    default:
+        ASSERT(false, "Unexpected data type");
+    }
+}
+
+void removeLeftZK(const FpData &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<G1Commit*>(d.d);
+    d.d = NULL;
+    if (d.type == ELEMENT_PAIR) {
+        removeLeft(*d.pair.first);
+        removeLeft(*d.pair.second);
+    }
+}
+
+void removeLeftZK(const G1Data &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<G1Commit*>(d.d);
+    d.d = NULL;
+    if (d.type == ELEMENT_PAIR) {
+        removeLeft(*d.pair.first);
+        removeLeft(*d.pair.second);
+    }
+}
+
+void removeRightZK(const FpData &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<G2Commit*>(d.d);
+    d.d = NULL;
+    if (d.type == ELEMENT_PAIR) {
+        removeRight(*d.pair.first);
+        removeRight(*d.pair.second);
+    }
+}
+
+void removeRightZK(const G2Data &d) {
+    if (!d.d) return;
+    delete reinterpret_cast<G2Commit*>(d.d);
+    d.d = NULL;
+    if (d.type == ELEMENT_PAIR) {
+        removeRight(*d.pair.first);
+        removeRight(*d.pair.second);
     }
 }
 

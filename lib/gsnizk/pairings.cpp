@@ -187,7 +187,7 @@ void hashToZZn(const char *data, int len, const ::Big &n, ::Big &result) {
 }
 
 Fp::Fp(int i) : d(new SharedData(reinterpret_cast<void*>(i >= 0 ?
-        (new ::Big(i)) : (new ::Big(*pfc->ord + Big(i)))))) {}
+        (new ::Big(i)) : (new ::Big(*pfc->ord - Big(-i)))))) {}
 
 Fp::Fp(unsigned long i)
     : d(new SharedData(reinterpret_cast<void*>(new ::Big(i)))) {}
