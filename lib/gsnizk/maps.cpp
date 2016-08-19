@@ -151,7 +151,6 @@ std::istream &operator>>(std::istream &stream, CRS &crs) {
         crs.u2._2.precomputeForPairing();
         crs.v2._1.precomputeForPairing();
         crs.v2._2.precomputeForPairing();
-        crs.w2._1.precomputeForPairing();
         crs.w2._2.precomputeForPairing();
 #endif
     } else if (crs.type == CRS_TYPE_PRIVATE) {
@@ -224,7 +223,6 @@ void CRS::computeElements() {
     u2._2.precomputeForPairing();
     v2._1.precomputeForPairing();
     v2._2.precomputeForPairing();
-    w2._1.precomputeForPairing();
     w2._2.precomputeForPairing();
 #endif
 }
