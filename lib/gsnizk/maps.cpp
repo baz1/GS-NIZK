@@ -8,7 +8,7 @@
 namespace gsnizk {
 
 G1 B1::extract(const CRS &crs) const {
-    return _2 - (Fp(1) / crs.j1) * _1;
+    return _2 - (Fp::getUnit() / crs.j1) * _1;
 }
 
 B1 B1::commit(const Fp &el, const Fp &r, const CRS &crs) {
@@ -26,7 +26,7 @@ B1 B1::commit(const B1 &el, const Fp &r, const Fp &s, const CRS &crs) {
 }
 
 G2 B2::extract(const CRS &crs) const {
-    return _2 - (Fp(1) / crs.j2) * _1;
+    return _2 - (Fp::getUnit() / crs.j2) * _1;
 }
 
 B2 B2::commit(const Fp &el, const Fp &r, const CRS &crs) {

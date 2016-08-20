@@ -297,7 +297,7 @@ public:
     /**
      * @brief Gets the unity element.
      *
-     * Note that this is equivalent to `Fp(1)`.
+     * Note that this is equivalent to `Fp(1)`, but might be more efficient.
      *
      * @return The unity element.
      * @sa Fp::Fp(int)

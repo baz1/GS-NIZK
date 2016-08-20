@@ -4174,18 +4174,6 @@ void removeRightCalc(const G2Data &d) {
     }
 }
 
-struct ZKG1Commit {
-    G1Commit nc;
-    bool nativeZK;
-    G1Commit *builtZK;
-};
-
-struct ZKG2Commit {
-    G2Commit nc;
-    bool nativeZK;
-    G2Commit *builtZK;
-};
-
 void removeProofZK(const FpData &d);
 void removeProofZK(const G1Data &d);
 void removeProofZK(const G2Data &d);
@@ -4206,116 +4194,121 @@ void NIZKProof::simulateProof(std::ostream &stream, const CRS &crs,
     ASSERT(varsFp.size() == varsFpInB1.size(), "Array sizes do not match");
     ASSERT(cstsFp.size() == cstsFpInB1.size(), "Array sizes do not match");
     ASSERT(cstsGT.empty(), "Unexpected non-ZK property");
-    ZKG1Commit c1;
-    ZKG2Commit c2;
+    G1Commit c1;
+    G2Commit c2;
     int j = varsFp.size(), i = additionalFp.size();
-    c1.nativeZK = true;
-    c1.nc.type = COMMIT_ENC;
-    c1.nc.c.type = VALUE_Fp;
-    c1.builtZK = NULL;
-    c2.nativeZK = true;
-    c2.nc.type = COMMIT_ENC;
-    c2.nc.c.type = VALUE_B;
-    c2.builtZK = NULL;
+    c1.type = COMMIT_ENC;
+    c1.c.type = VALUE_Fp;
+    c2.type = COMMIT_ENC;
+    c2.c.type = VALUE_B;
     while (i-- > 0) {
         if (varsFpInB1[--j]) {
-            c1.nc.r = Fp::getRand();
-            varsFp[j]->d = reinterpret_cast<void*>(new ZKG1Commit(c1));
-            stream << B1::commit(c1.nc.c.fpValue, c1.nc.r, crs);
+            c1.r = Fp::getRand();
+            varsFp[j]->d = reinterpret_cast<void*>(new G1Commit(c1));
+            stream << B1::commit(c1.c.fpValue, c1.r, crs);
         } else {
-            c2.nc.r = Fp::getRand();
-            c2.nc.c.b2Value = B2::commit(Fp(), c2.nc.r, crs);
-            varsFp[j]->d = reinterpret_cast<void*>(new ZKG2Commit(c2));
-            stream << c2.nc.c.b2Value;
+            c2.r = Fp::getRand();
+            c2.c.b2Value = B2::commit(Fp(), c2.r, crs);
+            varsFp[j]->d = reinterpret_cast<void*>(new G2Commit(c2));
+            stream << c2.c.b2Value;
         }
     }
     while (j-- > 0) {
         if (varsFpInB1[j]) {
-            c1.nc.r = Fp::getRand();
-            varsFp[j]->d = reinterpret_cast<void*>(new ZKG1Commit(c1));
-            stream << B1::commit(c1.nc.c.fpValue, c1.nc.r, crs);
+            c1.r = Fp::getRand();
+            varsFp[j]->d = reinterpret_cast<void*>(new G1Commit(c1));
+            stream << B1::commit(c1.c.fpValue, c1.r, crs);
         } else {
-            c2.nc.r = Fp::getRand();
-            c2.nc.c.b2Value = B2::commit(Fp(), c2.nc.r, crs);
-            varsFp[j]->d = reinterpret_cast<void*>(new ZKG2Commit(c2));
-            stream << c2.nc.c.b2Value;
+            c2.r = Fp::getRand();
+            c2.c.b2Value = B2::commit(Fp(), c2.r, crs);
+            varsFp[j]->d = reinterpret_cast<void*>(new G2Commit(c2));
+            stream << c2.c.b2Value;
         }
     }
     j = varsG1.size();
     i = additionalG1.size();
-    c1.nc.c.type = VALUE_G;
+    c1.c.type = VALUE_G;
     while (i-- > 0) {
         --j;
-        c1.nc.r = Fp::getRand();
+        c1.r = Fp::getRand();
         if ((type == AllEncrypted) ||
                 ((type == SelectedEncryption) && sEnc[INDEX_TYPE_G1][j])) {
-            c1.nc.type = COMMIT_ENC;
-            stream << B1::commit(c1.nc.c.b1Value, c1.nc.r, crs);
+            c1.type = COMMIT_ENC;
+            stream << B1::commit(c1.c.b1Value, c1.r, crs);
         } else {
-            c1.nc.type = COMMIT_PRIV;
-            c1.nc.s = Fp::getRand();
-            stream << B1::commit(c1.nc.c.b1Value, c1.nc.r, c1.nc.s, crs);
+            c1.type = COMMIT_PRIV;
+            c1.s = Fp::getRand();
+            stream << B1::commit(c1.c.b1Value, c1.r, c1.s, crs);
         }
-        varsG1[j]->d = reinterpret_cast<void*>(new ZKG1Commit(c1));
+        varsG1[j]->d = reinterpret_cast<void*>(new G1Commit(c1));
     }
     while (j-- > 0) {
-        c1.nc.r = Fp::getRand();
+        c1.r = Fp::getRand();
         if ((type == AllEncrypted) ||
                 ((type == SelectedEncryption) && sEnc[INDEX_TYPE_G1][j])) {
-            c1.nc.type = COMMIT_ENC;
-            stream << B1::commit(c1.nc.c.b1Value, c1.nc.r, crs);
+            c1.type = COMMIT_ENC;
+            stream << B1::commit(c1.c.b1Value, c1.r, crs);
         } else {
-            c1.nc.type = COMMIT_PRIV;
-            c1.nc.s = Fp::getRand();
-            stream << B1::commit(c1.nc.c.b1Value, c1.nc.r, c1.nc.s, crs);
+            c1.type = COMMIT_PRIV;
+            c1.s = Fp::getRand();
+            stream << B1::commit(c1.c.b1Value, c1.r, c1.s, crs);
         }
-        varsG1[j]->d = reinterpret_cast<void*>(new ZKG1Commit(c1));
+        varsG1[j]->d = reinterpret_cast<void*>(new G1Commit(c1));
     }
     j = varsG2.size();
     i = additionalG2.size();
-    c2.nc.c.type = VALUE_B;
+    c2.c.type = VALUE_B;
     while (i-- > 0) {
         --j;
-        c2.nc.r = Fp::getRand();
+        c2.r = Fp::getRand();
         if ((type == AllEncrypted) ||
                 ((type == SelectedEncryption) && sEnc[INDEX_TYPE_G2][j])) {
-            c2.nc.type = COMMIT_ENC;
-            c2.nc.c.b2Value = B2::commit(G2(), c2.nc.r, crs);
+            c2.type = COMMIT_ENC;
+            c2.c.b2Value = B2::commit(G2(), c2.r, crs);
         } else {
-            c2.nc.type = COMMIT_PRIV;
-            c2.nc.s = Fp::getRand();
-            c2.nc.c.b2Value = B2::commit(G2(), c2.nc.r, c2.nc.s, crs);
+            c2.type = COMMIT_PRIV;
+            c2.s = Fp::getRand();
+            c2.c.b2Value = B2::commit(G2(), c2.r, c2.s, crs);
         }
-        stream << c2.nc.c.b2Value;
-        varsG2[j]->d = reinterpret_cast<void*>(new ZKG2Commit(c2));
+        stream << c2.c.b2Value;
+        varsG2[j]->d = reinterpret_cast<void*>(new G2Commit(c2));
     }
     while (j-- > 0) {
-        c2.nc.r = Fp::getRand();
+        c2.r = Fp::getRand();
         if ((type == AllEncrypted) ||
                 ((type == SelectedEncryption) && sEnc[INDEX_TYPE_G2][j])) {
-            c2.nc.type = COMMIT_ENC;
-            c2.nc.c.b2Value = B2::commit(G2(), c2.nc.r, crs);
+            c2.type = COMMIT_ENC;
+            c2.c.b2Value = B2::commit(G2(), c2.r, crs);
         } else {
-            c2.nc.type = COMMIT_PRIV;
-            c2.nc.s = Fp::getRand();
-            c2.nc.c.b2Value = B2::commit(G2(), c2.nc.r, c2.nc.s, crs);
+            c2.type = COMMIT_PRIV;
+            c2.s = Fp::getRand();
+            c2.c.b2Value = B2::commit(G2(), c2.r, c2.s, crs);
         }
-        stream << c2.nc.c.b2Value;
-        varsG2[j]->d = reinterpret_cast<void*>(new ZKG2Commit(c2));
+        stream << c2.c.b2Value;
+        varsG2[j]->d = reinterpret_cast<void*>(new G2Commit(c2));
     }
-    c1.nativeZK = false;
-    c1.nc.type = COMMIT_PUB;
-    c1.nc.c.type = VALUE_G;
+    c1.type = COMMIT_PUB;
+    c1.c.type = VALUE_Fp;
+    c2.type = COMMIT_PUB;
+    c2.c.type = VALUE_Fp;
+    for (j = cstsFp.size(); j-- > 0;) {
+        if (cstsFpInB1[j]) {
+            c1.c.fpValue = instantiation.pubFp[j];
+            cstsFp[j]->d = reinterpret_cast<void*>(new G1Commit(c1));
+        } else {
+            c2.c.fpValue = instantiation.pubFp[j];
+            cstsFp[j]->d = reinterpret_cast<void*>(new G2Commit(c2));
+        }
+    }
+    c1.c.type = VALUE_G;
     for (j = cstsG1.size(); j-- > 0;) {
-        c1.nc.c.b1Value._2 = instantiation.pubG1[j];
-        cstsG1[j]->d = reinterpret_cast<void*>(new ZKG1Commit(c1));
+        c1.c.b1Value._2 = instantiation.pubG1[j];
+        cstsG1[j]->d = reinterpret_cast<void*>(new G1Commit(c1));
     }
-    c2.nativeZK = false;
-    c2.nc.type = COMMIT_PUB;
-    c2.nc.c.type = VALUE_G;
+    c2.c.type = VALUE_G;
     for (j = cstsG2.size(); j-- > 0;) {
-        c2.nc.c.b2Value._2 = instantiation.pubG2[j];
-        cstsG2[j]->d = reinterpret_cast<void*>(new ZKG2Commit(c2));
+        c2.c.b2Value._2 = instantiation.pubG2[j];
+        cstsG2[j]->d = reinterpret_cast<void*>(new G2Commit(c2));
     }
     for (i = eqsFp.size(); i-- > 0;) {
         const FpData &left = *eqsFp[i].first;
@@ -4348,34 +4341,33 @@ void NIZKProof::simulateProof(std::ostream &stream, const CRS &crs,
     for (int i = eqsFp.size(); i-- > 0;) {
         const FpData &left = *eqsFp[i].first;
         const FpData &right = *eqsFp[i].second;
-        removeProofZK(left);
-        removeProofZK(right);
+        removeProof(left);
+        removeProof(right);
     }
     for (int i = eqsG1.size(); i-- > 0;) {
         const G1Data &left = *eqsG1[i].first;
         const G1Data &right = *eqsG1[i].second;
-        removeProofZK(left);
-        removeProofZK(right);
+        removeProof(left);
+        removeProof(right);
     }
     for (int i = eqsG2.size(); i-- > 0;) {
         const G2Data &left = *eqsG2[i].first;
         const G2Data &right = *eqsG2[i].second;
-        removeProofZK(left);
-        removeProofZK(right);
+        removeProof(left);
+        removeProof(right);
     }
     for (int i = eqsGT.size(); i-- > 0;) {
         const GTData &left = *eqsGT[i].first;
         const GTData &right = *eqsGT[i].second;
-        removeProofZK(left);
-        removeProofZK(right);
+        removeProof(left);
+        removeProof(right);
     }
 }
 
 void NIZKProof::getProofZK(const FpData &d, const CRS &crs,
                            EqProofType t) const {
-    if (d.d) return;
-    ProofEls *proofEl = new ProofEls;
-    d.d = reinterpret_cast<void*>(proofEl);
+    ProofEls *proofEl = (d.d ? (reinterpret_cast<ProofEls*>(d.d))
+                             : (new ProofEls));
     switch (d.type) {
     case ELEMENT_CONST_VALUE:
         if (t == EQ_TYPE_QConst_H) {
@@ -4387,6 +4379,8 @@ void NIZKProof::getProofZK(const FpData &d, const CRS &crs,
             proofEl->p1_v.fpValue = d.el * crs.i2;
             proofEl->p2_v.type = VALUE_NULL;
         }
+        proofEl->p1_w.type = VALUE_NULL;
+        proofEl->p2_w.type = VALUE_NULL;
         break;
     case ELEMENT_BASE:
         if (t == EQ_TYPE_QConst_H) {
@@ -4398,6 +4392,8 @@ void NIZKProof::getProofZK(const FpData &d, const CRS &crs,
             proofEl->p1_v.fpValue = crs.i2;
             proofEl->p2_v.type = VALUE_NULL;
         }
+        proofEl->p1_w.type = VALUE_NULL;
+        proofEl->p2_w.type = VALUE_NULL;
         break;
     case ELEMENT_PAIR:
         {
@@ -4408,48 +4404,44 @@ void NIZKProof::getProofZK(const FpData &d, const CRS &crs,
             const ProofEls &el2 =
                     *reinterpret_cast<const ProofEls*>(d.pair.second->d);
             addAllPi(el1, el2, *proofEl, crs);
-            return;
+            break;
         }
     case ELEMENT_SCALAR:
         {
             getLeftZK(*d.pair.first, crs, t);
             getRightZK(*d.pair.second, crs, t);
-            const ZKG1Commit &el1 =
-                    *reinterpret_cast<const ZKG1Commit*>(d.pair.first->d);
-            const ZKG2Commit &el2 =
-                    *reinterpret_cast<const ZKG2Commit*>(d.pair.second->d);
-            if (el1.nativeZK || el2.nativeZK) {
-                scalarCombine(el1.nc, el2.nc, *proofEl);
-            } else if (el1.builtZK) {
-                scalarCombine(*el1.builtZK, el2.nc, *proofEl);
-            } else {
-                ASSERT(el2.builtZK, "Unexpected impossibility to get ZK");
-                scalarCombine(el1.nc, *el2.builtZK, *proofEl);
-            }
-            return;
+            const G1Commit &el1 =
+                    *reinterpret_cast<const G1Commit*>(d.pair.first->d);
+            const G2Commit &el2 =
+                    *reinterpret_cast<const G2Commit*>(d.pair.second->d);
+            scalarCombine(el1, el2, *proofEl);
+            break;
         }
     default:
         ASSERT(false, "Unexpected data type");
     }
-    proofEl->p1_w.type = VALUE_NULL;
-    proofEl->p2_w.type = VALUE_NULL;
+    d.d = reinterpret_cast<void*>(proofEl);
 }
 
 void NIZKProof::getProofZK(const G1Data &d, const CRS &crs,
                            EqProofType t) const {
-    if (d.d) return;
-    ProofEls *proofEl = new ProofEls;
-    d.d = reinterpret_cast<void*>(proofEl);
+    ProofEls *proofEl = (d.d ? (reinterpret_cast<ProofEls*>(d.d))
+                             : (new ProofEls));
     switch (d.type) {
     case ELEMENT_CONST_VALUE:
         proofEl->p1_v.type = VALUE_G;
         proofEl->p1_v.b1Value._2 = crs.i2 * d.el;
+        proofEl->p1_w.type = VALUE_NULL;
+        proofEl->p2_v.type = VALUE_NULL;
+        proofEl->p2_w.type = VALUE_NULL;
         break;
     case ELEMENT_BASE:
         if (t != EQ_TYPE_MLin_G) {
             proofEl->p1_v.type = VALUE_G;
             proofEl->p1_v.b1Value._2 = crs.i2 * d.el;
-            break;
+            proofEl->p1_w.type = VALUE_NULL;
+            proofEl->p2_v.type = VALUE_NULL;
+            proofEl->p2_w.type = VALUE_NULL;
         } else {
             proofEl->p1_v.type = VALUE_NULL;
             proofEl->p1_w.type = VALUE_NULL;
@@ -4458,7 +4450,7 @@ void NIZKProof::getProofZK(const G1Data &d, const CRS &crs,
             proofEl->p2_w.type = VALUE_Fp;
             proofEl->p2_w.fpValue = Fp(-1);
         }
-        return;
+        break;
     case ELEMENT_PAIR:
         {
             getProofZK(*d.pair.first, crs, t);
@@ -4468,49 +4460,44 @@ void NIZKProof::getProofZK(const G1Data &d, const CRS &crs,
             const ProofEls &el2 =
                     *reinterpret_cast<const ProofEls*>(d.pair.second->d);
             addAllPi(el1, el2, *proofEl, crs);
-            return;
+            break;
         }
     case ELEMENT_SCALAR:
         {
             getLeftZK(*d.scalar.second, crs, t);
             getRightZK(*d.scalar.first, crs, t);
-            const ZKG1Commit &el1 =
-                    *reinterpret_cast<const ZKG1Commit*>(d.scalar.second->d);
-            const ZKG2Commit &el2 =
-                    *reinterpret_cast<const ZKG2Commit*>(d.scalar.first->d);
-            if (el1.nativeZK || el2.nativeZK) {
-                scalarCombine(el1.nc, el2.nc, *proofEl);
-            } else if (el1.builtZK) {
-                scalarCombine(*el1.builtZK, el2.nc, *proofEl);
-            } else {
-                ASSERT(el2.builtZK, "Unexpected impossibility to get ZK");
-                scalarCombine(el1.nc, *el2.builtZK, *proofEl);
-            }
-            return;
+            const G1Commit &el1 =
+                    *reinterpret_cast<const G1Commit*>(d.scalar.second->d);
+            const G2Commit &el2 =
+                    *reinterpret_cast<const G2Commit*>(d.scalar.first->d);
+            scalarCombine(el1, el2, *proofEl);
+            break;
         }
     default:
         ASSERT(false, "Unexpected data type");
     }
-    proofEl->p1_w.type = VALUE_NULL;
-    proofEl->p2_v.type = VALUE_NULL;
-    proofEl->p2_w.type = VALUE_NULL;
+    d.d = reinterpret_cast<void*>(proofEl);
 }
 
 void NIZKProof::getProofZK(const G2Data &d, const CRS &crs,
                            EqProofType t) const {
-    if (d.d) return;
-    ProofEls *proofEl = new ProofEls;
-    d.d = reinterpret_cast<void*>(proofEl);
+    ProofEls *proofEl = (d.d ? (reinterpret_cast<ProofEls*>(d.d))
+                             : (new ProofEls));
     switch (d.type) {
     case ELEMENT_CONST_VALUE:
         proofEl->p2_v.type = VALUE_G;
         proofEl->p2_v.b2Value._2 = crs.i1 * d.el;
+        proofEl->p1_v.type = VALUE_NULL;
+        proofEl->p1_w.type = VALUE_NULL;
+        proofEl->p2_w.type = VALUE_NULL;
         break;
     case ELEMENT_BASE:
         if (t != EQ_TYPE_MLin_H) {
             proofEl->p2_v.type = VALUE_G;
             proofEl->p2_v.b2Value._2 = crs.i1 * d.el;
-            break;
+            proofEl->p1_v.type = VALUE_NULL;
+            proofEl->p1_w.type = VALUE_NULL;
+            proofEl->p2_w.type = VALUE_NULL;
         } else {
             proofEl->p1_v.type = VALUE_Fp;
             proofEl->p1_v.fpValue = crs.i2;
@@ -4519,7 +4506,7 @@ void NIZKProof::getProofZK(const G2Data &d, const CRS &crs,
             proofEl->p2_v.type = VALUE_NULL;
             proofEl->p2_w.type = VALUE_NULL;
         }
-        return;
+        break;
     case ELEMENT_PAIR:
         {
             getProofZK(*d.pair.first, crs, t);
@@ -4529,39 +4516,29 @@ void NIZKProof::getProofZK(const G2Data &d, const CRS &crs,
             const ProofEls &el2 =
                     *reinterpret_cast<const ProofEls*>(d.pair.second->d);
             addAllPi(el1, el2, *proofEl, crs);
-            return;
+            break;
         }
     case ELEMENT_SCALAR:
         {
             getLeftZK(*d.scalar.first, crs, t);
             getRightZK(*d.scalar.second, crs, t);
-            const ZKG1Commit &el1 =
-                    *reinterpret_cast<const ZKG1Commit*>(d.scalar.first->d);
-            const ZKG2Commit &el2 =
-                    *reinterpret_cast<const ZKG2Commit*>(d.scalar.second->d);
-            if (el1.nativeZK || el2.nativeZK) {
-                scalarCombine(el1.nc, el2.nc, *proofEl);
-            } else if (el1.builtZK) {
-                scalarCombine(*el1.builtZK, el2.nc, *proofEl);
-            } else {
-                ASSERT(el2.builtZK, "Unexpected impossibility to get ZK");
-                scalarCombine(el1.nc, *el2.builtZK, *proofEl);
-            }
-            return;
+            const G1Commit &el1 =
+                    *reinterpret_cast<const G1Commit*>(d.scalar.first->d);
+            const G2Commit &el2 =
+                    *reinterpret_cast<const G2Commit*>(d.scalar.second->d);
+            scalarCombine(el1, el2, *proofEl);
+            break;
         }
     default:
         ASSERT(false, "Unexpected data type");
     }
-    proofEl->p1_v.type = VALUE_NULL;
-    proofEl->p1_w.type = VALUE_NULL;
-    proofEl->p2_w.type = VALUE_NULL;
+    d.d = reinterpret_cast<void*>(proofEl);
 }
 
 void NIZKProof::getProofZK(const GTData &d, const CRS &crs,
                            EqProofType t) const {
-    if (d.d) return;
-    ProofEls *proofEl = new ProofEls;
-    d.d = reinterpret_cast<void*>(proofEl);
+    ProofEls *proofEl = (d.d ? (reinterpret_cast<ProofEls*>(d.d))
+                             : (new ProofEls));
     switch (d.type) {
     case ELEMENT_BASE:
         if ((t == EQ_TYPE_PEnc_G) || (t == EQ_TYPE_PConst_G)) {
@@ -4579,7 +4556,7 @@ void NIZKProof::getProofZK(const GTData &d, const CRS &crs,
             proofEl->p2_w.type = VALUE_G;
             proofEl->p2_w.b2Value._2 = -crs.getG2Base();
         }
-        return;
+        break;
     case ELEMENT_PAIR:
         {
             getProofZK(*d.pair.first, crs, t);
@@ -4589,288 +4566,275 @@ void NIZKProof::getProofZK(const GTData &d, const CRS &crs,
             const ProofEls &el2 =
                     *reinterpret_cast<const ProofEls*>(d.pair.second->d);
             addAllPi(el1, el2, *proofEl, crs);
-            return;
+            break;
         }
     case ELEMENT_PAIRING:
         {
             getLeftZK(*d.pring.first, crs, t);
             getRightZK(*d.pring.second, crs, t);
-            const ZKG1Commit &el1 =
-                    *reinterpret_cast<const ZKG1Commit*>(d.pring.first->d);
-            const ZKG2Commit &el2 =
-                    *reinterpret_cast<const ZKG2Commit*>(d.pring.second->d);
-            if (el1.nativeZK || el2.nativeZK) {
-                scalarCombine(el1.nc, el2.nc, *proofEl);
-            } else if (el1.builtZK) {
-                scalarCombine(*el1.builtZK, el2.nc, *proofEl);
-            } else {
-                ASSERT(el2.builtZK, "Unexpected impossibility to get ZK");
-                scalarCombine(el1.nc, *el2.builtZK, *proofEl);
-            }
-            return;
+            const G1Commit &el1 =
+                    *reinterpret_cast<const G1Commit*>(d.pring.first->d);
+            const G2Commit &el2 =
+                    *reinterpret_cast<const G2Commit*>(d.pring.second->d);
+            scalarCombine(el1, el2, *proofEl);
+            break;
         }
     default:
         ASSERT(false, "Unexpected data type");
     }
+    d.d = reinterpret_cast<void*>(proofEl);
 }
 
-// TODO finish ZK functions (below)
+bool cheatLeft(EqProofType t) {
+    switch (t) {
+    case EQ_TYPE_PPE:
+    case EQ_TYPE_PEnc_H:
+    case EQ_TYPE_PConst_H:
+    case EQ_TYPE_MLin_G:
+    case EQ_TYPE_ME_H:
+    case EQ_TYPE_MEnc_H:
+    case EQ_TYPE_MConst_H:
+    case EQ_TYPE_QE:
+    case EQ_TYPE_QConst_H:
+        return true;
+    case EQ_TYPE_PEnc_G:
+    case EQ_TYPE_PConst_G:
+    case EQ_TYPE_MLin_H:
+    case EQ_TYPE_ME_G:
+    case EQ_TYPE_MEnc_G:
+    case EQ_TYPE_MConst_G:
+    case EQ_TYPE_QConst_G:
+        return false;
+    default:
+        ASSERT(false, "Unexpected equation type");
+        return false;
+    }
+}
+
+bool cheatRight(EqProofType t) {
+    switch (t) {
+    case EQ_TYPE_PEnc_H:
+    case EQ_TYPE_PConst_H:
+    case EQ_TYPE_MLin_G:
+    case EQ_TYPE_ME_H:
+    case EQ_TYPE_MEnc_H:
+    case EQ_TYPE_MConst_H:
+    case EQ_TYPE_QConst_H:
+        return false;
+    case EQ_TYPE_PPE:
+    case EQ_TYPE_PEnc_G:
+    case EQ_TYPE_PConst_G:
+    case EQ_TYPE_MLin_H:
+    case EQ_TYPE_ME_G:
+    case EQ_TYPE_MEnc_G:
+    case EQ_TYPE_MConst_G:
+    case EQ_TYPE_QE:
+    case EQ_TYPE_QConst_G:
+        return true;
+    default:
+        ASSERT(false, "Unexpected equation type");
+        return false;
+    }
+}
 
 void NIZKProof::getLeftZK(const FpData &d, const CRS &crs,
                           EqProofType t) const {
-    if (d.d) return;
-    G1Commit *c1 = new G1Commit;
-    d.d = reinterpret_cast<void*>(c1);
+    G1Commit *c1 = (d.d ? (reinterpret_cast<G1Commit*>(d.d)) : (new G1Commit));
     switch (d.type) {
+    case ELEMENT_VARIABLE:
+        ASSERT(d.d, "Variable not instantiated");
+        return;
+    case ELEMENT_CONST_INDEX:
+        ASSERT(d.d, "Constant not instantiated");
+        if (cheatLeft(t)) {
+            c1->type = COMMIT_ENC;
+            c1->r = c1->c.fpValue * crs.i1;
+        } else {
+            c1->type = COMMIT_PUB;
+        }
+        return;
     case ELEMENT_CONST_VALUE:
-        c1->type = COMMIT_PUB;
+        if (cheatLeft(t)) {
+            c1->type = COMMIT_ENC;
+            c1->r = d.el * crs.i1;
+        } else {
+            c1->type = COMMIT_PUB;
+        }
+        if (d.d) return;
         c1->c.type = VALUE_Fp;
         c1->c.fpValue = d.el;
-        return;
+        break;
     case ELEMENT_PAIR:
         {
-            getLeft(*d.pair.first, crs);
-            getLeft(*d.pair.second, crs);
+            getLeftZK(*d.pair.first, crs, t);
+            getLeftZK(*d.pair.second, crs, t);
             const G1Commit &el1 =
                     *reinterpret_cast<const G1Commit*>(d.pair.first->d);
             const G1Commit &el2 =
                     *reinterpret_cast<const G1Commit*>(d.pair.second->d);
             addCommitG1(el1, el2, *c1, crs);
-            return;
+            break;
         }
     case ELEMENT_BASE:
-        c1->type = COMMIT_PUB;
+        if (cheatLeft(t)) {
+            c1->type = COMMIT_ENC;
+            c1->r = crs.i1;
+        } else {
+            c1->type = COMMIT_PUB;
+        }
+        if (d.d) return;
         c1->c.type = VALUE_Fp;
         c1->c.fpValue = Fp::getUnit();
-        return;
+        break;
     default:
         ASSERT(false, "Unexpected data type");
     }
+    d.d = reinterpret_cast<void*>(c1);
 }
 
 void NIZKProof::getLeftZK(const G1Data &d, const CRS &crs,
                           EqProofType t) const {
-    if (d.d) return;
-    G1Commit *c1 = new G1Commit;
-    d.d = reinterpret_cast<void*>(c1);
+    G1Commit *c1 = (d.d ? (reinterpret_cast<G1Commit*>(d.d)) : (new G1Commit));
     switch (d.type) {
+    case ELEMENT_VARIABLE:
+        ASSERT(d.d, "Variable not instantiated");
+        return;
+    case ELEMENT_CONST_INDEX:
+        ASSERT(d.d, "Constant not instantiated");
+        return;
     case ELEMENT_CONST_VALUE:
+        if (d.d) return;
         c1->type = COMMIT_PUB;
         c1->c.type = VALUE_G;
         c1->c.b1Value._2 = d.el;
-        return;
+        break;
     case ELEMENT_PAIR:
         {
-            getLeft(*d.pair.first, crs);
-            getLeft(*d.pair.second, crs);
+            getLeftZK(*d.pair.first, crs, t);
+            getLeftZK(*d.pair.second, crs, t);
             const G1Commit &el1 =
                     *reinterpret_cast<const G1Commit*>(d.pair.first->d);
             const G1Commit &el2 =
                     *reinterpret_cast<const G1Commit*>(d.pair.second->d);
             addCommitG1(el1, el2, *c1, crs);
-            return;
+            break;
         }
     case ELEMENT_BASE:
-        c1->type = COMMIT_PUB;
+        if (cheatLeft(t)) {
+            c1->type = COMMIT_PRIV;
+            c1->r = crs.i1;
+            c1->s = Fp(-1);
+        } else {
+            c1->type = COMMIT_PUB;
+        }
+        if (d.d) return;
         c1->c.type = VALUE_G;
         c1->c.b1Value._2 = crs.getG1Base();
-        return;
+        break;
     default:
         ASSERT(false, "Unexpected data type");
     }
+    d.d = reinterpret_cast<void*>(c1);
 }
 
 void NIZKProof::getRightZK(const FpData &d, const CRS &crs,
                            EqProofType t) const {
-    if (d.d) return;
-    G2Commit *c2 = new G2Commit;
-    d.d = reinterpret_cast<void*>(c2);
+    G2Commit *c2 = (d.d ? (reinterpret_cast<G2Commit*>(d.d)) : (new G2Commit));
     switch (d.type) {
+    case ELEMENT_VARIABLE:
+        ASSERT(d.d, "Variable not instantiated");
+        return;
+    case ELEMENT_CONST_INDEX:
+        ASSERT(d.d, "Constant not instantiated");
+        if (cheatRight(t)) {
+            c2->type = COMMIT_ENC;
+            c2->r = c2->c.fpValue * crs.i2;
+        } else {
+            c2->type = COMMIT_PUB;
+        }
+        return;
     case ELEMENT_CONST_VALUE:
-        c2->type = COMMIT_PUB;
+        if (cheatRight(t)) {
+            c2->type = COMMIT_ENC;
+            c2->r = d.el * crs.i2;
+        } else {
+            c2->type = COMMIT_PUB;
+        }
+        if (d.d) return;
         c2->c.type = VALUE_Fp;
         c2->c.fpValue = d.el;
-        return;
+        break;
     case ELEMENT_PAIR:
         {
-            getRight(*d.pair.first, crs);
-            getRight(*d.pair.second, crs);
+            getRightZK(*d.pair.first, crs, t);
+            getRightZK(*d.pair.second, crs, t);
             const G2Commit &el1 =
                     *reinterpret_cast<const G2Commit*>(d.pair.first->d);
             const G2Commit &el2 =
                     *reinterpret_cast<const G2Commit*>(d.pair.second->d);
             addCommitG2(el1, el2, *c2, crs);
-            return;
+            break;
         }
     case ELEMENT_BASE:
-        c2->type = COMMIT_PUB;
+        if (cheatRight(t)) {
+            c2->type = COMMIT_ENC;
+            c2->r = crs.i2;
+        } else {
+            c2->type = COMMIT_PUB;
+        }
+        if (d.d) return;
         c2->c.type = VALUE_Fp;
         c2->c.fpValue = Fp::getUnit();
-        return;
+        break;
     default:
         ASSERT(false, "Unexpected data type");
     }
+    d.d = reinterpret_cast<void*>(c2);
 }
 
 void NIZKProof::getRightZK(const G2Data &d, const CRS &crs,
                            EqProofType t) const {
-    if (d.d) return;
-    G2Commit *c2 = new G2Commit;
-    d.d = reinterpret_cast<void*>(c2);
+    G2Commit *c2 = (d.d ? (reinterpret_cast<G2Commit*>(d.d)) : (new G2Commit));
     switch (d.type) {
+    case ELEMENT_VARIABLE:
+        ASSERT(d.d, "Variable not instantiated");
+        return;
+    case ELEMENT_CONST_INDEX:
+        ASSERT(d.d, "Constant not instantiated");
+        return;
     case ELEMENT_CONST_VALUE:
+        if (d.d) return;
         c2->type = COMMIT_PUB;
         c2->c.type = VALUE_G;
         c2->c.b2Value._2 = d.el;
-        return;
+        break;
     case ELEMENT_PAIR:
         {
-            getRight(*d.pair.first, crs);
-            getRight(*d.pair.second, crs);
+            getRightZK(*d.pair.first, crs, t);
+            getRightZK(*d.pair.second, crs, t);
             const G2Commit &el1 =
                     *reinterpret_cast<const G2Commit*>(d.pair.first->d);
             const G2Commit &el2 =
                     *reinterpret_cast<const G2Commit*>(d.pair.second->d);
             addCommitG2(el1, el2, *c2, crs);
-            return;
+            break;
         }
     case ELEMENT_BASE:
-        c2->type = COMMIT_PUB;
+        if (cheatLeft(t)) {
+            c2->type = COMMIT_PRIV;
+            c2->r = crs.i2;
+            c2->s = Fp(-1);
+        } else {
+            c2->type = COMMIT_PUB;
+        }
+        if (d.d) return;
         c2->c.type = VALUE_G;
         c2->c.b2Value._2 = crs.getG2Base();
-        return;
-    default:
-        ASSERT(false, "Unexpected data type");
-    }
-}
-
-void removeProofZK(const FpData &d) {
-    if (!d.d) return;
-    delete reinterpret_cast<ProofEls*>(d.d);
-    d.d = NULL;
-    switch (d.type) {
-    case ELEMENT_CONST_VALUE:
-        break;
-    case ELEMENT_PAIR:
-        removeProof(*d.pair.first);
-        removeProof(*d.pair.second);
-        break;
-    case ELEMENT_SCALAR:
-        removeLeft(*d.pair.first);
-        removeRight(*d.pair.second);
-        break;
-    case ELEMENT_BASE:
         break;
     default:
         ASSERT(false, "Unexpected data type");
     }
-}
-
-void removeProofZK(const G1Data &d) {
-    if (!d.d) return;
-    delete reinterpret_cast<ProofEls*>(d.d);
-    d.d = NULL;
-    switch (d.type) {
-    case ELEMENT_CONST_VALUE:
-        break;
-    case ELEMENT_PAIR:
-        removeProof(*d.pair.first);
-        removeProof(*d.pair.second);
-        break;
-    case ELEMENT_SCALAR:
-        removeLeft(*d.scalar.second);
-        removeRight(*d.scalar.first);
-        break;
-    case ELEMENT_BASE:
-        break;
-    default:
-        ASSERT(false, "Unexpected data type");
-    }
-}
-
-void removeProofZK(const G2Data &d) {
-    if (!d.d) return;
-    delete reinterpret_cast<ProofEls*>(d.d);
-    d.d = NULL;
-    switch (d.type) {
-    case ELEMENT_CONST_VALUE:
-        break;
-    case ELEMENT_PAIR:
-        removeProof(*d.pair.first);
-        removeProof(*d.pair.second);
-        break;
-    case ELEMENT_SCALAR:
-        removeLeft(*d.scalar.first);
-        removeRight(*d.scalar.second);
-        break;
-    case ELEMENT_BASE:
-        break;
-    default:
-        ASSERT(false, "Unexpected data type");
-    }
-}
-
-void removeProofZK(const GTData &d) {
-    if (!d.d) return;
-    delete reinterpret_cast<ProofEls*>(d.d);
-    d.d = NULL;
-    switch (d.type) {
-    case ELEMENT_CONST_INDEX:
-    case ELEMENT_CONST_VALUE:
-        break;
-    case ELEMENT_PAIR:
-        removeProof(*d.pair.first);
-        removeProof(*d.pair.second);
-        break;
-    case ELEMENT_PAIRING:
-        removeLeft(*d.pring.first);
-        removeRight(*d.pring.second);
-        break;
-    case ELEMENT_BASE:
-        break;
-    default:
-        ASSERT(false, "Unexpected data type");
-    }
-}
-
-void removeLeftZK(const FpData &d) {
-    if (!d.d) return;
-    delete reinterpret_cast<G1Commit*>(d.d);
-    d.d = NULL;
-    if (d.type == ELEMENT_PAIR) {
-        removeLeft(*d.pair.first);
-        removeLeft(*d.pair.second);
-    }
-}
-
-void removeLeftZK(const G1Data &d) {
-    if (!d.d) return;
-    delete reinterpret_cast<G1Commit*>(d.d);
-    d.d = NULL;
-    if (d.type == ELEMENT_PAIR) {
-        removeLeft(*d.pair.first);
-        removeLeft(*d.pair.second);
-    }
-}
-
-void removeRightZK(const FpData &d) {
-    if (!d.d) return;
-    delete reinterpret_cast<G2Commit*>(d.d);
-    d.d = NULL;
-    if (d.type == ELEMENT_PAIR) {
-        removeRight(*d.pair.first);
-        removeRight(*d.pair.second);
-    }
-}
-
-void removeRightZK(const G2Data &d) {
-    if (!d.d) return;
-    delete reinterpret_cast<G2Commit*>(d.d);
-    d.d = NULL;
-    if (d.type == ELEMENT_PAIR) {
-        removeRight(*d.pair.first);
-        removeRight(*d.pair.second);
-    }
+    d.d = reinterpret_cast<void*>(c2);
 }
 
 } /* End of namespace nizk */
