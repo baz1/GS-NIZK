@@ -30,6 +30,7 @@ bool checkDataSize(int size, int line) {
 #define CHECK_DATA_SIZE(s) if (!checkDataSize((s), __LINE__)) return
 
 void testPairings() {
+    cout << "########## PAIRING TESTS ##########" << endl;
     int len;
     char data[DATA_SIZE], *data2;
 
@@ -228,7 +229,7 @@ void testPairings() {
     h2.clear();
     t1 = GT::getRand();
     t2.clear();
-    /*{
+    {
         ofstream out("test1.test");
         out << v1 << v2;
         out << g1 << g2;
@@ -251,42 +252,74 @@ void testPairings() {
     ASSERT(h1 == h3);
     ASSERT(h2 == h4);
     ASSERT(t1 == t3);
-    ASSERT(t2 == t4);*/ // TODO:uncomment when done with tests
+    ASSERT(t2 == t4);
 }
 
-void testProofs() {
-    G1 a = G1::getRand();
-    Fp k = Fp::getRand();
-    G1 b = k * a;
-
-    CRS crs(true);
-    NIZKProof proof;
-    proof.addEquation(FpVar(0) * G1Const(0), FpUnit() * G1Const(1));
-    ASSERT(proof.endEquations());
-
-    ProofData d;
-    d.privFp.push_back(k);
-    d.pubG1.push_back(a);
-    d.pubG1.push_back(b);
-
+void testProof(NIZKProof &proof, ProofData &d, const CRS &crs, CRS *verif = 0) {
     ASSERT(proof.verifySolution(d));
-
     {
+        cout << "* Creating and writing proof..." << endl;
         ofstream out("test2.test");
         proof.writeProof(out, crs, d);
         out.close();
     }
+    d.privFp.clear();
+    d.privG1.clear();
+    d.privG2.clear();
     {
+        cout << "* Reading and checking proof..." << endl;
         ifstream in("test2.test");
+        if (verif) {
+            ASSERT(proof.checkProof(in, *verif, d));
+        } else {
+            ASSERT(proof.checkProof(in, crs, d));
+        }
+        in.close();
+    }
+    if (!(proof.isZeroKnowledge() && crs.isSimulationReady()))
+        return;
+    {
+        cout << "* Creating and writing simulated proof..." << endl;
+        ofstream out("test3.test");
+        proof.simulateProof(out, crs, d);
+        out.close();
+    }
+    {
+        cout << "* Reading and checking simulated proof..." << endl;
+        ifstream in("test3.test");
         ASSERT(proof.checkProof(in, crs, d));
         in.close();
+    }
+}
+
+void testProofs() {
+    cout << "########## PROOF TESTS ##########" << endl;
+    {
+        cout << "Instantiation 1: discrete log in G1" << endl;
+        cout << "* Creating the equation system..." << endl;
+
+        G1 a = G1::getRand();
+        Fp k = Fp::getRand();
+        G1 b = k * a;
+
+        CRS crs(false);
+        NIZKProof proof;
+        proof.addEquation(FpVar(0) * G1Const(0), FpUnit() * G1Const(1));
+        ASSERT(proof.endEquations());
+
+        ProofData d;
+        d.privFp.push_back(k);
+        d.pubG1.push_back(a);
+        d.pubG1.push_back(b);
+
+        testProof(proof, d, crs);
     }
 }
 
 int main() {
     pairings::initialize_pairings(0, 0);
 
-    testPairings();
+    //testPairings();
     testProofs();
 
     pairings::terminate_pairings();
