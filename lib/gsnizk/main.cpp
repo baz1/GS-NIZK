@@ -314,6 +314,45 @@ void testProofs() {
 
         testProof(proof, d, crs);
     }
+    {
+        cout << "Instantiation 2: discrete log in G1 with private CRS" << endl;
+        cout << "* Creating the equation system..." << endl;
+
+        G1 a = G1::getRand();
+        Fp k = Fp::getRand();
+        G1 b = k * a;
+
+        CRS crsref(true), crspriv, crspub;
+        crsref.makePublic();
+        {
+            ofstream out("tmp.test");
+            crspriv = crsref.genPrivate(out);
+            out.close();
+        }
+        crspub = crspriv;
+        crspub.makePublic();
+
+        NIZKProof proof, proofcp;
+        proof.addEquation(FpVar(0) * G1Const(a), FpUnit() * G1Const(b));
+        ASSERT(proof.endEquations());
+
+        ProofData d;
+        d.privFp.push_back(k);
+
+        cout << "* Writing and reading back the equation system..." << endl;
+        {
+            ofstream out("test4.test");
+            out << proof;
+            out.close();
+        }
+        {
+            ifstream in("test4.test");
+            in >> proofcp;
+            in.close();
+        }
+
+        testProof(proofcp, d, crspriv, &crspub);
+    }
 }
 
 int main() {

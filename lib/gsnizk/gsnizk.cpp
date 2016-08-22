@@ -21,6 +21,8 @@
 #define ASSERT(X,Y) /* noop */
 #endif
 
+#include "bigendian.h"
+
 namespace gsnizk {
 
 FpData::~FpData() {
@@ -885,41 +887,61 @@ endZKTests:
     return true;
 }
 
+inline void put_integer(std::ostream &stream, const int v) {
+    ASSERT(stream.good(), "Stream is not good");
+    ASSERT(v < 0x10000, "Integer value is unexpectedly big");
+    uint16_t i = htons(static_cast<uint16_t>(v));
+    stream.write(reinterpret_cast<const char*>(&i), 2);
+    ASSERT(stream.good(), "Stream is not good");
+}
+
+inline int get_integer(std::istream &stream) {
+    uint16_t i;
+    ASSERT(stream.good(), "Stream is not good");
+    stream.read(reinterpret_cast<char*>(&i), 2);
+    ASSERT(!stream.fail(), "Stream failed");
+    return static_cast<int>(ntohs(i));
+}
+
 std::ostream &operator<<(std::ostream &stream, const EqProofType &t) {
-    stream << ((int) t);
+    ASSERT(stream.good(), "Stream is not good");
+    stream.put(static_cast<char>(t));
+    ASSERT(stream.good(), "Stream is not good");
     return stream;
 }
 
 std::istream &operator>>(std::istream &stream, EqProofType &t) {
-    int i;
-    stream >> i;
-    t = (EqProofType) i;
+    ASSERT(stream.good(), "Stream is not good");
+    t = static_cast<EqProofType>(stream.get());
+    ASSERT(!stream.fail(), "Stream failed");
     return stream;
 }
 
 template <typename T> inline void writeVectorToStream(std::ostream &stream,
         const std::vector<T> &v) {
     int i = v.size();
-    stream << i;
+    put_integer(stream, i);
     while (i-- > 0)
         stream << v[i];
+    ASSERT(stream.good(), "Stream is not good");
 }
 
 template <typename T> inline void readVectorFromStream(std::istream &stream,
         std::vector<T> &v) {
-    int i;
-    stream >> i;
+    int i = get_integer(stream);
     v.resize(i);
     while (i-- > 0)
         stream >> v[i];
 }
 
 void writeToStream(std::ostream &stream, const FpData &d) {
-    stream << ((int) d.type);
+    ASSERT(stream.good(), "Stream is not good");
+    stream.put(static_cast<char>(d.type));
+    ASSERT(stream.good(), "Stream is not good");
     switch (d.type) {
     case ELEMENT_VARIABLE:
     case ELEMENT_CONST_INDEX:
-        stream << d.index;
+        put_integer(stream, d.index);
         break;
     case ELEMENT_CONST_VALUE:
         stream << d.el;
@@ -937,11 +959,13 @@ void writeToStream(std::ostream &stream, const FpData &d) {
 }
 
 void writeToStream(std::ostream &stream, const G1Data &d) {
-    stream << ((int) d.type);
+    ASSERT(stream.good(), "Stream is not good");
+    stream.put(static_cast<char>(d.type));
+    ASSERT(stream.good(), "Stream is not good");
     switch (d.type) {
     case ELEMENT_VARIABLE:
     case ELEMENT_CONST_INDEX:
-        stream << d.index;
+        put_integer(stream, d.index);
         break;
     case ELEMENT_CONST_VALUE:
         stream << d.el;
@@ -962,11 +986,13 @@ void writeToStream(std::ostream &stream, const G1Data &d) {
 }
 
 void writeToStream(std::ostream &stream, const G2Data &d) {
-    stream << ((int) d.type);
+    ASSERT(stream.good(), "Stream is not good");
+    stream.put(static_cast<char>(d.type));
+    ASSERT(stream.good(), "Stream is not good");
     switch (d.type) {
     case ELEMENT_VARIABLE:
     case ELEMENT_CONST_INDEX:
-        stream << d.index;
+        put_integer(stream, d.index);
         break;
     case ELEMENT_CONST_VALUE:
         stream << d.el;
@@ -987,11 +1013,13 @@ void writeToStream(std::ostream &stream, const G2Data &d) {
 }
 
 void writeToStream(std::ostream &stream, const GTData &d) {
-    stream << ((int) d.type);
+    ASSERT(stream.good(), "Stream is not good");
+    stream.put(static_cast<char>(d.type));
+    ASSERT(stream.good(), "Stream is not good");
     switch (d.type) {
     case ELEMENT_VARIABLE:
     case ELEMENT_CONST_INDEX:
-        stream << d.index;
+        put_integer(stream, d.index);
         break;
     case ELEMENT_CONST_VALUE:
         stream << d.el;
@@ -1015,10 +1043,12 @@ void NIZKProof::readFromStream(std::istream &stream,
                                std::shared_ptr<FpData> &dp,
                                int side) {
     int mtype, mindex;
-    stream >> mtype;
+    ASSERT(stream.good(), "Stream is not good");
+    mtype = stream.get();
+    ASSERT(!stream.fail(), "Stream failed");
     if (mtype <= 1) { /* ELEMENT_VARIABLE or ELEMENT_CONST_INDEX */
         ASSERT(side != 0, "Wrong data");
-        stream >> mindex;
+        mindex = get_integer(stream);
         if (mtype == ELEMENT_VARIABLE) {
             ASSERT((0 <= mindex) && (mindex < (int) varsFp.size()),
                     "Wrong data");
@@ -1054,14 +1084,17 @@ void NIZKProof::readFromStream(std::istream &stream,
     dp = std::shared_ptr<FpData>(new FpData((ElementType) mtype));
     switch (mtype) {
     case ELEMENT_CONST_VALUE:
+        new (&dp->el) Fp();
         stream >> dp->el;
         return;
     case ELEMENT_PAIR:
+        new (&dp->pair) PairFp();
         readFromStream(stream, dp->pair.first, side);
         readFromStream(stream, dp->pair.second, side);
         return;
     case ELEMENT_SCALAR:
         ASSERT((side == 0) || (side == -2), "Wrong data");
+        new (&dp->pair) PairFp();
         readFromStream(stream, dp->pair.first, -1);
         readFromStream(stream, dp->pair.second, 1);
         return;
@@ -1075,9 +1108,11 @@ void NIZKProof::readFromStream(std::istream &stream,
 void NIZKProof::readFromStream(std::istream &stream,
                                std::shared_ptr<G1Data> &dp) {
     int mtype, mindex;
-    stream >> mtype;
+    ASSERT(stream.good(), "Stream is not good");
+    mtype = stream.get();
+    ASSERT(!stream.fail(), "Stream failed");
     if (mtype <= 1) { /* ELEMENT_VARIABLE or ELEMENT_CONST_INDEX */
-        stream >> mindex;
+        mindex = get_integer(stream);
         if (mtype == ELEMENT_VARIABLE) {
             ASSERT((0 <= mindex) && (mindex < (int) varsG1.size()),
                     "Wrong data");
@@ -1105,13 +1140,16 @@ void NIZKProof::readFromStream(std::istream &stream,
     dp = std::shared_ptr<G1Data>(new G1Data((ElementType) mtype));
     switch (mtype) {
     case ELEMENT_CONST_VALUE:
+        new (&dp->el) G1();
         stream >> dp->el;
         return;
     case ELEMENT_PAIR:
+        new (&dp->pair) PairG1();
         readFromStream(stream, dp->pair.first);
         readFromStream(stream, dp->pair.second);
         return;
     case ELEMENT_SCALAR:
+        new (&dp->scalar) ScalarG1();
         readFromStream(stream, dp->scalar.second);
         readFromStream(stream, dp->scalar.first, 1);
         return;
@@ -1125,9 +1163,11 @@ void NIZKProof::readFromStream(std::istream &stream,
 void NIZKProof::readFromStream(std::istream &stream,
                                std::shared_ptr<G2Data> &dp) {
     int mtype, mindex;
-    stream >> mtype;
+    ASSERT(stream.good(), "Stream is not good");
+    mtype = stream.get();
+    ASSERT(!stream.fail(), "Stream failed");
     if (mtype <= 1) { /* ELEMENT_VARIABLE or ELEMENT_CONST_INDEX */
-        stream >> mindex;
+        mindex = get_integer(stream);
         if (mtype == ELEMENT_VARIABLE) {
             ASSERT((0 <= mindex) && (mindex < (int) varsG2.size()),
                     "Wrong data");
@@ -1155,13 +1195,16 @@ void NIZKProof::readFromStream(std::istream &stream,
     dp = std::shared_ptr<G2Data>(new G2Data((ElementType) mtype));
     switch (mtype) {
     case ELEMENT_CONST_VALUE:
+        new (&dp->el) G2();
         stream >> dp->el;
         return;
     case ELEMENT_PAIR:
+        new (&dp->pair) PairG2();
         readFromStream(stream, dp->pair.first);
         readFromStream(stream, dp->pair.second);
         return;
     case ELEMENT_SCALAR:
+        new (&dp->scalar) ScalarG2();
         readFromStream(stream, dp->scalar.first, -1);
         readFromStream(stream, dp->scalar.second);
         return;
@@ -1175,9 +1218,11 @@ void NIZKProof::readFromStream(std::istream &stream,
 void NIZKProof::readFromStream(std::istream &stream,
                                std::shared_ptr<GTData> &dp) {
     int mtype, mindex;
-    stream >> mtype;
+    ASSERT(stream.good(), "Stream is not good");
+    mtype = stream.get();
+    ASSERT(!stream.fail(), "Stream failed");
     if (mtype == ELEMENT_CONST_INDEX) {
-        stream >> mindex;
+        mindex = get_integer(stream);
         ASSERT((0 <= mindex) && (mindex < (int) cstsGT.size()),
                 "Wrong data");
         if (cstsGT[mindex]) {
@@ -1193,13 +1238,16 @@ void NIZKProof::readFromStream(std::istream &stream,
     dp = std::shared_ptr<GTData>(new GTData((ElementType) mtype));
     switch (mtype) {
     case ELEMENT_CONST_VALUE:
+        new (&dp->el) GT();
         stream >> dp->el;
         return;
     case ELEMENT_PAIR:
+        new (&dp->pair) PairGT();
         readFromStream(stream, dp->pair.first);
         readFromStream(stream, dp->pair.second);
         return;
     case ELEMENT_PAIRING:
+        new (&dp->pring) PairingGT();
         readFromStream(stream, dp->pring.first);
         readFromStream(stream, dp->pring.second);
         return;
@@ -1251,12 +1299,18 @@ inline std::ostream &operator<<(std::ostream &stream, const AdditionalG2 &a) {
 
 std::ostream &operator<<(std::ostream &stream, const NIZKProof &p) {
     if (!p.fixed) return stream;
-    stream << ((int) p.type);
-    stream << p.zk;
-    stream << p.varsFp.size() << p.cstsFp.size();
-    stream << p.varsG1.size() << p.cstsG1.size();
-    stream << p.varsG2.size() << p.cstsG2.size();
-    stream << p.cstsGT.size();
+    ASSERT(stream.good(), "Stream is not good");
+    stream.put(static_cast<char>(p.type));
+    stream.put(static_cast<char>(p.zk));
+    ASSERT(stream.good(), "Stream is not good");
+    put_integer(stream, p.varsFp.size());
+    put_integer(stream, p.cstsFp.size());
+    put_integer(stream, p.varsG1.size());
+    put_integer(stream, p.cstsG1.size());
+    put_integer(stream, p.varsG2.size());
+    put_integer(stream, p.cstsG2.size());
+    put_integer(stream, p.cstsGT.size());
+    ASSERT(stream.good(), "Stream is not good");
     writeVectorToStream(stream, p.eqsFp);
     writeVectorToStream(stream, p.eqsG1);
     writeVectorToStream(stream, p.eqsG2);
@@ -1270,51 +1324,42 @@ std::ostream &operator<<(std::ostream &stream, const NIZKProof &p) {
     writeVectorToStream(stream, p.additionalFp);
     writeVectorToStream(stream, p.additionalG1);
     writeVectorToStream(stream, p.additionalG2);
+    ASSERT(stream.good(), "Stream is not good");
     return stream;
 }
 
 NIZKProof::NIZKProof(std::istream &stream) : fixed(true) {
-    int mtype;
-    stream >> mtype;
-    type = (CommitType) mtype;
-    stream >> zk;
-    size_t s;
-    stream >> s;
-    varsFp.resize(s);
+    ASSERT(stream.good(), "Stream is not good");
+    type = static_cast<CommitType>(stream.get());
+    ASSERT(stream.good(), "Stream is not good");
+    zk = static_cast<bool>(stream.get());
+    ASSERT(stream.good(), "Stream is not good");
+    int s;
+    varsFp.resize(s = get_integer(stream));
     varsFpInB1.resize(s);
-    stream >> s;
-    cstsFp.resize(s);
+    cstsFp.resize(s = get_integer(stream));
     cstsFpInB1.resize(s);
-    stream >> s;
-    varsG1.resize(s);
-    stream >> s;
-    cstsG1.resize(s);
-    stream >> s;
-    varsG2.resize(s);
-    stream >> s;
-    cstsG2.resize(s);
-    stream >> s;
-    cstsGT.resize(s);
-    stream >> s;
-    eqsFp.resize(s);
+    varsG1.resize(get_integer(stream));
+    cstsG1.resize(get_integer(stream));
+    varsG2.resize(get_integer(stream));
+    cstsG2.resize(get_integer(stream));
+    cstsGT.resize(get_integer(stream));
+    eqsFp.resize(s = get_integer(stream));
     while (s-- > 0) {
         readFromStream(stream, eqsFp[s].first, 0);
         readFromStream(stream, eqsFp[s].second, 0);
     }
-    stream >> s;
-    eqsG1.resize(s);
+    eqsG1.resize(s = get_integer(stream));
     while (s-- > 0) {
         readFromStream(stream, eqsG1[s].first);
         readFromStream(stream, eqsG1[s].second);
     }
-    stream >> s;
-    eqsG2.resize(s);
+    eqsG2.resize(s = get_integer(stream));
     while (s-- > 0) {
         readFromStream(stream, eqsG2[s].first);
         readFromStream(stream, eqsG2[s].second);
     }
-    stream >> s;
-    eqsGT.resize(s);
+    eqsGT.resize(s = get_integer(stream));
     while (s-- > 0) {
         readFromStream(stream, eqsGT[s].first);
         readFromStream(stream, eqsGT[s].second);
@@ -1325,16 +1370,13 @@ NIZKProof::NIZKProof(std::istream &stream) : fixed(true) {
     readVectorFromStream(stream, tG1);
     readVectorFromStream(stream, tG2);
     readVectorFromStream(stream, tGT);
-    stream >> s;
-    additionalFp.resize(s);
+    additionalFp.resize(s = get_integer(stream));
     while (s-- > 0)
         readFromStream(stream, additionalFp[s].formula, -2);
-    stream >> s;
-    additionalG1.resize(s);
+    additionalG1.resize(s = get_integer(stream));
     while (s-- > 0)
         readFromStream(stream, additionalG1[s].formula);
-    stream >> s;
-    additionalG2.resize(s);
+    additionalG2.resize(s = get_integer(stream));
     while (s-- > 0)
         readFromStream(stream, additionalG2[s].formula);
 }

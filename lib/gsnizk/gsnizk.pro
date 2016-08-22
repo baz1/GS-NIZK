@@ -37,11 +37,13 @@ CONFIG += c++11
 SOURCES += gsnizk.cpp \
     pairings.cpp \
     test.cpp \
-    maps.cpp
+    maps.cpp \
+    bigendian.cpp
 
 HEADERS += gsnizk.h \
     pairings.h \
-    maps.h
+    maps.h \
+    bigendian.h
 
 config_miracl {
     include(BN.pri)
