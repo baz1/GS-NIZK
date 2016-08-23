@@ -256,7 +256,7 @@ void testPairings() {
 }
 
 void testProof(NIZKProof &proof, ProofData &d, const CRS &crs, CRS *verif = 0) {
-    ASSERT(proof.verifySolution(d));
+    ASSERT(proof.verifySolution(d, crs));
     {
         cout << "* Creating and writing proof..." << endl;
         ofstream out("test2.test");
@@ -352,6 +352,63 @@ void testProofs() {
         }
 
         testProof(proofcp, d, crspriv, &crspub);
+    }
+    {
+        cout << "Instantiation 2: user tokens" << endl;
+        cout << "  (see https://eprint.iacr.org/2016/416)" << endl;
+        cout << "* Creating the equation system..." << endl;
+
+        CRS crs(false);
+
+        ProofData d;
+
+        /* Certificate Authority's credentials */
+        Fp sk_A = Fp::getRand();
+        G2 pk_A = sk_A * crs.getG2Base();
+        d.pubG2.push_back(pk_A);
+        G2Element _pk_A = G2Const(0);
+
+        /* User's credentials */
+        Fp sk_C = Fp::getRand();
+        G1 pk_C = sk_C * crs.getG1Base();
+        d.privFp.push_back(sk_C);
+        FpElement _sk_C = FpVar(0);
+        d.privG1.push_back(pk_C);
+        G1Element _pk_C = G1Var(0);
+
+        /* User's certificate */
+        G1 cert = sk_A * pk_C;
+        d.privG1.push_back(cert);
+        G1Element _cert = G1Var(1);
+
+        /* Hash of the one-time public key */
+        G2 HK = G2::getRand();
+        d.pubG2.push_back(HK);
+        G2Element _HK = G2Const(1);
+
+        /* Signature of the one-time public key */
+        G2 sign = sk_C * HK;
+        d.pubG2.push_back(sign);
+        G2Element _sign = G2Const(2);
+
+        /* Service Provider ID (in G1 instead of G2 for efficiency) */
+        G1 v_SP = G1::getRand();
+        d.pubG1.push_back(v_SP);
+        G1Element _v_SP = G1Const(0);
+
+        /* Linkability value */
+        G1 value = sk_C * v_SP;
+        d.pubG1.push_back(value);
+        G1Element _value = G1Const(1);
+
+        NIZKProof proof;
+        proof.addEquation(FpUnit() * _pk_C, _sk_C * G1Base());
+        proof.addEquation(e(_cert, G2Base()), e(_pk_C, _pk_A));
+        proof.addEquation(FpUnit() * _sign, _sk_C * _HK);
+        proof.addEquation(FpUnit() * _value, _sk_C * _v_SP);
+        ASSERT(proof.endEquations());
+
+        testProof(proof, d, crs);
     }
 }
 

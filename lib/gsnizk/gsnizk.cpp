@@ -2016,7 +2016,6 @@ void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
     }
     j = varsG2.size();
     i = additionalG2.size();
-    c2.c.type = VALUE_B;
     while (i-- > 0) {
         --j;
         c2.r = Fp::getRand();
@@ -2048,6 +2047,7 @@ void NIZKProof::writeProof(std::ostream &stream, const CRS &crs,
         stream << c2.c.b2Value;
         varsG2[j]->d = reinterpret_cast<void*>(new G2Commit(c2));
     }
+    c2.c.b2Value._1.clear();
     c1.type = COMMIT_PUB;
     c1.c.type = VALUE_Fp;
     c2.type = COMMIT_PUB;
@@ -2353,7 +2353,7 @@ void NIZKProof::checkoutAsGT(std::shared_ptr<GTData> &d) {
         checkoutAsGT(d->pair.first);
         checkoutAsGT(d->pair.second);
         break;
-    case ELEMENT_SCALAR:
+    case ELEMENT_PAIRING:
         checkoutLeft(d->pring.first);
         checkoutRight(d->pring.second);
         break;
@@ -2389,6 +2389,7 @@ void NIZKProof::checkoutLeft(std::shared_ptr<FpData> &d) {
                     eqsFp.push_back(getFpVarEq(newVar, d));
                     varsFp.push_back(newVar);
                     varsFpInB1.push_back(true);
+                    additionalFp.push_back(AdditionalFp(d));
                     d = newVar;
                 } else {
                     d = varsFp[idx];
@@ -2430,6 +2431,7 @@ void NIZKProof::checkoutLeft(std::shared_ptr<FpData> &d) {
             new (&right->pair) PairFp(newVar,
                     std::shared_ptr<FpData>(new FpData(ELEMENT_BASE)));
             eqsFp.push_back(PairFp(d, std::shared_ptr<FpData>(right)));
+            additionalFp.push_back(AdditionalFp(d));
             d = newVar;
         }
         break;
@@ -2464,6 +2466,7 @@ void NIZKProof::checkoutLeft(std::shared_ptr<G1Data> &d) {
             new (&right->scalar) ScalarG1(
                     std::shared_ptr<FpData>(new FpData(ELEMENT_BASE)), newVar);
             eqsG1.push_back(PairG1(d, std::shared_ptr<G1Data>(right)));
+            additionalG1.push_back(AdditionalG1(d));
             d = newVar;
         }
         break;
@@ -2489,6 +2492,7 @@ void NIZKProof::checkoutRight(std::shared_ptr<FpData> &d) {
                     eqsFp.push_back(getFpVarEq(d, newVar));
                     varsFp.push_back(newVar);
                     varsFpInB1.push_back(false);
+                    additionalFp.push_back(AdditionalFp(d));
                     d = newVar;
                 } else {
                     d = varsFp[idx];
@@ -2530,6 +2534,7 @@ void NIZKProof::checkoutRight(std::shared_ptr<FpData> &d) {
             new (&right->pair) PairFp(
                     std::shared_ptr<FpData>(new FpData(ELEMENT_BASE)), newVar);
             eqsFp.push_back(PairFp(d, std::shared_ptr<FpData>(right)));
+            additionalFp.push_back(AdditionalFp(d));
             d = newVar;
         }
         break;
@@ -2564,6 +2569,7 @@ void NIZKProof::checkoutRight(std::shared_ptr<G2Data> &d) {
             new (&right->scalar) ScalarG2(
                     std::shared_ptr<FpData>(new FpData(ELEMENT_BASE)), newVar);
             eqsG2.push_back(PairG2(d, std::shared_ptr<G2Data>(right)));
+            additionalG2.push_back(AdditionalG2(d));
             d = newVar;
         }
         break;
@@ -3536,17 +3542,17 @@ void NIZKProof::getEqProofTypes() {
         if (ElTSContains(result.first, EL_TYPE_SCA_G) ||
                 ElTSContains(result.second, EL_TYPE_PUB_H)) {
             if (ElTSContains(result.second, EL_TYPE_COM_H)) {
-                tG1[i] = EQ_TYPE_ME_H;
+                tG2[i] = EQ_TYPE_ME_H;
             } else if (ElTSContains(result.second, EL_TYPE_ENC_H)) {
-                tG1[i] = EQ_TYPE_MEnc_H;
+                tG2[i] = EQ_TYPE_MEnc_H;
             } else {
-                tG1[i] = EQ_TYPE_MConst_H;
+                tG2[i] = EQ_TYPE_MConst_H;
             }
         } else {
             if (ElTSContains(result.second, EL_TYPE_ENC_H)) {
-                tG1[i] = EQ_TYPE_MEnc_H;
+                tG2[i] = EQ_TYPE_MEnc_H;
             } else {
-                tG1[i] = EQ_TYPE_MLin_H;
+                tG2[i] = EQ_TYPE_MLin_H;
             }
         }
     }
@@ -4240,14 +4246,14 @@ void NIZKProof::simulateProof(std::ostream &stream, const CRS &crs,
     G2Commit c2;
     int j = varsFp.size(), i = additionalFp.size();
     c1.type = COMMIT_ENC;
-    c1.c.type = VALUE_Fp;
+    c1.c.type = VALUE_NULL;
     c2.type = COMMIT_ENC;
     c2.c.type = VALUE_B;
     while (i-- > 0) {
         if (varsFpInB1[--j]) {
             c1.r = Fp::getRand();
             varsFp[j]->d = reinterpret_cast<void*>(new G1Commit(c1));
-            stream << B1::commit(c1.c.fpValue, c1.r, crs);
+            stream << B1::commit(Fp(), c1.r, crs);
         } else {
             c2.r = Fp::getRand();
             c2.c.b2Value = B2::commit(Fp(), c2.r, crs);
@@ -4269,18 +4275,17 @@ void NIZKProof::simulateProof(std::ostream &stream, const CRS &crs,
     }
     j = varsG1.size();
     i = additionalG1.size();
-    c1.c.type = VALUE_G;
     while (i-- > 0) {
         --j;
         c1.r = Fp::getRand();
         if ((type == AllEncrypted) ||
                 ((type == SelectedEncryption) && sEnc[INDEX_TYPE_G1][j])) {
             c1.type = COMMIT_ENC;
-            stream << B1::commit(c1.c.b1Value, c1.r, crs);
+            stream << B1::commit(B1(), c1.r, crs);
         } else {
             c1.type = COMMIT_PRIV;
             c1.s = Fp::getRand();
-            stream << B1::commit(c1.c.b1Value, c1.r, c1.s, crs);
+            stream << B1::commit(B1(), c1.r, c1.s, crs);
         }
         varsG1[j]->d = reinterpret_cast<void*>(new G1Commit(c1));
     }
@@ -4289,11 +4294,11 @@ void NIZKProof::simulateProof(std::ostream &stream, const CRS &crs,
         if ((type == AllEncrypted) ||
                 ((type == SelectedEncryption) && sEnc[INDEX_TYPE_G1][j])) {
             c1.type = COMMIT_ENC;
-            stream << B1::commit(c1.c.b1Value, c1.r, crs);
+            stream << B1::commit(B1(), c1.r, crs);
         } else {
             c1.type = COMMIT_PRIV;
             c1.s = Fp::getRand();
-            stream << B1::commit(c1.c.b1Value, c1.r, c1.s, crs);
+            stream << B1::commit(B1(), c1.r, c1.s, crs);
         }
         varsG1[j]->d = reinterpret_cast<void*>(new G1Commit(c1));
     }
@@ -4336,9 +4341,11 @@ void NIZKProof::simulateProof(std::ostream &stream, const CRS &crs,
     for (j = cstsFp.size(); j-- > 0;) {
         if (cstsFpInB1[j]) {
             c1.c.fpValue = instantiation.pubFp[j];
+            c1.r = c1.c.fpValue * crs.i1;
             cstsFp[j]->d = reinterpret_cast<void*>(new G1Commit(c1));
         } else {
             c2.c.fpValue = instantiation.pubFp[j];
+            c2.r = c2.c.fpValue * crs.i2;
             cstsFp[j]->d = reinterpret_cast<void*>(new G2Commit(c2));
         }
     }
@@ -4348,6 +4355,7 @@ void NIZKProof::simulateProof(std::ostream &stream, const CRS &crs,
         cstsG1[j]->d = reinterpret_cast<void*>(new G1Commit(c1));
     }
     c2.c.type = VALUE_G;
+    c2.c.b2Value._1.clear();
     for (j = cstsG2.size(); j-- > 0;) {
         c2.c.b2Value._2 = instantiation.pubG2[j];
         cstsG2[j]->d = reinterpret_cast<void*>(new G2Commit(c2));
@@ -4690,21 +4698,23 @@ void NIZKProof::getLeftZK(const FpData &d, const CRS &crs,
         ASSERT(d.d, "Constant not instantiated");
         if (cheatLeft(t)) {
             c1->type = COMMIT_ENC;
-            c1->r = c1->c.fpValue * crs.i1;
+            c1->c.type = VALUE_NULL;
         } else {
             c1->type = COMMIT_PUB;
+            c1->c.type = VALUE_Fp;
         }
         return;
     case ELEMENT_CONST_VALUE:
         if (cheatLeft(t)) {
             c1->type = COMMIT_ENC;
-            c1->r = d.el * crs.i1;
+            c1->c.type = VALUE_NULL;
         } else {
             c1->type = COMMIT_PUB;
+            c1->c.type = VALUE_Fp;
         }
         if (d.d) return;
-        c1->c.type = VALUE_Fp;
         c1->c.fpValue = d.el;
+        c1->r = d.el * crs.i1;
         break;
     case ELEMENT_PAIR:
         {
@@ -4720,13 +4730,14 @@ void NIZKProof::getLeftZK(const FpData &d, const CRS &crs,
     case ELEMENT_BASE:
         if (cheatLeft(t)) {
             c1->type = COMMIT_ENC;
-            c1->r = crs.i1;
+            c1->c.type = VALUE_NULL;
         } else {
             c1->type = COMMIT_PUB;
+            c1->c.type = VALUE_Fp;
         }
         if (d.d) return;
-        c1->c.type = VALUE_Fp;
         c1->c.fpValue = Fp::getUnit();
+        c1->r = crs.i1;
         break;
     default:
         ASSERT(false, "Unexpected data type");
@@ -4764,14 +4775,15 @@ void NIZKProof::getLeftZK(const G1Data &d, const CRS &crs,
     case ELEMENT_BASE:
         if (cheatLeft(t)) {
             c1->type = COMMIT_PRIV;
-            c1->r = crs.i1;
-            c1->s = Fp(-1);
+            c1->c.type = VALUE_NULL;
         } else {
             c1->type = COMMIT_PUB;
+            c1->c.type = VALUE_G;
         }
         if (d.d) return;
-        c1->c.type = VALUE_G;
         c1->c.b1Value._2 = crs.getG1Base();
+        c1->r = crs.i1;
+        c1->s = Fp(-1);
         break;
     default:
         ASSERT(false, "Unexpected data type");
@@ -4788,22 +4800,12 @@ void NIZKProof::getRightZK(const FpData &d, const CRS &crs,
         return;
     case ELEMENT_CONST_INDEX:
         ASSERT(d.d, "Constant not instantiated");
-        if (cheatRight(t)) {
-            c2->type = COMMIT_ENC;
-            c2->r = c2->c.fpValue * crs.i2;
-        } else {
-            c2->type = COMMIT_PUB;
-        }
+        c2->type = (cheatRight(t) ? COMMIT_ENC : COMMIT_PUB);
         return;
     case ELEMENT_CONST_VALUE:
-        if (cheatRight(t)) {
-            c2->type = COMMIT_ENC;
-            c2->r = d.el * crs.i2;
-        } else {
-            c2->type = COMMIT_PUB;
-        }
+        c2->type = (cheatRight(t) ? COMMIT_ENC : COMMIT_PUB);
         if (d.d) return;
-        c2->c.type = VALUE_Fp;
+        c2->r = d.el * crs.i2;
         c2->c.fpValue = d.el;
         break;
     case ELEMENT_PAIR:
@@ -4818,15 +4820,11 @@ void NIZKProof::getRightZK(const FpData &d, const CRS &crs,
             break;
         }
     case ELEMENT_BASE:
-        if (cheatRight(t)) {
-            c2->type = COMMIT_ENC;
-            c2->r = crs.i2;
-        } else {
-            c2->type = COMMIT_PUB;
-        }
+        c2->type = (cheatRight(t) ? COMMIT_ENC : COMMIT_PUB);
         if (d.d) return;
         c2->c.type = VALUE_Fp;
         c2->c.fpValue = Fp::getUnit();
+        c2->r = crs.i2;
         break;
     default:
         ASSERT(false, "Unexpected data type");
@@ -4862,16 +4860,12 @@ void NIZKProof::getRightZK(const G2Data &d, const CRS &crs,
             break;
         }
     case ELEMENT_BASE:
-        if (cheatLeft(t)) {
-            c2->type = COMMIT_PRIV;
-            c2->r = crs.i2;
-            c2->s = Fp(-1);
-        } else {
-            c2->type = COMMIT_PUB;
-        }
+        c2->type = (cheatLeft(t) ? COMMIT_PRIV : COMMIT_PUB);
         if (d.d) return;
         c2->c.type = VALUE_G;
         c2->c.b2Value._2 = crs.getG2Base();
+        c2->r = crs.i2;
+        c2->s = Fp(-1);
         break;
     default:
         ASSERT(false, "Unexpected data type");

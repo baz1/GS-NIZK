@@ -183,16 +183,22 @@ enum EqProofType {
 };
 
 struct AdditionalFp {
+    inline AdditionalFp() {}
+    inline AdditionalFp(const std::shared_ptr<FpData> &d) : formula(d) {}
     std::shared_ptr<FpData> formula;
     mutable Fp value;
 };
 
 struct AdditionalG1 {
+    inline AdditionalG1() {}
+    inline AdditionalG1(const std::shared_ptr<G1Data> &d) : formula(d) {}
     std::shared_ptr<G1Data> formula;
     mutable G1 value;
 };
 
 struct AdditionalG2 {
+    inline AdditionalG2() {}
+    inline AdditionalG2(const std::shared_ptr<G2Data> &d) : formula(d) {}
     std::shared_ptr<G2Data> formula;
     mutable G2 value;
 };

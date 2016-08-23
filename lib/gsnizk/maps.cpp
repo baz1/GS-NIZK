@@ -20,9 +20,9 @@ B1 B1::commit(const B1 &el, const Fp &r, const CRS &crs) {
 }
 
 B1 B1::commit(const B1 &el, const Fp &r, const Fp &s, const CRS &crs) {
-    if (crs.type == CRS_TYPE_PUBLIC)
-        return el + r * crs.v1 + s * crs.w1;
-    return el + (r + crs.i1 * s) * crs.v1;
+    if (crs.type & 1)
+        return el + (r + crs.i1 * s) * crs.v1;
+    return el + r * crs.v1 + s * crs.w1;
 }
 
 G2 B2::extract(const CRS &crs) const {
@@ -38,9 +38,9 @@ B2 B2::commit(const B2 &el, const Fp &r, const CRS &crs) {
 }
 
 B2 B2::commit(const B2 &el, const Fp &r, const Fp &s, const CRS &crs) {
-    if (crs.type == CRS_TYPE_PUBLIC)
-        return el + r * crs.v2 + s * crs.w2;
-    return el + (r + crs.i2 * s) * crs.v2;
+    if (crs.type & 1)
+        return el + (r + crs.i2 * s) * crs.v2;
+    return el + r * crs.v2 + s * crs.w2;
 }
 
 GT BT::extract(const CRS &crs) const {
@@ -84,6 +84,8 @@ void CRS::makePublic() {
     if (type != CRS_TYPE_PUBLIC) {
         i1 = Fp();
         i2 = Fp();
+        j1 = Fp();
+        j2 = Fp();
         type = CRS_TYPE_PUBLIC;
     }
 }
