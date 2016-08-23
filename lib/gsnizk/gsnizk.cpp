@@ -1733,9 +1733,9 @@ void convToB(PiG1 &v, const CRS &crs) {
     case VALUE_G:
         break;
     case VALUE_B:
-        return;
+        break;
     }
-    v.type = VALUE_B;
+    //v.type = VALUE_B;
 }
 
 void convToB(PiG2 &v, const CRS &crs) {
@@ -1748,9 +1748,9 @@ void convToB(PiG2 &v, const CRS &crs) {
     case VALUE_G:
         break;
     case VALUE_B:
-        return;
+        break;
     }
-    v.type = VALUE_B;
+    //v.type = VALUE_B;
 }
 
 void NIZKProof::writeEqProof(std::ostream &stream, const void *leftp,
