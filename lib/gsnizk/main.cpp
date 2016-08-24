@@ -491,7 +491,7 @@ void testProofs() {
 int main() {
     pairings::initialize_pairings(0, 0);
 
-    //testPairings();
+    testPairings();
     testProofs();
 
     pairings::terminate_pairings();

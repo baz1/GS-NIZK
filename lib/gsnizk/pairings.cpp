@@ -9,6 +9,22 @@
 #error LIB_COMPILATION should be defined for the compilation of this library.
 #endif
 
+/* Prioritize Qt's no-debug policy, if existent */
+#if defined(QT_NO_DEBUG) && defined(DEBUG)
+#undef DEBUG
+#endif
+
+#ifdef DEBUG
+#define ASSERT(X,Y) if (!(X)) { \
+    std::cerr << "Error: Assert of " << #X << " at line " \
+    << __LINE__ << " failed in gsnizk.cpp!" << std::endl \
+    << Y << std::endl; \
+    throw Y; \
+    }
+#else
+#define ASSERT(X,Y) /* noop */
+#endif
+
 #if defined(USE_MIRACL)
 /* -------------------- MIRACL build -------------------- */
 
@@ -194,36 +210,49 @@ Fp::Fp(unsigned long i)
 
 Fp Fp::operator-() const {
     const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
-    if (_this.iszero())
+    if ((d == zero) || _this.iszero())
         return Fp(*this);
     return Fp(reinterpret_cast<void*>(new ::Big((*pfc->ord) - _this)));
 }
 
 Fp Fp::operator+(const Fp &other) const {
+    if (d == zero) return other;
+    if (other.d == zero) return *this;
     const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
     const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
-    return Fp(reinterpret_cast<void*>(
-        new ::Big((_this + _other) % (*pfc->ord))));
+    ::Big *_result = new ::Big(_this);
+    *_result += _other;
+    if (*_result >= *pfc->ord)
+        *_result -= *pfc->ord;
+    return Fp(reinterpret_cast<void*>(_result));
 }
 
 Fp Fp::operator-(const Fp &other) const {
+    if (other.d == zero) return *this;
     const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
     const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
-    return Fp(reinterpret_cast<void*>(
-        new ::Big(((*pfc->ord + _this) - _other) % (*pfc->ord))));
+    if (_this >= _other)
+        return Fp(reinterpret_cast<void*>(new ::Big(_this - _other)));
+    return Fp(reinterpret_cast<void*>(new ::Big((*pfc->ord + _this) - _other)));
 }
 
 Fp &Fp::operator+=(const Fp &other) {
+    if (other.d == zero) return *this;
+    if (d == zero) return (*this = other);
     const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
     if (d->c) {
         --d->c;
         const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
-        d = new SharedData(reinterpret_cast<void*>(
-            new ::Big((_this + _other) % (*pfc->ord))));
+        ::Big *_result = new ::Big(_this);
+        *_result += _other;
+        if (*_result >= *pfc->ord)
+            *_result -= *pfc->ord;
+        d = new SharedData(reinterpret_cast<void*>(_result));
     } else {
         ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
         _this += _other;
-        _this %= *pfc->ord;
+        if (_this >= *pfc->ord)
+            _this -= *pfc->ord;
     }
     return *this;
 }
@@ -233,18 +262,25 @@ Fp &Fp::operator-=(const Fp &other) {
     if (d->c) {
         --d->c;
         const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
-        d = new SharedData(reinterpret_cast<void*>(
-            new ::Big(((*pfc->ord + _this) - _other) % (*pfc->ord))));
+        ::Big *_result = new ::Big(_this);
+        if (*_result < _other)
+            *_result += *pfc->ord;
+        *_result -= _other;
+        d = new SharedData(reinterpret_cast<void*>(_result));
     } else {
         ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
-        _this += *pfc->ord;
+        if (_this < _other)
+            _this += *pfc->ord;
         _this -= _other;
-        _this %= *pfc->ord;
     }
     return *this;
 }
 
 Fp Fp::operator*(const Fp &other) const {
+    if (d == zero) return *this;
+    if (d == one) return other;
+    if (other.d == zero) return other;
+    if (other.d == one) return *this;
     const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
     const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
     return Fp(reinterpret_cast<void*>(new ::Big(modmult(_this, _other,
@@ -252,6 +288,9 @@ Fp Fp::operator*(const Fp &other) const {
 }
 
 Fp Fp::operator/(const Fp &other) const {
+    ASSERT(!other.isNull(), "Divide by zero");
+    if (d == zero) return *this;
+    if (other.d == one) return *this;
     const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
     const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
     return Fp(reinterpret_cast<void*>(new ::Big(moddiv(_this, _other,
@@ -259,6 +298,10 @@ Fp Fp::operator/(const Fp &other) const {
 }
 
 Fp &Fp::operator*=(const Fp &other) {
+    if (d == zero) return *this;
+    if (d == one) return (*this = other);
+    if (other.d == zero) return (*this = other);
+    if (other.d == one) return *this;
     const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
     if (d->c) {
         --d->c;
@@ -273,6 +316,9 @@ Fp &Fp::operator*=(const Fp &other) {
 }
 
 Fp &Fp::operator/=(const Fp &other) {
+    ASSERT(!other.isNull(), "Divide by zero");
+    if (d == zero) return *this;
+    if (other.d == one) return *this;
     const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
     if (d->c) {
         --d->c;
@@ -287,6 +333,7 @@ Fp &Fp::operator/=(const Fp &other) {
 }
 
 bool Fp::operator==(const Fp &other) const {
+    if (d == other.d) return true;
     const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
     const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
     return _this == _other;
@@ -344,6 +391,7 @@ std::istream &operator>>(std::istream &stream, Fp &el) {
 }
 
 bool Fp::isNull() const {
+    if (d == zero) return true;
     const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
     return _this.iszero();
 }
@@ -468,7 +516,7 @@ G1 &G1::operator-=(const G1 &other) {
 }
 
 G1 &G1::operator*=(const Fp &other) {
-    if (!d) return *this;
+    if ((!d) || (other.d == Fp::one)) return *this;
     if (other.isNull()) {
         deref();
         d = 0;
@@ -490,7 +538,7 @@ G1 &G1::operator*=(const Fp &other) {
 }
 
 G1 G1::operator*(const Fp &other) const {
-    if (!d) return *this;
+    if ((!d) || (other.d == Fp::one)) return *this;
     if (other.isNull()) return G1();
     // Note: Since neither this group element nor the scalar are null,
     // the result won't be null either.
@@ -500,7 +548,7 @@ G1 G1::operator*(const Fp &other) const {
 }
 
 G1 operator*(const Fp &m, const G1 &g) {
-    if (!g.d) return g;
+    if ((!g.d) || (m.d == Fp::one)) return g;
     if (m.isNull()) return G1();
     // Note: Since neither this group element nor the scalar are null,
     // the result won't be null either.
@@ -790,7 +838,7 @@ G2 &G2::operator-=(const G2 &other) {
 }
 
 G2 &G2::operator*=(const Fp &other) {
-    if (!d) return *this;
+    if ((!d) || (other.d == Fp::one)) return *this;
     if (other.isNull()) {
         deref();
         d = 0;
@@ -812,7 +860,7 @@ G2 &G2::operator*=(const Fp &other) {
 }
 
 G2 G2::operator*(const Fp &other) const {
-    if (!d) return *this;
+    if ((!d) || (other.d == Fp::one)) return *this;
     if (other.isNull()) return G2();
     // Note: Since neither this group element nor the scalar are null,
     // the result won't be null either.
@@ -822,7 +870,7 @@ G2 G2::operator*(const Fp &other) const {
 }
 
 G2 operator*(const Fp &m, const G2 &g) {
-    if (!g.d) return g;
+    if ((!g.d) || (m.d == Fp::one)) return g;
     if (m.isNull()) return G2();
     // Note: Since neither this group element nor the scalar are null,
     // the result won't be null either.
@@ -1214,7 +1262,7 @@ GT &GT::operator/=(const GT &other) {
 }
 
 GT &GT::operator^=(const Fp &other) {
-    if (!d) return *this;
+    if ((!d) || (other.d == Fp::one)) return *this;
     if (other.isNull()) {
         deref();
         d = 0;
@@ -1236,7 +1284,7 @@ GT &GT::operator^=(const Fp &other) {
 }
 
 GT GT::operator^(const Fp &other) const {
-    if (!d) return *this;
+    if ((!d) || (other.d == Fp::one)) return *this;
     if (other.isNull()) return GT();
     // Note: Since neither this group element nor the scalar are null,
     // the result won't be null either.
