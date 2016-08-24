@@ -469,6 +469,23 @@ void testProofs() {
 
         testProof(proof, d, crs);
     }
+    {
+        cout << "Instantiation 5: Big equation" << endl;
+        CRS crs(false);
+        ProofData d;
+
+        Fp k = Fp::getRand(), l = Fp::getRand();
+        d.privFp.push_back(k);
+        FpElement _k = FpVar(0);
+        G1 v = (k * l) * crs.getG1Base();
+
+        NIZKProof proof;
+        proof.addEquation(e(G1Base(), (_k * FpConst(l)) * G2Base()),
+                          e(G1Const(v), G2Base()));
+        ASSERT(proof.endEquations());
+
+        testProof(proof, d, crs);
+    }
 }
 
 int main() {

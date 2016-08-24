@@ -4805,8 +4805,9 @@ void NIZKProof::getRightZK(const FpData &d, const CRS &crs,
     case ELEMENT_CONST_VALUE:
         c2->type = (cheatRight(t) ? COMMIT_ENC : COMMIT_PUB);
         if (d.d) return;
-        c2->r = d.el * crs.i2;
+        c2->c.type = VALUE_Fp;
         c2->c.fpValue = d.el;
+        c2->r = d.el * crs.i2;
         break;
     case ELEMENT_PAIR:
         {
@@ -4860,7 +4861,7 @@ void NIZKProof::getRightZK(const G2Data &d, const CRS &crs,
             break;
         }
     case ELEMENT_BASE:
-        c2->type = (cheatLeft(t) ? COMMIT_PRIV : COMMIT_PUB);
+        c2->type = (cheatRight(t) ? COMMIT_PRIV : COMMIT_PUB);
         if (d.d) return;
         c2->c.type = VALUE_G;
         c2->c.b2Value._2 = crs.getG2Base();

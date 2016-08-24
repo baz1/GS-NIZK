@@ -206,9 +206,9 @@ void CRS::computeElements() {
             u2._2 = w2._2 + v2._2;
         } else {
             u1._2 = i1 * v1._2;
-            w1._2 = w1._2 - v1._2;
+            w1._2 = u1._2 - v1._2;
             u2._2 = i2 * v2._2;
-            w2._2 = w2._2 - v2._2;
+            w2._2 = u2._2 - v2._2;
         }
     }
 #if !defined(USE_PBC)
