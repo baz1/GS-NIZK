@@ -2,7 +2,7 @@ SHELL=/bin/sh
 
 all: miracllib pbclib doc
 
-miracllib: miracl/miracl.a lib/gsnizk/miracl
+miracllib: miracl/miracl.a
 
 miracl/miracl.a: miracl/miracl.h
 	cd miracl/; bash linux64_cpp
@@ -17,10 +17,7 @@ install_files/miracl.zip:
 	mkdir install_files
 	wget "https://github.com/miracl/MIRACL/archive/master.zip" -O install_files/miracl.zip
 
-lib/gsnizk/miracl:
-	cd lib/gsnizk; ln -s "../../miracl/" miracl
-
-pbclib: pbc/pbc-master/libpbc.a lib/gsnizk/pbc
+pbclib: pbc/pbc-master/libpbc.a
 
 pbc/pbc-master/libpbc.a: pbc/pbc-master/setup
 	cd pbc/pbc-master; ./setup && ./configure && make && ar rc libpbc.a libpbc_*.o
@@ -33,9 +30,6 @@ pbc/pbc-master/setup: install_files/pbc.zip
 install_files/pbc.zip:
 	mkdir install_files
 	wget "https://github.com/blynn/pbc/archive/master.zip" -O install_files/pbc.zip
-
-lib/gsnizk/pbc:
-	cd lib/gsnizk; ln -s "../../pbc/pbc-master/include/" pbc
 
 doc: lib/gsnizk/*.h lib/gsnizk/*.dox lib/gsnizk/Doxyfile
 	cd lib/gsnizk/; doxygen Doxyfile

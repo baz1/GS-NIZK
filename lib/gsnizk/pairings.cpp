@@ -56,7 +56,7 @@ namespace pairings {
 static PFC *pfc;
 static int big_size;
 
-SharedData *Fp::zero = 0, *Fp::one = 0;
+SharedData *Fp::zero = NULL, *Fp::one = NULL;
 
 
 #ifdef GSNIZK_IOSTREAM_NOTHREADS
@@ -99,13 +99,13 @@ int getNBits(const Big &n) {
 }
 // */
 
-static ::GT *rndSeed = 0;
+static ::GT *rndSeed = NULL;
 
-void initialize_pairings(int len, const char *rndData) {
+void initialize_pairings(int len, const char *data) {
     csprng *rnd = new csprng;
     // Note: Sorry about the following const_cast,
     // const keyword simply missing in strong_init
-    strong_init(rnd, len, const_cast<char*>(rndData), (unsigned int) clock());
+    strong_init(rnd, len, const_cast<char*>(data), (unsigned int) clock());
     pfc = new PFC(AES_SECURITY, rnd);
     Fp::zero = new SharedData(reinterpret_cast<void*>(new ::Big()));
     Fp::one = new SharedData(reinterpret_cast<void*>(new ::Big(1)));
@@ -123,18 +123,20 @@ void initialize_pairings(int len, const char *rndData) {
 void terminate_pairings() {
     if (!rndSeed) return;
     delete rndSeed;
-    rndSeed = 0;
+    rndSeed = NULL;
     if (Fp::zero->c) {
+        ASSERT(false, "Trailing references");
         --Fp::zero->c;
     } else {
         delete reinterpret_cast< ::Big* >(Fp::zero->p);
         delete Fp::zero;
     }
     if (Fp::one->c) {
+        ASSERT(false, "Trailing references");
         --Fp::one->c;
     } else {
         delete reinterpret_cast< ::Big* >(Fp::one->p);
-        delete Fp::zero;
+        delete Fp::one;
     }
     strong_kill(pfc->RNG);
     delete pfc->RNG;
@@ -477,7 +479,7 @@ G1 &G1::operator+=(const G1 &other) {
     if (result->g.iszero()) {
         delete result;
         deref();
-        d = 0;
+        d = NULL;
         return *this;
     }
     if (d->c) {
@@ -502,7 +504,7 @@ G1 &G1::operator-=(const G1 &other) {
     if (result->g.iszero()) {
         delete result;
         deref();
-        d = 0;
+        d = NULL;
         return *this;
     }
     if (d->c) {
@@ -519,7 +521,7 @@ G1 &G1::operator*=(const Fp &other) {
     if ((!d) || (other.d == Fp::one)) return *this;
     if (other.isNull()) {
         deref();
-        d = 0;
+        d = NULL;
         return *this;
     }
     // Note: Since neither this group element nor the scalar are null,
@@ -566,7 +568,7 @@ bool G1::operator==(const G1 &other) const {
 }
 
 int G1::getDataLen(bool compressed) const {
-    if (!d) return 0;
+    if (!d) return NULL;
     if (compressed) {
         return big_size + 1;
     } else {
@@ -798,7 +800,7 @@ G2 &G2::operator+=(const G2 &other) {
     if (result->g.iszero()) {
         delete result;
         deref();
-        d = 0;
+        d = NULL;
         return *this;
     }
     if (d->c) {
@@ -824,7 +826,7 @@ G2 &G2::operator-=(const G2 &other) {
     if (result->g.iszero()) {
         delete result;
         deref();
-        d = 0;
+        d = NULL;
         return *this;
     }
     if (d->c) {
@@ -841,7 +843,7 @@ G2 &G2::operator*=(const Fp &other) {
     if ((!d) || (other.d == Fp::one)) return *this;
     if (other.isNull()) {
         deref();
-        d = 0;
+        d = NULL;
         return *this;
     }
     // Note: Since neither this group element nor the scalar are null,
@@ -1219,7 +1221,7 @@ GT &GT::operator*=(const GT &other) {
     if (result->g.isunity()) {
         delete result;
         deref();
-        d = 0;
+        d = NULL;
         return *this;
     }
     if (d->c) {
@@ -1248,7 +1250,7 @@ GT &GT::operator/=(const GT &other) {
     if (result->g.isunity()) {
         delete result;
         deref();
-        d = 0;
+        d = NULL;
         return *this;
     }
     if (d->c) {
@@ -1265,7 +1267,7 @@ GT &GT::operator^=(const Fp &other) {
     if ((!d) || (other.d == Fp::one)) return *this;
     if (other.isNull()) {
         deref();
-        d = 0;
+        d = NULL;
         return *this;
     }
     // Note: Since neither this group element nor the scalar are null,
@@ -1644,8 +1646,64 @@ void GT::deref() {
 #elif defined(USE_PBC)
 /* -------------------- PBC build -------------------- */
 
+#ifdef PBC_STATIC
+#include <pbc.h>
+#else
+#include <pbc/pbc.h>
+#endif
+
+namespace pairings {
+
+static pairing_t p_params;
+
+SharedData *Fp::zero = NULL, *Fp::one = NULL;
+
+void freeElement(void *ptr) {
+#ifdef ZERO_MEMORY
+    element_random(*reinterpret_cast<element_ptr>(ptr));
+#endif
+    element_clear(*reinterpret_cast<element_ptr>(ptr));
+    delete reinterpret_cast<element_ptr>(ptr);
+}
+
+void initialize_pairings(int len, const char *data) {
+    pairing_init_set_buf(p_params, data, len);
+    element_ptr el = new element_s;
+    element_init_Zr(el, p_params);
+    element_set0(el);
+    Fp::zero = new SharedData(reinterpret_cast<void*>(el));
+    el = new element_s;
+    element_init_Zr(el, p_params);
+    element_set1(el);
+    Fp::one = new SharedData(reinterpret_cast<void*>(el));
+    element_init(e, p->G1);
+}
+
+void terminate_pairings() {
+    if (!Fp::zero) return;
+    if (Fp::zero->c) {
+        ASSERT(false, "Trailing references");
+        --Fp::zero->c;
+    } else {
+        delete reinterpret_cast< ::Big* >(Fp::zero->p);
+        delete Fp::zero;
+    }
+    if (Fp::one->c) {
+        ASSERT(false, "Trailing references");
+        --Fp::one->c;
+    } else {
+        delete reinterpret_cast< ::Big* >(Fp::one->p);
+        delete Fp::one;
+    }
+    Fp::zero = NULL;
+    pairing_clear(p_params);
+}
+
 // TODO
+
 #error PBC implementation has not been done yet!
+
+} /* End of namespace pairings */
 
 #else
 #error Neither MIRACL nor PBC have been specified for this build

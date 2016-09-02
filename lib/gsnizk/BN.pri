@@ -1,15 +1,17 @@
 # GS-NIZK project by Remi Bazin
 # Barreto-Naehrig curves implementation from the MIRACL library
 
-SOURCES     += miracl/bn_pair.cpp \
-    miracl/zzn12a.cpp \
-    miracl/ecn2.cpp \
-    miracl/zzn4.cpp \
-    miracl/zzn2.cpp \
-    miracl/big.cpp \
-    miracl/zzn.cpp \
-    miracl/ecn.cpp
+MIRACL_DIR   = ../../miracl
 
-LIBS        += miracl/miracl.a
+SOURCES     += $${MIRACL_DIR}/bn_pair.cpp \
+    $${MIRACL_DIR}/zzn12a.cpp \
+    $${MIRACL_DIR}/ecn2.cpp \
+    $${MIRACL_DIR}/zzn4.cpp \
+    $${MIRACL_DIR}/zzn2.cpp \
+    $${MIRACL_DIR}/big.cpp \
+    $${MIRACL_DIR}/zzn.cpp \
+    $${MIRACL_DIR}/ecn.cpp
 
-INCLUDEPATH += miracl
+LIBS        += $${MIRACL_DIR}/miracl.a
+
+INCLUDEPATH += $${MIRACL_DIR}

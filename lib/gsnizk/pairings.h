@@ -47,12 +47,14 @@ namespace pairings {
  * namespace. You may call it again after having called
  * terminate_pairings().
  *
- * @param len Length of the data pointed to by @p rndData.
- * @param rndData Pointer to some random data used to
+ * @param len Length of the data pointed to by @p data.
+ * @param data With MIRACL: Pointer to some random data used to
  *   initialize the pseudo-random number generator.
- *   `/dev/random` or `/dev/urandom` might be used under Linux.
+ *   Data from `/dev/random` or `/dev/urandom` might be used under Linux.
+ *   With PBC: Text data containing the curve parameters
+ *   to build up the pairing groups and primitives.
  */
-void initialize_pairings(int len, const char *rndData);
+void initialize_pairings(int len, const char *data);
 
 /**
  * @brief Releases memory used for pairing-based cryptography.
@@ -1290,7 +1292,7 @@ inline Fp::Fp(void *v) : d(new SharedData(v)) {}
 
 inline Fp::Fp(SharedData *d) : d(d) { ++d->c; }
 
-inline G1::G1() : d(0) {}
+inline G1::G1() : d(NULL) {}
 
 inline G1::G1(const G1 &other) {
     if ((d = other.d)) ++d->c;
@@ -1313,7 +1315,7 @@ inline bool G1::isNull() const { return !d; }
 inline void G1::clear() {
     if (d) {
         deref();
-        d = 0;
+        d = NULL;
     }
 }
 
@@ -1321,7 +1323,7 @@ inline G1::G1(void *v) : d(new SharedData(v)) {}
 
 inline G1::G1(SharedData *d) : d(d) { ++d->c; }
 
-inline G2::G2() : d(0) {}
+inline G2::G2() : d(NULL) {}
 
 inline G2::G2(const G2 &other) {
     if ((d = other.d)) ++d->c;
@@ -1344,7 +1346,7 @@ inline bool G2::isNull() const { return !d; }
 inline void G2::clear() {
     if (d) {
         deref();
-        d = 0;
+        d = NULL;
     }
 }
 
@@ -1352,7 +1354,7 @@ inline G2::G2(void *v) : d(new SharedData(v)) {}
 
 inline G2::G2(SharedData *d) : d(d) { ++d->c; }
 
-inline GT::GT() : d(0) {}
+inline GT::GT() : d(NULL) {}
 
 inline GT::GT(const GT &other) {
     if ((d = other.d)) ++d->c;
@@ -1375,7 +1377,7 @@ inline bool GT::isUnit() const { return !d; }
 inline void GT::clear() {
     if (d) {
         deref();
-        d = 0;
+        d = NULL;
     }
 }
 
