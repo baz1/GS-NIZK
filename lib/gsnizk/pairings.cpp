@@ -1660,9 +1660,9 @@ SharedData *Fp::zero = NULL, *Fp::one = NULL;
 
 void freeElement(void *ptr) {
 #ifdef ZERO_MEMORY
-    element_random(*reinterpret_cast<element_ptr>(ptr));
+    element_random(reinterpret_cast<element_ptr>(ptr));
 #endif
-    element_clear(*reinterpret_cast<element_ptr>(ptr));
+    element_clear(reinterpret_cast<element_ptr>(ptr));
     delete reinterpret_cast<element_ptr>(ptr);
 }
 
@@ -1676,7 +1676,6 @@ void initialize_pairings(int len, const char *data) {
     element_init_Zr(el, p_params);
     element_set1(el);
     Fp::one = new SharedData(reinterpret_cast<void*>(el));
-    element_init(e, p->G1);
 }
 
 void terminate_pairings() {
@@ -1685,14 +1684,14 @@ void terminate_pairings() {
         ASSERT(false, "Trailing references");
         --Fp::zero->c;
     } else {
-        delete reinterpret_cast< ::Big* >(Fp::zero->p);
+        freeElement(Fp::zero->p);
         delete Fp::zero;
     }
     if (Fp::one->c) {
         ASSERT(false, "Trailing references");
         --Fp::one->c;
     } else {
-        delete reinterpret_cast< ::Big* >(Fp::one->p);
+        freeElement(Fp::one->p);
         delete Fp::one;
     }
     Fp::zero = NULL;
@@ -1701,7 +1700,7 @@ void terminate_pairings() {
 
 // TODO
 
-#error PBC implementation has not been done yet!
+//#error PBC implementation has not been done yet!
 
 } /* End of namespace pairings */
 

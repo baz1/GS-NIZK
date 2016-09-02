@@ -2,10 +2,21 @@
 #include <fstream>
 #include <cstdlib>
 
+#ifdef USE_MIRACL
+
 #include "gsnizk.h"
 
 using namespace std;
 using namespace gsnizk;
+
+#else
+
+#include "pairings.h"
+
+using namespace std;
+using namespace pairings;
+
+#endif
 
 static int n_err = 0;
 #define ASSERT(X) if (!(X)) (cerr << "Error: Assert of " << #X << " at line " \
@@ -33,6 +44,8 @@ void testPairings() {
     cout << "########## PAIRING TESTS ##########" << endl;
     int len;
     char data[DATA_SIZE], *data2;
+
+#if 0 // Skip the tests for unimplemented features
 
     /* -------------------- Hash prerequisite -------------------- */
     char *hash = new char[pairings::getHashLen()];
@@ -253,7 +266,10 @@ void testPairings() {
     ASSERT(h2 == h4);
     ASSERT(t1 == t3);
     ASSERT(t2 == t4);
+#endif
 }
+
+#if 0
 
 void testProof(NIZKProof &proof, ProofData &d, const CRS &crs, CRS *verif = 0) {
     ASSERT(proof.verifySolution(d, crs));
@@ -488,9 +504,38 @@ void testProofs() {
     }
 }
 
-int main() {
-    pairings::initialize_pairings(0, 0);
+#endif
 
+bool getPairing()
+{
+    char *paramData;
+    FILE *paramFile = fopen("pairing.param", "r");
+    if (!paramFile)
+        return false;
+    fseek(paramFile, 0, SEEK_END);
+    size_t count = ftell(paramFile);
+    if (count <= 0)
+        count = 2048;
+    paramData = new char[count];
+    fseek(paramFile, 0, SEEK_SET);
+    count = fread(paramData, sizeof(char), count, paramFile);
+    fclose(paramFile);
+    if (!count)
+    {
+        delete[] paramData;
+        return false;
+    }
+    pairings::initialize_pairings(count, paramData);
+    delete[] paramData;
+    return true;
+}
+
+int main() {
+#ifdef USE_MIRACL
+    pairings::initialize_pairings(0, 0);
+#else
+    ASSERT(getPairing());
+#endif
     testPairings();
     //testProofs();
 

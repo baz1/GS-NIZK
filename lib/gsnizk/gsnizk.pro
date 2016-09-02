@@ -64,15 +64,15 @@ config_lib {
 }
 
 
-SOURCES     += gsnizk.cpp \
-    pairings.cpp \
-    maps.cpp \
-    bigendian.cpp
+SOURCES     += pairings.cpp# \
+#    gsnizk.cpp \
+#    maps.cpp \
+#    bigendian.cpp
 
-HEADERS     += gsnizk.h \
-    pairings.h \
-    maps.h \
-    bigendian.h
+HEADERS     += pairings.h# \
+#    gsnizk.h \
+#    maps.h \
+#    bigendian.h
 
 config_miracl {
     include(BN.pri)
