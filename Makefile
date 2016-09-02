@@ -14,7 +14,7 @@ miracl/miracl.h: install_files/miracl.zip
 	touch miracl/miracl.h
 
 install_files/miracl.zip:
-	mkdir install_files
+	mkdir -p install_files
 	wget "https://github.com/miracl/MIRACL/archive/master.zip" -O install_files/miracl.zip
 
 pbclib: pbc/pbc-master/libpbc.a
@@ -28,7 +28,7 @@ pbc/pbc-master/setup: install_files/pbc.zip
 	touch pbc/pbc-master/setup
 
 install_files/pbc.zip:
-	mkdir install_files
+	mkdir -p install_files
 	wget "https://github.com/blynn/pbc/archive/master.zip" -O install_files/pbc.zip
 
 doc: lib/gsnizk/*.h lib/gsnizk/*.dox lib/gsnizk/Doxyfile
