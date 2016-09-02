@@ -492,7 +492,7 @@ int main() {
     pairings::initialize_pairings(0, 0);
 
     testPairings();
-    testProofs();
+    //testProofs();
 
     pairings::terminate_pairings();
     if (n_err) {

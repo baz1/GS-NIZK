@@ -1,5 +1,17 @@
+# Installation directory
 install_files/
+
+# MIRACL build
 miracl/
+lib/gsnizk/miracl
+
+# PBC build
+pbc/
+lib/gsnizk/pbc
+
+# Qt's build directories and user files
 build-*
 *.pro.user
+
+# Doxygen-generated documentation
 doc/

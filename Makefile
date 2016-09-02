@@ -2,7 +2,7 @@ SHELL=/bin/sh
 
 all: miracllib pbclib doc
 
-miracllib: miracl/miracl.a
+miracllib: miracl/miracl.a lib/gsnizk/miracl
 
 miracl/miracl.a: miracl/miracl.h
 	cd miracl/; bash linux64_cpp
@@ -11,22 +11,31 @@ miracl/miracl.a: miracl/miracl.h
 
 miracl/miracl.h: install_files/miracl.zip
 	unzip -j -aa -L "install_files/miracl.zip" -d miracl
-
-pbclib: pbc/pbc-master/libpbc.a
-
-pbc/pbc-master/libpbc.a: pbc/pbc-master/setup
-	cd pbc/pbc-master; ./setup && ./configure && make && ar rc libpbc.a libpbc_*.o
-
-pbc/pbc-master/setup: install_files/pbc.zip
-	unzip -a "install_files/pbc.zip" -d pbc
+	touch miracl/miracl.h
 
 install_files/miracl.zip:
 	mkdir install_files
 	wget "https://github.com/miracl/MIRACL/archive/master.zip" -O install_files/miracl.zip
 
+lib/gsnizk/miracl:
+	cd lib/gsnizk; ln -s "../../miracl/" miracl
+
+pbclib: pbc/pbc-master/libpbc.a lib/gsnizk/pbc
+
+pbc/pbc-master/libpbc.a: pbc/pbc-master/setup
+	cd pbc/pbc-master; ./setup && ./configure && make && ar rc libpbc.a libpbc_*.o
+	cd pbc/pbc-master; cp libpbc.a include/ # (sorry for the mess)
+
+pbc/pbc-master/setup: install_files/pbc.zip
+	unzip -a "install_files/pbc.zip" -d pbc
+	touch pbc/pbc-master/setup
+
 install_files/pbc.zip:
 	mkdir install_files
 	wget "https://github.com/blynn/pbc/archive/master.zip" -O install_files/pbc.zip
+
+lib/gsnizk/pbc:
+	cd lib/gsnizk; ln -s "../../pbc/pbc-master/include/" pbc
 
 doc: lib/gsnizk/*.h lib/gsnizk/*.dox lib/gsnizk/Doxyfile
 	cd lib/gsnizk/; doxygen Doxyfile
