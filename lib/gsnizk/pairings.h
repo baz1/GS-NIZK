@@ -295,6 +295,11 @@ public:
      * @return `true` if the element is null, `false` otherwise.
      */
     bool isNull() const;
+    /**
+     * @brief Checks if the element is the unity element.
+     * @return `true` if the element is 1, `false` otherwise.
+     */
+    bool isUnit() const;
 public:
     /**
      * @brief Gets the unity element.

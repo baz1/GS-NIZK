@@ -13,8 +13,8 @@
 #CONFIG      += config_lib
 
 # Which configuration are we using? (MIRACL? PBC?)
-CONFIG      += config_miracl
-#CONFIG      += config_pbc
+#CONFIG      += config_miracl
+CONFIG      += config_pbc
 
 # Do we want to enable debug mode?
 # (note: may be overwritten by Qt's NO_DEBUG macro)

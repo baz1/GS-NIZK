@@ -1,7 +1,6 @@
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
-#include <ctime>
 
 #ifdef USE_MIRACL
 
@@ -26,7 +25,7 @@ static int n_err = 0;
 #define TRANSFER_TESTS 10
 #define PAIRING_TESTS 10
 #define PAIRING_COUNT_MAX 10
-#define HASH_TESTS 1000000
+#define HASH_TESTS 10000
 
 #define DATA_SIZE 512
 
@@ -46,18 +45,18 @@ void testHash() {
     cout << "########## HASH TESTS ##########" << endl;
     srand(42);
     char *hash = new char[pairings::getHashLen()], *data = new char[256];
-    //ofstream out("hashes");
-    clock_t t = clock();
+    ofstream out("hashes");
     for (int i = 0; i < HASH_TESTS; ++i) {
         int len = rand() % 257;
         for (int j = 0; j < len; ++j)
             data[j] = static_cast<char>(rand() & 0xFF);
         pairings::getHash(data, len, hash);
-        //out.write(hash, pairings::getHashLen());
+        out.write(hash, pairings::getHashLen());
     }
-    t = clock() - t;
-    //out.close();
-    cout << "Elapsed: " << (((double) t) / CLOCKS_PER_SEC) << endl;
+    out.close();
+    /* Note: The file "hashes" is useful to check that all implementations
+     * produce the same hashes. This is however limited to the getHash
+     * function that uses SHA256 or SHA512. */
 }
 
 void testPairings() {
@@ -557,10 +556,10 @@ int main() {
     ASSERT(getPairing());
 #endif
     testHash();
-    //testPairings();
+    testPairings();
     //testProofs();
 
-    //pairings::terminate_pairings();
+    pairings::terminate_pairings();
     if (n_err) {
         cout << "Done; " << n_err << " error(s) have occured!" << endl;
     } else {
