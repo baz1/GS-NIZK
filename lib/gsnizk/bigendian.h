@@ -60,4 +60,18 @@ uint16_t ntohs(uint16_t netshort);
 
 #endif
 
+/**
+ * @brief Converts from host to network byte order.
+ * @param hostlong The host 64-bit integer.
+ * @return The network 64-bit integer.
+ */
+uint64_t htonll(uint64_t hostlong);
+
+/**
+ * @brief Converts from network to host byte order.
+ * @param netlong The network 64-bit integer.
+ * @return The host 64-bit integer.
+ */
+uint64_t ntohll(uint64_t netlong);
+
 #endif /* End of BIGENDIAN_H */

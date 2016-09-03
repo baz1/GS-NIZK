@@ -44,3 +44,16 @@ uint16_t ntohs(uint16_t netshort) {
 }
 
 #endif /* End of BIGENDIAN_CPP_IMPLEMENTATION */
+
+uint64_t htonll(uint64_t hostlong) {
+    uint64_t result;
+    reinterpret_cast<uint32_t*>(&result)[0] = htonl(hostlong >> 32);
+    reinterpret_cast<uint32_t*>(&result)[1] = htonl(hostlong & 0xFFFFFFFFULL);
+    return result;
+}
+
+uint64_t ntohll(uint64_t netlong) {
+    return (static_cast<uint64_t>(
+            ntohl(reinterpret_cast<uint32_t*>(&netlong)[0])) << 32) |
+            ntohl(reinterpret_cast<uint32_t*>(&netlong)[1]);
+}

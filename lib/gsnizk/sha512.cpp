@@ -81,13 +81,14 @@ void process_chunk(uint64_t *h, uint64_t *w) {
 }
 
 void hash_sha512(const char *data, int len, char *hash) {
-    uint64_t h[8], w[80];
-    memcpy(h, H, 64);
+#define myh reinterpret_cast<uint64_t*>(hash)
+    uint64_t w[80];
+    memcpy(hash, H, 64);
     while (len >= 128) {
         memcpy(w, data, 128);
         data += 128;
         len -= 128;
-        process_chunk(h, w);
+        process_chunk(myh, w);
     }
     memcpy(w, data, len);
     reinterpret_cast<char*>(w)[len] = 1;
@@ -96,10 +97,11 @@ void hash_sha512(const char *data, int len, char *hash) {
         reinterpret_cast<uint32_t*>(w)[124] = htonl(len * 8);
     } else {
         memset(reinterpret_cast<char*>(w) + len + 1, 0, 127 - len);
-        process_chunk(h, w);
+        process_chunk(myh, w);
         memset(w, 0, 124);
         reinterpret_cast<uint32_t*>(w)[124] = htonl(len * 8);
     }
-    process_chunk(h, w);
-    // TODO
+    process_chunk(myh, w);
+    for (int i = 8; i-- > 0;)
+        myh[i] = htonll(myh[i]);
 }

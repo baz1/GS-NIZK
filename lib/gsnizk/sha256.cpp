@@ -60,16 +60,17 @@ void process_chunk(uint32_t *h, uint32_t *w) {
 }
 
 void hash_sha256(const char *data, int len, char *hash) {
-    uint32_t h[8], w[64];
-    copy_64b(h, H, 0);
-    copy_64b(h, H, 1);
-    copy_64b(h, H, 2);
-    copy_64b(h, H, 3);
+#define myh reinterpret_cast<uint32_t*>(hash)
+    uint32_t w[64];
+    copy_64b(hash, H, 0);
+    copy_64b(hash, H, 1);
+    copy_64b(hash, H, 2);
+    copy_64b(hash, H, 3);
     while (len >= 64) {
         memcpy(w, data, 64);
         data += 64;
         len -= 64;
-        process_chunk(h, w);
+        process_chunk(myh, w);
     }
     memcpy(w, data, len);
     reinterpret_cast<char*>(w)[len] = 1;
@@ -78,10 +79,11 @@ void hash_sha256(const char *data, int len, char *hash) {
         w[60] = htonl(len * 8);
     } else {
         memset(reinterpret_cast<char*>(w) + len + 1, 0, 63 - len);
-        process_chunk(h, w);
+        process_chunk(myh, w);
         memset(w, 0, 60);
         w[60] = htonl(len * 8);
     }
-    process_chunk(h, w);
-    // TODO
+    process_chunk(myh, w);
+    for (int i = 8; i-- > 0;)
+        myh[i] = htonl(myh[i]);
 }
