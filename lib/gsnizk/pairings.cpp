@@ -30,7 +30,7 @@
 //#define HASH_LEN_BITS 512
 #endif
 
-#define HASH_LEN_BYTES  (HASH_LEN_BITS / 8)
+#define HASH_LEN_BYTES (HASH_LEN_BITS / 8)
 
 #if defined(USE_MIRACL)
 /* -------------------- MIRACL build -------------------- */
@@ -1652,6 +1652,14 @@ void GT::deref() {
 #include <pbc/pbc.h>
 #endif
 
+#if HASH_LEN_BITS == 256
+#include "sha256.h"
+#elif HASH_LEN_BITS == 512
+#include "sha512.h"
+#else
+#error Error: Invalid value of HASH_LEN_BITS (pairings)
+#endif
+
 namespace pairings {
 
 static pairing_t p_params;
@@ -1696,6 +1704,20 @@ void terminate_pairings() {
     }
     Fp::zero = NULL;
     pairing_clear(p_params);
+}
+
+int getHashLen() {
+    return HASH_LEN_BYTES;
+}
+
+void getHash(const char *data, int len, char *hash) {
+#if HASH_LEN_BITS == 256
+    hash_sha256(data, len, hash);
+#elif HASH_LEN_BITS == 512
+    hash_sha512(data, len, hash);
+#else
+#error Error: Invalid value of HASH_LEN_BITS (pairings)
+#endif
 }
 
 // TODO

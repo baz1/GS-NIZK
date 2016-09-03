@@ -53,7 +53,7 @@ static const uint32_t K[64] = {
 };
 
 #define copy_64b(to,from,idx) reinterpret_cast<uint64_t*>(to)[idx] = \
-    reinterpret_cast<uint64_t*>(from)[idx]
+    reinterpret_cast<const uint64_t*>(from)[idx]
 
 #define S(n,x) (((x)>>n) | ((x)<<(32-n)))
 #define R(n,x) ((x)>>n)
@@ -67,15 +67,16 @@ static const uint32_t K[64] = {
 
 void process_chunk(uint32_t *h, uint32_t *w) {
     uint32_t abc[8], t1, t2;
-    for (int i = 16; i-- > 0;)
-        h[i] = ntohl(h[i]);
-    for (int i = 16; i < 64; ++i)
-        w[i] = theta1(w[i-2]) + w[i-7] + theta0(w[i-15]) + w[i-16];
     copy_64b(abc, h, 0);
     copy_64b(abc, h, 1);
     copy_64b(abc, h, 2);
     copy_64b(abc, h, 3);
     for (int i = 0; i < 64; ++i) {
+        if (i < 16) {
+            w[i] = ntohl(w[i]);
+        } else {
+            w[i] = theta1(w[i-2]) + w[i-7] + theta0(w[i-15]) + w[i-16];
+        }
         t1 = abc[7] + Sig1(abc[4]) + Ch(abc[4],abc[5],abc[6]) + K[i] + w[i];
         t2 = Sig0(abc[0]) + Maj(abc[0],abc[1],abc[2]);
         memmove(&abc[1], &abc[0], 7 * 4);
@@ -88,27 +89,28 @@ void process_chunk(uint32_t *h, uint32_t *w) {
 
 void hash_sha256(const char *data, int len, char *hash) {
 #define myh reinterpret_cast<uint32_t*>(hash)
+    int r = len;
     uint32_t w[64];
     copy_64b(hash, H, 0);
     copy_64b(hash, H, 1);
     copy_64b(hash, H, 2);
     copy_64b(hash, H, 3);
-    while (len >= 64) {
+    while (r >= 64) {
         memcpy(w, data, 64);
         data += 64;
-        len -= 64;
+        r -= 64;
         process_chunk(myh, w);
     }
-    memcpy(w, data, len);
-    reinterpret_cast<char*>(w)[len] = 1;
-    if (len <= 55) {
-        memset(reinterpret_cast<char*>(w) + len + 1, 0, 59 - len);
-        w[60] = htonl(len * 8);
+    memcpy(w, data, r);
+    reinterpret_cast<char*>(w)[r] = 0x80;
+    if (r <= 55) {
+        memset(reinterpret_cast<char*>(w) + r + 1, 0, 59 - r);
+        w[15] = htonl(len * 8);
     } else {
-        memset(reinterpret_cast<char*>(w) + len + 1, 0, 63 - len);
+        memset(reinterpret_cast<char*>(w) + r + 1, 0, 63 - r);
         process_chunk(myh, w);
         memset(w, 0, 60);
-        w[60] = htonl(len * 8);
+        w[15] = htonl(len * 8);
     }
     process_chunk(myh, w);
     for (int i = 8; i-- > 0;)

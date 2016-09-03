@@ -10,6 +10,8 @@
 #include <cstdint>
 #include <cstring>
 
+#include "bigendian.h"
+
 /* Prioritize Qt's no-debug policy, if existent */
 #if defined(QT_NO_DEBUG) && defined(DEBUG)
 #undef DEBUG
@@ -88,15 +90,16 @@ static const uint64_t K[80] = {
 
 void process_chunk(uint64_t *h, uint64_t *w) {
     uint64_t abc[8], t1, t2;
-    for (int i = 16; i-- > 0;)
-        h[i] = ntohll(h[i]);
-    for (int i = 16; i < 80; ++i)
-        w[i] = theta1(w[i-2]) + w[i-7] + theta0(w[i-15]) + w[i-16];
     memcpy(abc, h, 64);
     for (int i = 0; i < 80; ++i) {
+        if (i < 16) {
+            w[i] = ntohll(w[i]);
+        } else {
+            w[i] = theta1(w[i-2]) + w[i-7] + theta0(w[i-15]) + w[i-16];
+        }
         t1 = abc[7] + Sig1(abc[4]) + Ch(abc[4],abc[5],abc[6]) + K[i] + w[i];
         t2 = Sig0(abc[0]) + Maj(abc[0],abc[1],abc[2]);
-        memmove(&abc[1], &abc[0], 7 * 4);
+        memmove(&abc[1], &abc[0], 7 * 8);
         abc[0] = t1 + t2;
         abc[4] += t1;
     }
@@ -106,24 +109,25 @@ void process_chunk(uint64_t *h, uint64_t *w) {
 
 void hash_sha512(const char *data, int len, char *hash) {
 #define myh reinterpret_cast<uint64_t*>(hash)
+    int r = len;
     uint64_t w[80];
     memcpy(hash, H, 64);
-    while (len >= 128) {
+    while (r >= 128) {
         memcpy(w, data, 128);
         data += 128;
-        len -= 128;
+        r -= 128;
         process_chunk(myh, w);
     }
-    memcpy(w, data, len);
-    reinterpret_cast<char*>(w)[len] = 1;
-    if (len <= 119) {
-        memset(reinterpret_cast<char*>(w) + len + 1, 0, 123 - len);
-        reinterpret_cast<uint32_t*>(w)[124] = htonl(len * 8);
+    memcpy(w, data, r);
+    reinterpret_cast<char*>(w)[r] = 0x80;
+    if (r <= 111) {
+        memset(reinterpret_cast<char*>(w) + r + 1, 0, 123 - r);
+        reinterpret_cast<uint32_t*>(w)[31] = htonl(len * 8);
     } else {
-        memset(reinterpret_cast<char*>(w) + len + 1, 0, 127 - len);
+        memset(reinterpret_cast<char*>(w) + r + 1, 0, 127 - r);
         process_chunk(myh, w);
         memset(w, 0, 124);
-        reinterpret_cast<uint32_t*>(w)[124] = htonl(len * 8);
+        reinterpret_cast<uint32_t*>(w)[31] = htonl(len * 8);
     }
     process_chunk(myh, w);
     for (int i = 8; i-- > 0;)

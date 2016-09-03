@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
+#include <ctime>
 
 #ifdef USE_MIRACL
 
@@ -25,6 +26,7 @@ static int n_err = 0;
 #define TRANSFER_TESTS 10
 #define PAIRING_TESTS 10
 #define PAIRING_COUNT_MAX 10
+#define HASH_TESTS 1000000
 
 #define DATA_SIZE 512
 
@@ -40,16 +42,34 @@ bool checkDataSize(int size, int line) {
 
 #define CHECK_DATA_SIZE(s) if (!checkDataSize((s), __LINE__)) return
 
+void testHash() {
+    cout << "########## HASH TESTS ##########" << endl;
+    srand(42);
+    char *hash = new char[pairings::getHashLen()], *data = new char[256];
+    //ofstream out("hashes");
+    clock_t t = clock();
+    for (int i = 0; i < HASH_TESTS; ++i) {
+        int len = rand() % 257;
+        for (int j = 0; j < len; ++j)
+            data[j] = static_cast<char>(rand() & 0xFF);
+        pairings::getHash(data, len, hash);
+        //out.write(hash, pairings::getHashLen());
+    }
+    t = clock() - t;
+    //out.close();
+    cout << "Elapsed: " << (((double) t) / CLOCKS_PER_SEC) << endl;
+}
+
 void testPairings() {
     cout << "########## PAIRING TESTS ##########" << endl;
     int len;
     char data[DATA_SIZE], *data2;
 
-#if 0 // Skip the tests for unimplemented features
-
     /* -------------------- Hash prerequisite -------------------- */
     char *hash = new char[pairings::getHashLen()];
     pairings::getHash("hello", 5, hash);
+
+#if 0 // Skip the tests for unimplemented features
 
     /* -------------------- Tests for Fp -------------------- */
     Fp v1, v2(0), v3(42), v4(1764);
@@ -536,10 +556,11 @@ int main() {
 #else
     ASSERT(getPairing());
 #endif
-    testPairings();
+    testHash();
+    //testPairings();
     //testProofs();
 
-    pairings::terminate_pairings();
+    //pairings::terminate_pairings();
     if (n_err) {
         cout << "Done; " << n_err << " error(s) have occured!" << endl;
     } else {
