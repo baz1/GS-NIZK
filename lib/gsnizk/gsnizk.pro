@@ -20,6 +20,9 @@ CONFIG      += config_pbc
 # (note: may be overwritten by Qt's NO_DEBUG macro)
 DEFINES     += DEBUG
 
+# Do we want to use SHA512? (default: SHA256)
+#CONFIG      += config_sha512
+
 # ========== MIRACL ONLY CONFIGURATION  ==========
 
 # What kind of security level do we want?
@@ -48,6 +51,12 @@ QT          -= core gui
 TARGET       = gsnizk
 CONFIG      += c++11
 
+config_sha512 {
+    DEFINES     += HASH_LEN_BITS=512
+} else {
+    DEFINES     += HASH_LEN_BITS=256
+}
+
 config_lib {
     TEMPLATE     = lib
     CONFIG      += staticlib
@@ -64,15 +73,15 @@ config_lib {
 }
 
 
-SOURCES     += pairings.cpp# \
+SOURCES     += pairings.cpp \
+    bigendian.cpp
 #    gsnizk.cpp \
 #    maps.cpp \
-#    bigendian.cpp
 
-HEADERS     += pairings.h# \
+HEADERS     += pairings.h \
+    bigendian.h
 #    gsnizk.h \
 #    maps.h \
-#    bigendian.h
 
 config_miracl {
     include(BN.pri)

@@ -25,6 +25,13 @@
 #define ASSERT(X,Y) /* noop */
 #endif
 
+#ifndef HASH_LEN_BITS
+#define HASH_LEN_BITS 256
+//#define HASH_LEN_BITS 512
+#endif
+
+#define HASH_LEN_BYTES  (HASH_LEN_BITS / 8)
+
 #if defined(USE_MIRACL)
 /* -------------------- MIRACL build -------------------- */
 
@@ -34,13 +41,6 @@
 #define AES_SECURITY 128
 //#define AES_SECURITY 192
 #endif /* Not AES_SECURITY */
-
-#ifndef HASH_LEN_BITS
-#define HASH_LEN_BITS 256
-//#define HASH_LEN_BITS 512
-#endif
-
-#define HASH_LEN_BYTES  (HASH_LEN_BITS / 8)
 
 #define BUFFER_SIZE 128
 
