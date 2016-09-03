@@ -399,10 +399,6 @@ bool Fp::isUnit() const {
     return equals_one(*reinterpret_cast< ::Big* >(d->p));
 }
 
-Fp Fp::getUnit() {
-    return Fp(one);
-}
-
 Fp Fp::getRand() {
     return Fp(reinterpret_cast<void*>(
         new ::Big(strong_rand(pfc->RNG, *pfc->ord))));
@@ -1722,6 +1718,191 @@ void getHash(const char *data, int len, char *hash) {
 #else
 #error Error: Invalid value of HASH_LEN_BITS (pairings)
 #endif
+}
+
+bool hasPrecomputations() {
+    return false;
+}
+
+bool iostream_nothreads() {
+    return false;
+}
+
+Fp::Fp(int i) {
+    element_ptr _result = new element_s;
+    element_init_Zr(_result, p_params);
+    element_set_si(_result, i);
+    d = new SharedData(reinterpret_cast<void*>(_result));
+}
+
+Fp::Fp(unsigned long i) {
+    element_ptr _result = new element_s;
+    element_init_Zr(_result, p_params);
+    mpz_t v;
+    mpz_init(v);
+    mpz_set_ui(v, i);
+    element_set_mpz(_result, v);
+    mpz_clear(v);
+    d = new SharedData(reinterpret_cast<void*>(_result));
+}
+
+Fp Fp::operator-() const {
+    const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
+    if ((d == zero) || element_is0(_this))
+        return Fp(*this);
+    element_ptr _result = new element_s;
+    element_init_Zr(_result, p_params);
+    element_neg(_result, _this);
+    return Fp(reinterpret_cast<void*>(_result));
+}
+
+Fp Fp::operator+(const Fp &other) const {
+    const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
+    const element_ptr &_other = reinterpret_cast<element_ptr>(other.d->p);
+    if ((d == zero) || element_is0(_this)) return other;
+    if ((other.d == zero) || element_is0(_other)) return *this;
+    element_ptr _result = new element_s;
+    element_init_Zr(_result, p_params);
+    element_add(_result, _this, _other);
+    return Fp(reinterpret_cast<void*>(_result));
+}
+
+Fp Fp::operator-(const Fp &other) const {
+    const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
+    const element_ptr &_other = reinterpret_cast<element_ptr>(other.d->p);
+    if ((other.d == zero) || element_is0(_other)) return *this;
+    element_ptr _result = new element_s;
+    element_init_Zr(_result, p_params);
+    element_sub(_result, _this, _other);
+    return Fp(reinterpret_cast<void*>(_result));
+}
+
+Fp &Fp::operator+=(const Fp &other) {
+    const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
+    const element_ptr &_other = reinterpret_cast<element_ptr>(other.d->p);
+    if ((other.d == zero) || element_is0(_other)) return *this;
+    if ((d == zero) || element_is0(_this)) return (*this = other);
+    if (d->c) {
+        --d->c;
+        element_ptr _result = new element_s;
+        element_init_Zr(_result, p_params);
+        element_add(_result, _this, _other);
+        d = new SharedData(reinterpret_cast<void*>(_result));
+    } else {
+        element_add(_this, _this, _other);
+    }
+    return *this;
+}
+
+Fp &Fp::operator-=(const Fp &other) {
+    const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
+    const element_ptr &_other = reinterpret_cast<element_ptr>(other.d->p);
+    if ((other.d == zero) || element_is0(_other)) return *this;
+    if (d->c) {
+        --d->c;
+        element_ptr _result = new element_s;
+        element_init_Zr(_result, p_params);
+        element_sub(_result, _this, _other);
+        d = new SharedData(reinterpret_cast<void*>(_result));
+    } else {
+        element_sub(_this, _this, _other);
+    }
+    return *this;
+}
+
+Fp Fp::operator*(const Fp &other) const {
+    const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
+    const element_ptr &_other = reinterpret_cast<element_ptr>(other.d->p);
+    if ((d == zero) || (other.d == one) || element_is0(_this) ||
+            element_is1(_other)) return *this;
+    if ((d == one) || (other.d == zero) || element_is0(_other) ||
+            element_is1(_this)) return other;
+    element_ptr _result = new element_s;
+    element_init_Zr(_result, p_params);
+    element_mul(_result, _this, _other);
+    return Fp(reinterpret_cast<void*>(_result));
+}
+
+Fp Fp::operator/(const Fp &other) const {
+    ASSERT(!other.isNull(), "Divide by zero");
+    const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
+    const element_ptr &_other = reinterpret_cast<element_ptr>(other.d->p);
+    if ((d == zero) || (other.d == one) || element_is0(_this) ||
+            element_is1(_other)) return *this;
+    element_ptr _result = new element_s;
+    element_init_Zr(_result, p_params);
+    element_div(_result, _this, _other);
+    return Fp(reinterpret_cast<void*>(_result));
+}
+
+Fp &Fp::operator*=(const Fp &other) {
+    const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
+    const element_ptr &_other = reinterpret_cast<element_ptr>(other.d->p);
+    if ((d == zero) || (other.d == one) || element_is0(_this) ||
+            element_is1(_other)) return *this;
+    if ((d == one) || (other.d == zero) || element_is0(_other) ||
+            element_is1(_this)) return (*this = other);
+    if (d->c) {
+        --d->c;
+        element_ptr _result = new element_s;
+        element_init_Zr(_result, p_params);
+        element_mul(_result, _this, _other);
+        d = new SharedData(reinterpret_cast<void*>(_result));
+    } else {
+        element_mul(_this, _this, _other);
+    }
+    return *this;
+}
+
+Fp &Fp::operator/=(const Fp &other) {
+    ASSERT(!other.isNull(), "Divide by zero");
+    const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
+    const element_ptr &_other = reinterpret_cast<element_ptr>(other.d->p);
+    if ((d == zero) || (other.d == one) || element_is0(_this) ||
+            element_is1(_other)) return *this;
+    if (d->c) {
+        --d->c;
+        element_ptr _result = new element_s;
+        element_init_Zr(_result, p_params);
+        element_div(_result, _this, _other);
+        d = new SharedData(reinterpret_cast<void*>(_result));
+    } else {
+        element_div(_this, _this, _other);
+    }
+    return *this;
+}
+
+bool Fp::operator==(const Fp &other) const {
+    if (d == other.d) return true;
+    const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
+    const element_ptr &_other = reinterpret_cast<element_ptr>(other.d->p);
+    return !element_cmp(_this, _other);
+}
+
+bool Fp::isNull() const {
+    if (d == zero) return true;
+    return element_is0(reinterpret_cast<element_ptr>(d->p));
+}
+
+bool Fp::isUnit() const {
+    if (d == one) return true;
+    return element_is1(reinterpret_cast<element_ptr>(d->p));
+}
+
+Fp Fp::getRand() {
+    element_ptr _result = new element_s;
+    element_init_Zr(_result, p_params);
+    element_random(_result);
+    return Fp(reinterpret_cast<void*>(_result));
+}
+
+void Fp::deref() {
+    if (d->c) {
+        --d->c;
+    } else {
+        freeElement(d->p);
+        delete d;
+    }
 }
 
 // TODO

@@ -309,7 +309,7 @@ public:
      * @return The unity element.
      * @sa Fp::Fp(int)
      */
-    static Fp getUnit();
+    inline static Fp getUnit();
     /**
      * @brief Get a random element.
      *
@@ -1292,6 +1292,8 @@ inline Fp &Fp::operator=(const Fp &other) {
 inline bool Fp::operator!=(const Fp &other) const {
     return !(*this == other);
 }
+
+inline Fp Fp::getUnit() { return Fp(one); }
 
 inline Fp::Fp(void *v) : d(new SharedData(v)) {}
 
