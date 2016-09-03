@@ -14,10 +14,20 @@
 #undef DEBUG
 #endif
 
+// Note: The following is used more for an indication and hint for the readers
+// rather than an efficiency improvement.
+#ifdef __GNUC__
+#define LIKELY(x)       __builtin_expect(!!(x), 1)
+#define UNLIKELY(x)     __builtin_expect(!!(x), 0)
+#else
+#define LIKELY(x)       (x)
+#define UNLIKELY(x)     (x)
+#endif /* __GNUC__ */
+
 #ifdef DEBUG
-#define ASSERT(X,Y) if (!(X)) { \
+#define ASSERT(X,Y) if (UNLIKELY(!(X))) { \
     std::cerr << "Error: Assert of " << #X << " at line " \
-    << __LINE__ << " failed in gsnizk.cpp!" << std::endl \
+    << __LINE__ << " failed in " << __FILE__ << "!" << std::endl \
     << Y << std::endl; \
     throw Y; \
     }
@@ -71,37 +81,34 @@ template <typename T> inline const T &max(const T &a, const T &b) {
     return (a < b) ? b : a;
 }
 
-// Note: The following is used more for an indication and hint for the readers
-// rather than an efficiency improvement.
+/* Get the number of bits in the big number n */
+/* (Note: unused)
+
 #ifdef __GNUC__
-#define LIKELY(x)       __builtin_expect(!!(x), 1)
-#define UNLIKELY(x)     __builtin_expect(!!(x), 0)
 #define NB_BITS(x)      ((sizeof(unsigned long) * 8) - \
                             __builtin_clzl((unsigned long) (x)))
 #else
-#define LIKELY(x)       (x)
-#define UNLIKELY(x)     (x)
 inline int count_bits(unsigned long x) {
     int r = 1;
     while (x >>= 1) ++r;
     return r;
 }
 #define NB_BITS(x)      count_bits((unsigned long) (x))
-#endif /* __GNUC__ */
+#endif // __GNUC__
 
-/* Get the number of bits in the big number n */
-/* (Note: unused)
 int getNBits(const Big &n) {
     int i = n.len();
     while ((--i >= 0) && (!n[i]));
     if (i < 0) return 0;
     return NB_BITS(n[i]) + i * sizeof(mr_small);
 }
+
 // */
 
 static ::GT *rndSeed = NULL;
 
 void initialize_pairings(int len, const char *data) {
+    ASSERT(len >= 0, "Negative length");
     csprng *rnd = new csprng;
     // Note: Sorry about the following const_cast,
     // const keyword simply missing in strong_init
@@ -1666,6 +1673,10 @@ static pairing_t p_params;
 
 SharedData *Fp::zero = NULL, *Fp::one = NULL;
 
+#ifdef GSNIZK_IOSTREAM_NOTHREADS
+static char *iostream_nothreads_buffer;
+#endif
+
 void freeElement(void *ptr) {
 #ifdef ZERO_MEMORY
     element_random(reinterpret_cast<element_ptr>(ptr));
@@ -1675,7 +1686,9 @@ void freeElement(void *ptr) {
 }
 
 void initialize_pairings(int len, const char *data) {
+    ASSERT(len >= 0, "Negative length");
     pairing_init_set_buf(p_params, data, len);
+    ASSERT(!pairing_is_symmetric(p_params), "pairing is symmetric");
     element_ptr el = new element_s;
     element_init_Zr(el, p_params);
     element_set0(el);
@@ -1684,6 +1697,16 @@ void initialize_pairings(int len, const char *data) {
     element_init_Zr(el, p_params);
     element_set1(el);
     Fp::one = new SharedData(reinterpret_cast<void*>(el));
+#ifdef GSNIZK_IOSTREAM_NOTHREADS
+    int buffer_size = pairing_length_in_bytes_GT(p_params), cmp;
+    cmp = pairing_length_in_bytes_compressed_G2(p_params);
+    if (UNLIKELY(cmp > buffer_size)) buffer_size = cmp;
+    cmp = pairing_length_in_bytes_compressed_G1(p_params);
+    if (UNLIKELY(cmp > buffer_size)) buffer_size = cmp;
+    cmp = pairing_length_in_bytes_Zr(p_params);
+    if (UNLIKELY(cmp > buffer_size)) buffer_size = cmp;
+    iostream_nothreads_buffer = new char[buffer_size];
+#endif
 }
 
 void terminate_pairings() {
@@ -1704,6 +1727,9 @@ void terminate_pairings() {
     }
     Fp::zero = NULL;
     pairing_clear(p_params);
+#ifdef GSNIZK_IOSTREAM_NOTHREADS
+    delete[] iostream_nothreads_buffer;
+#endif
 }
 
 int getHashLen() {
@@ -1725,7 +1751,11 @@ bool hasPrecomputations() {
 }
 
 bool iostream_nothreads() {
+#ifdef GSNIZK_IOSTREAM_NOTHREADS
+    return true;
+#else
     return false;
+#endif
 }
 
 Fp::Fp(int i) {

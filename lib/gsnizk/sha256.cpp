@@ -20,7 +20,7 @@
 #ifdef DEBUG
 #define ASSERT(X,Y) if (!(X)) { \
     std::cerr << "Error: Assert of " << #X << " at line " \
-    << __LINE__ << " failed in gsnizk.cpp!" << std::endl \
+    << __LINE__ << " failed in " << __FILE__ << "!" << std::endl \
     << Y << std::endl; \
     throw Y; \
     }
@@ -88,6 +88,7 @@ void process_chunk(uint32_t *h, uint32_t *w) {
 }
 
 void hash_sha256(const char *data, int len, char *hash) {
+    ASSERT(len >= 0, "Negative length");
 #define myh reinterpret_cast<uint32_t*>(hash)
     int r = len;
     uint32_t w[64];

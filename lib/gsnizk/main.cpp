@@ -68,8 +68,6 @@ void testPairings() {
     char *hash = new char[pairings::getHashLen()];
     pairings::getHash("hello", 5, hash);
 
-#if 0 // Skip the tests for unimplemented features
-
     /* -------------------- Tests for Fp -------------------- */
     Fp v1, v2(0), v3(42), v4(1764);
     ASSERT(v1 == v2);
@@ -81,6 +79,7 @@ void testPairings() {
     ASSERT(v1 == v2);
     v1 = Fp::getRand();
     ASSERT(v1 != v2); // Note: Just highly unlikely if the randomness is fine
+#if 0 // Skip the tests for unimplemented features
     len = v1.getDataLen();
     cout << "Len for random Fp: " << len << endl;
     CHECK_DATA_SIZE(len);

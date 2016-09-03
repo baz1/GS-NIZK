@@ -23,16 +23,16 @@ DEFINES     += DEBUG
 # Do we want to use SHA512? (default: SHA256)
 CONFIG      += config_sha512
 
+# Do we want to optimize the iostream operations
+# by assuming that the library will not be used on
+# several different threads?
+DEFINES     += GSNIZK_IOSTREAM_NOTHREADS
+
 # ========== MIRACL ONLY CONFIGURATION  ==========
 
 # What kind of security level do we want?
 DEFINES     += AES_SECURITY=128
 #DEFINES     += AES_SECURITY=192
-
-# Do we want to optimize the iostream operations
-# by assuming that the library will not be used on
-# several different threads?
-DEFINES     += GSNIZK_IOSTREAM_NOTHREADS
 
 # ==========   PBC ONLY CONFIGURATION   ==========
 
