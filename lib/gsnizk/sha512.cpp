@@ -76,8 +76,32 @@ static const uint64_t K[80] = {
     0x5fcb6fab3ad6faecULL, 0x6c44198c4a475817ULL
 };
 
+#define S(n,x) (((x)>>n) | ((x)<<(64-n)))
+#define R(n,x) ((x)>>n)
+
+#define Ch(x,y,z)  ((x&y)^(~(x)&z))
+#define Maj(x,y,z) ((x&y)^(x&z)^(y&z))
+#define Sig0(x)    (S(28,x)^S(34,x)^S(39,x))
+#define Sig1(x)    (S(14,x)^S(18,x)^S(41,x))
+#define theta0(x)  (S(1,x)^S(8,x)^R(7,x))
+#define theta1(x)  (S(19,x)^S(61,x)^R(6,x))
+
 void process_chunk(uint64_t *h, uint64_t *w) {
-    // TODO
+    uint64_t abc[8], t1, t2;
+    for (int i = 16; i-- > 0;)
+        h[i] = ntohll(h[i]);
+    for (int i = 16; i < 80; ++i)
+        w[i] = theta1(w[i-2]) + w[i-7] + theta0(w[i-15]) + w[i-16];
+    memcpy(abc, h, 64);
+    for (int i = 0; i < 80; ++i) {
+        t1 = abc[7] + Sig1(abc[4]) + Ch(abc[4],abc[5],abc[6]) + K[i] + w[i];
+        t2 = Sig0(abc[0]) + Maj(abc[0],abc[1],abc[2]);
+        memmove(&abc[1], &abc[0], 7 * 4);
+        abc[0] = t1 + t2;
+        abc[4] += t1;
+    }
+    for (int i = 8; i-- > 0;)
+        h[i] += abc[i];
 }
 
 void hash_sha512(const char *data, int len, char *hash) {

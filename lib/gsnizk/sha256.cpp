@@ -55,8 +55,35 @@ static const uint32_t K[64] = {
 #define copy_64b(to,from,idx) reinterpret_cast<uint64_t*>(to)[idx] = \
     reinterpret_cast<uint64_t*>(from)[idx]
 
+#define S(n,x) (((x)>>n) | ((x)<<(32-n)))
+#define R(n,x) ((x)>>n)
+
+#define Ch(x,y,z)  ((x&y)^(~(x)&z))
+#define Maj(x,y,z) ((x&y)^(x&z)^(y&z))
+#define Sig0(x)    (S(2,x)^S(13,x)^S(22,x))
+#define Sig1(x)    (S(6,x)^S(11,x)^S(25,x))
+#define theta0(x)  (S(7,x)^S(18,x)^R(3,x))
+#define theta1(x)  (S(17,x)^S(19,x)^R(10,x))
+
 void process_chunk(uint32_t *h, uint32_t *w) {
-    // TODO
+    uint32_t abc[8], t1, t2;
+    for (int i = 16; i-- > 0;)
+        h[i] = ntohl(h[i]);
+    for (int i = 16; i < 64; ++i)
+        w[i] = theta1(w[i-2]) + w[i-7] + theta0(w[i-15]) + w[i-16];
+    copy_64b(abc, h, 0);
+    copy_64b(abc, h, 1);
+    copy_64b(abc, h, 2);
+    copy_64b(abc, h, 3);
+    for (int i = 0; i < 64; ++i) {
+        t1 = abc[7] + Sig1(abc[4]) + Ch(abc[4],abc[5],abc[6]) + K[i] + w[i];
+        t2 = Sig0(abc[0]) + Maj(abc[0],abc[1],abc[2]);
+        memmove(&abc[1], &abc[0], 7 * 4);
+        abc[0] = t1 + t2;
+        abc[4] += t1;
+    }
+    for (int i = 8; i-- > 0;)
+        h[i] += abc[i];
 }
 
 void hash_sha256(const char *data, int len, char *hash) {
