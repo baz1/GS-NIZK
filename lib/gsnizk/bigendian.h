@@ -32,15 +32,20 @@
 #else
 #define BIGENDIAN_CPP_IMPLEMENTATION
 
+typedef union {
+    uint16_t u16;
+    uint8_t u8[2];
+} U16;
+
 #if BIGENDIAN_CFG && !defined(DOXYGEN_COMPILATION)
 
 #if BIGENDIAN_INV16
-#define _TO8B reinterpret_cast<uint8_t*>
 inline uint16_t htons(const uint16_t hostshort) {
-    uint16_t result;
-    _TO8B(result)[0] = _TO8B(hostshort)[1];
-    _TO8B(result)[1] = _TO8B(hostshort)[0];
-    return result;
+    U16 result, input;
+    input.u16 = hostshort;
+    result.u8[0] = input.u8[1];
+    result.u8[1] = input.u8[0];
+    return result.u16;
 }
 #else
 inline uint16_t htons(const uint16_t hostshort) { return hostshort; }
@@ -57,15 +62,20 @@ uint16_t htons(uint16_t hostshort);
 
 #endif /* End of BIGENDIAN_CFG */
 
+typedef union {
+    uint32_t u32;
+    uint16_t u16[2];
+    uint8_t u8[4];
+} U32;
+
 #if BIGENDIAN_CFG && !defined(DOXYGEN_COMPILATION)
 
-#define _TO16B reinterpret_cast<uint16_t*>
-
 inline uint32_t htonl(const uint32_t hostlong) {
-    uint32_t result;
-    _TO16B(&result)[0] = htonl(_TO16B(hostlong[BIGENDIAN_INV32]));
-    _TO16B(&result)[1] = htonl(_TO16B(hostlong[1 - BIGENDIAN_INV32]));
-    return result;
+    U32 result, input;
+    input.u32 = hostlong;
+    result.u16[0] = htonl(input.u16[BIGENDIAN_INV32]);
+    result.u16[1] = htonl(input.u16[1 - BIGENDIAN_INV32]);
+    return result.u32;
 }
 
 #else
@@ -99,15 +109,21 @@ inline uint32_t ntohl(uint32_t netlong) {
 
 #endif /* End of BIGENDIAN_CPP_IMPLEMENTATION */
 
+typedef union {
+    uint64_t u64;
+    uint32_t u32[2];
+} U64;
+
 #if BIGENDIAN_CFG && !defined(DOXYGEN_COMPILATION)
 
 #define _TO32B reinterpret_cast<uint32_t*>
 
 inline uint64_t htonll(const uint64_t hostlong) {
-    uint64_t result;
-    _TO32B(&result)[0] = htonl(_TO32B(hostlong[BIGENDIAN_INV64]));
-    _TO32B(&result)[1] = htonl(_TO32B(hostlong[1 - BIGENDIAN_INV64]));
-    return result;
+    U64 result, input;
+    input.u64 = hostlong;
+    result.u32[0] = htonl(input.u32[BIGENDIAN_INV64]);
+    result.u32[1] = htonl(input.u32[1 - BIGENDIAN_INV64]);
+    return result.u64;
 }
 
 #else

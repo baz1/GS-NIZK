@@ -39,8 +39,8 @@ If you want to install PBC on your computer, run this additional command:
 $ make doc
 ```
 This will create a folder `doc` containing the documentation for
-GS-NIZK's library. Note that you need to have Doxygen installed to do this,
-as well as the dot tool.
+GS-NIZK's library. Note that you need to have Doxygen (`doxygen`) installed
+to do this, as well as the `dot` tool.
 
 ### Doing all of this at once
 
