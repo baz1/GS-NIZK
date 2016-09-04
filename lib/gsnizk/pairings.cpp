@@ -1632,8 +1632,6 @@ void freeElement(void *ptr) {
     delete reinterpret_cast<element_ptr>(ptr);
 }
 
-static element_t one_GT;
-
 void initialize_pairings(int len, const char *data) {
     ASSERT(len >= 0, "Negative length");
     pairing_init_set_buf(p_params, data, len);
@@ -1646,8 +1644,6 @@ void initialize_pairings(int len, const char *data) {
     element_init_Zr(_el, p_params);
     element_set1(_el);
     Fp::one = new SharedData(reinterpret_cast<void*>(_el));
-    element_init_GT(one_GT, p_params);
-    element_set1(one_GT);
 #ifdef GSNIZK_IOSTREAM_NOTHREADS
     int buffer_size = pairing_length_in_bytes_GT(p_params), cmp;
     cmp = pairing_length_in_bytes_x_only_G2(p_params) + 1;
@@ -1677,7 +1673,6 @@ void terminate_pairings() {
         freeElement(Fp::one->p);
         delete Fp::one;
     }
-    element_clear(one_GT);
     pairing_clear(p_params);
 #ifdef GSNIZK_IOSTREAM_NOTHREADS
     delete[] iostream_nothreads_buffer;
@@ -2696,7 +2691,7 @@ GT GT::operator/(const GT &other) const {
     element_ptr _el = new element_s;
     element_init_GT(_el, p_params);
     if (!d) {
-        element_div(_el, one_GT, _other);
+        element_neg(_el, _other);
         return GT(reinterpret_cast<void*>(_el));
     }
     const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
@@ -2741,7 +2736,7 @@ GT &GT::operator/=(const GT &other) {
     element_ptr _el = new element_s;
     element_init_GT(_el, p_params);
     if (!d) {
-        element_div(_el, one_GT, _other);
+        element_neg(_el, _other);
         d = new SharedData(reinterpret_cast<void*>(_el));
         return *this;
     }
@@ -2811,7 +2806,11 @@ bool GT::operator==(const GT &other) const {
 
 void GT::getData(char *data) const {
     if (!d) {
-        element_to_bytes(reinterpret_cast<unsigned char*>(data), one_GT);
+        element_t one;
+        element_init_GT(one, p_params);
+        element_set1(one);
+        element_to_bytes(reinterpret_cast<unsigned char*>(data), one);
+        element_clear(one);
         return;
     }
     const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
@@ -2821,17 +2820,21 @@ void GT::getData(char *data) const {
 std::ostream &operator<<(std::ostream &stream, const GT &el) {
     int size = pairing_length_in_bytes_GT(p_params);
     if (!el.d) {
+        element_t one;
+        element_init_GT(one, p_params);
+        element_set1(one);
 #ifdef GSNIZK_IOSTREAM_NOTHREADS
         element_to_bytes(reinterpret_cast<unsigned char*>(
-                             iostream_nothreads_buffer), one_GT);
+                             iostream_nothreads_buffer), one);
         stream.write(iostream_nothreads_buffer, size);
 #else
         char *iostream_threads_buffer = new char[size];
         element_to_bytes(reinterpret_cast<unsigned char*>(
-                             iostream_threads_buffer), one_GT);
+                             iostream_threads_buffer), one);
         stream.write(iostream_threads_buffer, size);
         delete[] iostream_threads_buffer;
 #endif
+        element_clear(one);
         return stream;
     }
     const element_ptr &_el = reinterpret_cast<element_ptr>(el.d->p);
@@ -2963,6 +2966,10 @@ GT GT::pairing(const std::vector< std::pair<G1,G2> > &lst) {
     element_init_GT(_el, p_params);
     element_prod_pairing(_el, reinterpret_cast<element_t*>(a),
                          reinterpret_cast<element_t*>(b), i);
+    while (i--) {
+        element_clear(a[i]);
+        element_clear(b[i]);
+    }
     delete[] a;
     delete[] b;
     if (element_is1(_el)) {
