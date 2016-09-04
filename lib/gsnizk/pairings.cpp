@@ -1288,7 +1288,6 @@ GT &GT::operator/=(const GT &other) {
 }
 
 GT &GT::operator^=(const Fp &other) {
-    const ::GT &_this = *reinterpret_cast< ::GT* >(d->p);
     const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
     if ((!d) || (other.d == Fp::one) || (_other.isone()))
         return *this;
@@ -1297,6 +1296,7 @@ GT &GT::operator^=(const Fp &other) {
         d = NULL;
         return *this;
     }
+    const ::GT &_this = *reinterpret_cast< ::GT* >(d->p);
     // Note: Since neither this group element nor the scalar are null,
     // the result won't be null either.
     void *_el = reinterpret_cast<void*>(
@@ -1312,10 +1312,10 @@ GT &GT::operator^=(const Fp &other) {
 }
 
 GT GT::operator^(const Fp &other) const {
-    const ::GT &_this = *reinterpret_cast< ::GT* >(d->p);
     const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
     if ((!d) || (other.d == Fp::one) || _other.isone()) return *this;
     if ((other.d == Fp::zero) || _other.iszero()) return GT();
+    const ::GT &_this = *reinterpret_cast< ::GT* >(d->p);
     // Note: Since neither this group element nor the scalar are null,
     // the result won't be null either.
     return GT(reinterpret_cast<void*>(new ::GT(pfc->power(_this, _other))));
@@ -1327,10 +1327,6 @@ bool GT::operator==(const GT &other) const {
     const ::GT &_this = *reinterpret_cast< ::GT* >(d->p);
     const ::GT &_other = *reinterpret_cast< ::GT* >(other.d->p);
     return (_this == _other);
-}
-
-int GT::getDataLen() {
-    return big_size * 12;
 }
 
 void GT::getData(char *data) const {
@@ -1515,6 +1511,10 @@ GT GT::getRand() {
     return GT(reinterpret_cast<void*>(_el));
 }
 
+int GT::getDataLen() {
+    return big_size * 12;
+}
+
 GT GT::getValue(const char *data) {
     ::GT *_el = new ::GT();
     // Note: const keyword simply missing in from_binary
@@ -1632,6 +1632,8 @@ void freeElement(void *ptr) {
     delete reinterpret_cast<element_ptr>(ptr);
 }
 
+static element_t one_GT;
+
 void initialize_pairings(int len, const char *data) {
     ASSERT(len >= 0, "Negative length");
     pairing_init_set_buf(p_params, data, len);
@@ -1644,6 +1646,8 @@ void initialize_pairings(int len, const char *data) {
     element_init_Zr(_el, p_params);
     element_set1(_el);
     Fp::one = new SharedData(reinterpret_cast<void*>(_el));
+    element_init_GT(one_GT, p_params);
+    element_set1(one_GT);
 #ifdef GSNIZK_IOSTREAM_NOTHREADS
     int buffer_size = pairing_length_in_bytes_GT(p_params), cmp;
     cmp = pairing_length_in_bytes_x_only_G2(p_params) + 1;
@@ -1665,6 +1669,7 @@ void terminate_pairings() {
         freeElement(Fp::zero->p);
         delete Fp::zero;
     }
+    Fp::zero = NULL;
     if (Fp::one->c) {
         ASSERT(false, "Trailing references");
         --Fp::one->c;
@@ -1672,7 +1677,7 @@ void terminate_pairings() {
         freeElement(Fp::one->p);
         delete Fp::one;
     }
-    Fp::zero = NULL;
+    element_clear(one_GT);
     pairing_clear(p_params);
 #ifdef GSNIZK_IOSTREAM_NOTHREADS
     delete[] iostream_nothreads_buffer;
@@ -2670,7 +2675,311 @@ void G2::deref() {
     }
 }
 
-// TODO
+GT GT::operator*(const GT &other) const {
+    if (!d) return other;
+    if (!other.d) return *this;
+    const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
+    const element_ptr &_other = reinterpret_cast<element_ptr>(other.d->p);
+    element_ptr _el = new element_s;
+    element_init_GT(_el, p_params);
+    element_mul(_el, _this, _other);
+    if (element_is1(_el)) {
+        freeElement(_el);
+        return GT();
+    }
+    return GT(reinterpret_cast<void*>(_el));
+}
+
+GT GT::operator/(const GT &other) const {
+    if (!other.d) return *this;
+    const element_ptr &_other = reinterpret_cast<element_ptr>(other.d->p);
+    element_ptr _el = new element_s;
+    element_init_GT(_el, p_params);
+    if (!d) {
+        element_div(_el, one_GT, _other);
+        return GT(reinterpret_cast<void*>(_el));
+    }
+    const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
+    element_div(_el, _this, _other);
+    if (element_is1(_el)) {
+        freeElement(_el);
+        return GT();
+    }
+    return GT(reinterpret_cast<void*>(_el));
+}
+
+GT &GT::operator*=(const GT &other) {
+    if (!other.d) return *this;
+    const element_ptr &_other = reinterpret_cast<element_ptr>(other.d->p);
+    if (!d) {
+        ++(d = other.d)->c;
+        return *this;
+    }
+    const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
+    element_ptr _el = new element_s;
+    element_init_GT(_el, p_params);
+    element_mul(_el, _this, _other);
+    if (element_is1(_el)) {
+        freeElement(_el);
+        deref();
+        d = NULL;
+        return *this;
+    }
+    if (d->c) {
+        --d->c;
+        d = new SharedData(reinterpret_cast<void*>(_el));
+    } else {
+        freeElement(d->p);
+        d->p = reinterpret_cast<void*>(_el);
+    }
+    return *this;
+}
+
+GT &GT::operator/=(const GT &other) {
+    if (!other.d) return *this;
+    const element_ptr &_other = reinterpret_cast<element_ptr>(other.d->p);
+    element_ptr _el = new element_s;
+    element_init_GT(_el, p_params);
+    if (!d) {
+        element_div(_el, one_GT, _other);
+        d = new SharedData(reinterpret_cast<void*>(_el));
+        return *this;
+    }
+    const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
+    element_div(_el, _this, _other);
+    if (element_is1(_el)) {
+        freeElement(_el);
+        deref();
+        d = NULL;
+        return *this;
+    }
+    if (d->c) {
+        --d->c;
+        d = new SharedData(reinterpret_cast<void*>(_el));
+    } else {
+        freeElement(d->p);
+        d->p = reinterpret_cast<void*>(_el);
+    }
+    return *this;
+}
+
+GT &GT::operator^=(const Fp &other) {
+    const element_ptr &_other = reinterpret_cast<element_ptr>(other.d->p);
+    if ((!d) || (other.d == Fp::one) || element_is1(_other))
+        return *this;
+    if ((other.d == Fp::zero) || element_is0(_other)) {
+        deref();
+        d = NULL;
+        return *this;
+    }
+    const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
+    // Note: Since neither this group element nor the scalar are null,
+    // the result won't be null either.
+    element_ptr _el = new element_s;
+    element_init_GT(_el, p_params);
+    element_mul_zn(_el, _this, _other);
+    if (d->c) {
+        --d->c;
+        d = new SharedData(_el);
+    } else {
+        freeElement(d->p);
+        d->p = _el;
+    }
+    return *this;
+}
+
+GT GT::operator^(const Fp &other) const {
+    const element_ptr &_other = reinterpret_cast<element_ptr>(other.d->p);
+    if ((!d) || (other.d == Fp::one) || element_is1(_other)) return *this;
+    if ((other.d == Fp::zero) || element_is0(_other)) return GT();
+    const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
+    // Note: Since neither this group element nor the scalar are null,
+    // the result won't be null either.
+    element_ptr _el = new element_s;
+    element_init_GT(_el, p_params);
+    element_mul_zn(_el, _this, _other);
+    return GT(reinterpret_cast<void*>(_el));
+}
+
+bool GT::operator==(const GT &other) const {
+    if (!d) return !other.d;
+    if (!other.d) return false;
+    const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
+    const element_ptr &_other = reinterpret_cast<element_ptr>(other.d->p);
+    return !element_cmp(_this, _other);
+}
+
+void GT::getData(char *data) const {
+    if (!d) {
+        element_to_bytes(reinterpret_cast<unsigned char*>(data), one_GT);
+        return;
+    }
+    const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
+    element_to_bytes(reinterpret_cast<unsigned char*>(data), _this);
+}
+
+std::ostream &operator<<(std::ostream &stream, const GT &el) {
+    int size = pairing_length_in_bytes_GT(p_params);
+    if (!el.d) {
+#ifdef GSNIZK_IOSTREAM_NOTHREADS
+        element_to_bytes(reinterpret_cast<unsigned char*>(
+                             iostream_nothreads_buffer), one_GT);
+        stream.write(iostream_nothreads_buffer, size);
+#else
+        char *iostream_threads_buffer = new char[size];
+        element_to_bytes(reinterpret_cast<unsigned char*>(
+                             iostream_threads_buffer), one_GT);
+        stream.write(iostream_threads_buffer, size);
+        delete[] iostream_threads_buffer;
+#endif
+        return stream;
+    }
+    const element_ptr &_el = reinterpret_cast<element_ptr>(el.d->p);
+#ifdef GSNIZK_IOSTREAM_NOTHREADS
+    element_to_bytes(reinterpret_cast<unsigned char*>(
+                         iostream_nothreads_buffer), _el);
+    stream.write(iostream_nothreads_buffer, size);
+#else
+    char *iostream_threads_buffer = new char[size];
+    element_to_bytes(reinterpret_cast<unsigned char*>(
+                         iostream_threads_buffer), _el);
+    stream.write(iostream_threads_buffer, size);
+    delete[] iostream_threads_buffer;
+#endif
+    return stream;
+}
+
+std::istream &operator>>(std::istream &stream, GT &el) {
+    element_ptr _el = new element_s;
+    element_init_GT(_el, p_params);
+    int size = pairing_length_in_bytes_GT(p_params);
+#ifdef GSNIZK_IOSTREAM_NOTHREADS
+    stream.read(iostream_nothreads_buffer, size);
+    element_from_bytes(_el, reinterpret_cast<unsigned char*>(
+                           iostream_nothreads_buffer));
+#else
+    char *iostream_threads_buffer = new char[size];
+    stream.read(iostream_threads_buffer, size);
+    element_from_bytes(_el, reinterpret_cast<unsigned char*>(
+                           iostream_threads_buffer));
+    delete[] iostream_threads_buffer;
+#endif
+    if (element_is1(_el)) {
+        freeElement(_el);
+        if (el.d) {
+            el.deref();
+            el.d = NULL;
+        }
+    } else if (el.d) {
+        if (el.d->c) {
+            --el.d->c;
+            el.d = new SharedData(reinterpret_cast<void*>(_el));
+        } else {
+            freeElement(el.d->p);
+            el.d->p = reinterpret_cast<void*>(_el);
+        }
+    } else {
+        el.d = new SharedData(reinterpret_cast<void*>(_el));
+    }
+    return stream;
+}
+
+void GT::precomputeForPower() {}
+
+int GT::savePowerPrecomputations(char *&data) {
+    /* Note: A good application should not call this function
+     * if hasPrecomputations() returns false, but we still prefer
+     * returning dummy values than throwing an exception for
+     * ease-of-use reasons. */
+    data = new char[1];
+    *data = 0; // (would not be a big threat to leak 1 byte though)
+    return 1;
+}
+
+void GT::loadPowerPrecomputations(char *data) {
+    delete[] data;
+}
+
+GT GT::getRand() {
+    element_ptr _el = new element_s;
+    element_init_GT(_el, p_params);
+    element_random(_el);
+    // Following is very unlikely, but we still want to handle it
+    if (UNLIKELY(element_is1(_el))) {
+        freeElement(_el);
+        return GT();
+    }
+    return GT(reinterpret_cast<void*>(_el));
+}
+
+int GT::getDataLen() {
+    return pairing_length_in_bytes_GT(p_params);
+}
+
+GT GT::getValue(const char *data) {
+    // Note: const keyword simply missing in element_from_bytes
+    element_ptr _el = new element_s;
+    element_init_GT(_el, p_params);
+    element_from_bytes(_el, reinterpret_cast<unsigned char*>(
+                                  const_cast<char*>(data)));
+    if (element_is1(_el)) {
+        freeElement(_el);
+        return GT();
+    }
+    return GT(reinterpret_cast<void*>(_el));
+}
+
+GT GT::pairing(const G1 &a, const G2 &b) {
+    if ((!a.d) || (!b.d))
+        return GT();
+    const element_ptr &_a = reinterpret_cast<element_ptr>(a.d->p);
+    const element_ptr &_b = reinterpret_cast<element_ptr>(b.d->p);
+    element_ptr _el = new element_s;
+    element_init_GT(_el, p_params);
+    element_pairing(_el, _a, _b);
+    return GT(reinterpret_cast<void*>(_el));
+}
+
+GT GT::pairing(const std::vector< std::pair<G1,G2> > &lst) {
+    if (lst.empty()) return GT();
+    element_t *a = new element_t[lst.size()];
+    element_t *b = new element_t[lst.size()];
+    int i = 0;
+    for (const std::pair<G1,G2> &p : lst) {
+        if ((!p.first.d) || (!p.second.d))
+            continue;
+        element_init_G1(a[i], p_params);
+        element_set(a[i], reinterpret_cast<element_ptr>(p.first.d->p));
+        element_init_G2(b[i], p_params);
+        element_set(b[i], reinterpret_cast<element_ptr>(p.second.d->p));
+        ++i;
+    }
+    if (!i) {
+        delete[] a;
+        delete[] b;
+        return GT();
+    }
+    element_ptr _el = new element_s;
+    element_init_GT(_el, p_params);
+    element_prod_pairing(_el, reinterpret_cast<element_t*>(a),
+                         reinterpret_cast<element_t*>(b), i);
+    delete[] a;
+    delete[] b;
+    if (element_is1(_el)) {
+        freeElement(_el);
+        return GT();
+    }
+    return GT(reinterpret_cast<void*>(_el));
+}
+
+void GT::deref() {
+    if (d->c) {
+        --d->c;
+    } else {
+        freeElement(d->p);
+        delete d;
+    }
+}
 
 //#error PBC implementation has not been done yet!
 

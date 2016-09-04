@@ -180,8 +180,6 @@ void testPairings() {
     ASSERT(h2 == (v1 * h1));
     ASSERT(h2 == (v1 * h3));
 
-#if 0 // Skip the tests for unimplemented features
-
     /* -------------------- Tests for GT -------------------- */
     GT t1 = GT::getRand(), t2, t3, t4;
     ASSERT(t1 != t2); // Note: Just highly unlikely if the randomness is fine
@@ -285,7 +283,6 @@ void testPairings() {
     ASSERT(h2 == h4);
     ASSERT(t1 == t3);
     ASSERT(t2 == t4);
-#endif
 }
 
 #if 0
