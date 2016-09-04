@@ -24,10 +24,10 @@
 
 #include "bigendian_cfg.h"
 
-#if defined(_WIN16) || defined(_WIN32) || defined(_WIN64) || \
-  defined(__WINDOWS__)
+#if (defined(_WIN16) || defined(_WIN32) || defined(_WIN64) || \
+  defined(__WINDOWS__)) && !defined(DOXYGEN_COMPILATION)
 #include <Winsock2.h>
-#elif defined(__linux__)
+#elif defined(__linux__) && !defined(DOXYGEN_COMPILATION)
 #include <arpa/inet.h>
 #else
 #define BIGENDIAN_CPP_IMPLEMENTATION
@@ -79,26 +79,23 @@ uint32_t htonl(uint32_t hostlong);
 
 #endif /* End of BIGENDIAN_CFG */
 
-#define ntohl(n) htonl(n)
-#define ntohs(n) htons(n)
-
-#ifdef DOXYGEN_COMPILATION
+/**
+ * @brief Converts from network to host byte order.
+ * @param netlong The network 16-bit integer.
+ * @return The host 16-bit integer.
+ */
+inline uint16_t ntohs(uint16_t netshort) {
+    return htons(netshort);
+}
 
 /**
  * @brief Converts from network to host byte order.
  * @param netlong The network 32-bit integer.
  * @return The host 32-bit integer.
  */
-uint32_t ntohl(uint32_t netlong);
-
-/**
- * @brief Converts from network to host byte order.
- * @param netlong The network 16-bit integer.
- * @return The host 16-bit integer.
- */
-uint16_t ntohs(uint16_t netshort);
-
-#endif /* End of DOXYGEN_COMPILATION */
+inline uint32_t ntohl(uint32_t netlong) {
+    return htonl(netlong);
+}
 
 #endif /* End of BIGENDIAN_CPP_IMPLEMENTATION */
 
@@ -124,17 +121,13 @@ uint64_t htonll(uint64_t hostlong);
 
 #endif /* End of BIGENDIAN_CFG */
 
-#define ntohll(n) htonll(n)
-
-#ifdef DOXYGEN_COMPILATION
-
 /**
  * @brief Converts from network to host byte order.
  * @param netlong The network 64-bit integer.
  * @return The host 64-bit integer.
  */
-uint64_t ntohll(uint64_t netlong);
-
-#endif /* End of DOXYGEN_COMPILATION */
+inline uint64_t ntohll(uint64_t netlong) {
+    return htonll(netlong);
+}
 
 #endif /* End of BIGENDIAN_H */
