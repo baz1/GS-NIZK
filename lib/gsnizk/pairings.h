@@ -243,31 +243,22 @@ public:
      */
     inline bool operator!=(const Fp &other) const;
     /**
-     * @brief Gets the length of this element's data.
-     *
-     * @warning This function might not always return the same
-     * number, depending on the value of the element to convert.
-     *
-     * @return Number of bytes needed to encode the element.
-     */
-    int getDataLen() const;
-    /**
      * @brief Retrieves this element's data.
      *
      * The data memory space is to be allocated before calling
      * this function, and thus the parameter @p data should point
-     * to some accessible space containing at least Fp::getDataLen()
+     * to some accessible space containing at least @ref Fp::getDataLen()
      * available bytes.
      *
      * The data will always contain exactly the number of bytes
-     * returned by the Fp::getDataLen() function.
+     * returned by the @ref Fp::getDataLen() function.
      *
      * It can then be converted back to the corresponding element
-     * value thanks to the Fp::getValue(const char*,int) function.
+     * value thanks to the @ref Fp::getValue(const char*) function.
      *
      * @param data Pointer to where the data is to be stored.
      * @sa Fp::getDataLen()
-     * @sa Fp::getValue(const char*,int)
+     * @sa Fp::getValue(const char*)
      */
     void getData(char *data) const;
     /**
@@ -324,19 +315,28 @@ public:
      */
     static Fp getRand();
     /**
+     * @brief Gets the length of an element's data.
+     *
+     * @note This function always returns the same number.
+     *
+     * @return Number of bytes needed to encode an element in Fp.
+     * @sa Fp::getData(char*)
+     * @sa Fp::getValue(const char*)
+     */
+    static int getDataLen();
+    /**
      * @brief Gets an element value from its data.
      *
-     * @p data and @p len should be respectively what the functions
-     * Fp::getData(char*) and Fp::getDataLen() give for the element
+     * @p data should hold exactly what the function
+     * @ref Fp::getData(char*) gives for the element
      * to be reconstructed.
      *
      * @param data Pointer to the data.
-     * @param len Length of the data.
      * @return The element value corresponding to that data.
      * @sa Fp::getDataLen()
      * @sa Fp::getData(char*)
      */
-    static Fp getValue(const char *data, int len);
+    static Fp getValue(const char *data);
     /**
      * @brief Gets an element value from some data to hash.
      *
@@ -460,47 +460,30 @@ public:
      */
     inline bool operator!=(const G1 &other) const;
     /**
-     * @brief Gets the length of this element's data.
-     *
-     * @warning This function might not always return the same
-     * number, depending on the value of the element to convert,
-     * and the value of the @p compressed parameter.
-     *
-     * @note Compressed data has the advantage of being almost
-     * twice smaller than raw data, but it might take longer to
-     * reconstruct the element in the G1::getValue(const char*,int,bool)
-     * function.
-     *
-     * @param compressed Indicates whether the element data
-     *   is to be compressed or not.
-     * @return Number of bytes needed to encode the element.
-     */
-    int getDataLen(bool compressed = false) const;
-    /**
      * @brief Retrieves this element's data.
      *
      * The data memory space is to be allocated before calling
      * this function, and thus the parameter @p data should point
-     * to some accessible space containing at least G1::getDataLen(bool)
+     * to some accessible space containing at least @ref G1::getDataLen(bool)
      * available bytes.
      *
      * The data will always contain exactly the number of bytes
-     * returned by the G1::getDataLen(bool) function called with
+     * returned by the @ref G1::getDataLen(bool) function called with
      * the same @p compressed value.
      *
      * It can then be converted back to the corresponding element
-     * value thanks to the G1::getValue(const char*,int,bool) function.
+     * value thanks to the @ref G1::getValue(const char*,bool) function.
      *
      * @note Compressed data has the advantage of being almost
      * twice smaller than raw data, but it might take longer to
-     * reconstruct the element in the G1::getValue(const char*,int,bool)
+     * reconstruct the element in the @ref G1::getValue(const char*,bool)
      * function.
      *
      * @param data Pointer to where the data is to be stored.
      * @param compressed Indicates whether the element data
      *   is to be compressed or not.
      * @sa G1::getDataLen(bool)
-     * @sa G1::getValue(const char*,int,bool)
+     * @sa G1::getValue(const char*,bool)
      */
     void getData(char *data, bool compressed = false) const;
     /**
@@ -615,20 +598,37 @@ public:
      */
     static G1 getRand();
     /**
+     * @brief Gets the length of an element's data.
+     *
+     * @note This function always returns the same number
+     * for the same value of the @p compressed parameter.
+     *
+     * @note Compressed data has the advantage of being almost
+     * twice smaller than raw data, but it might take longer to
+     * reconstruct the element in the @ref G1::getValue(const char*,int,bool)
+     * function.
+     *
+     * @param compressed Indicates whether the element data
+     *   is to be compressed or not.
+     * @return Number of bytes needed to encode an element in G1.
+     * @sa G1::getDataLen(bool)
+     * @sa G1::getValue(const char*,bool)
+     */
+    static int getDataLen(bool compressed = false);
+    /**
      * @brief Gets an element value from its data.
      *
-     * @p data and @p len should be respectively what the functions
-     * G1::getData(char*,bool) and G1::getDataLen(bool) give for the element
+     * @p data should hold exactly what the function
+     * @ref G1::getData(char*,bool) gives for the element
      * to be reconstructed, for the same value of @p compressed.
      *
      * @param data Pointer to the data.
-     * @param len Length of the data.
      * @param compressed Whether the data was compressed or not.
      * @return The element value corresponding to that data.
      * @sa G1::getDataLen(bool)
      * @sa G1::getData(char*,bool)
      */
-    static G1 getValue(const char *data, int len, bool compressed = false);
+    static G1 getValue(const char *data, bool compressed = false);
     /**
      * @brief Gets an element value from some data to hash.
      *
@@ -751,47 +751,30 @@ public:
      */
     inline bool operator!=(const G2 &other) const;
     /**
-     * @brief Gets the length of this element's data.
-     *
-     * @warning This function might not always return the same
-     * number, depending on the value of the element to convert,
-     * and the value of the @p compressed parameter.
-     *
-     * @note Compressed data has the advantage of being almost
-     * twice smaller than raw data, but it might take longer to
-     * reconstruct the element in the G2::getValue(const char*,int,bool)
-     * function.
-     *
-     * @param compressed Indicates whether the element data
-     *   is to be compressed or not.
-     * @return Number of bytes needed to encode the element.
-     */
-    int getDataLen(bool compressed = false) const;
-    /**
      * @brief Retrieves this element's data.
      *
      * The data memory space is to be allocated before calling
      * this function, and thus the parameter @p data should point
-     * to some accessible space containing at least G2::getDataLen(bool)
+     * to some accessible space containing at least @ref G2::getDataLen(bool)
      * available bytes.
      *
      * The data will always contain exactly the number of bytes
-     * returned by the G2::getDataLen(bool) function called with
+     * returned by the @ref G2::getDataLen(bool) function called with
      * the same @p compressed value.
      *
      * It can then be converted back to the corresponding element
-     * value thanks to the G2::getValue(const char*,int,bool) function.
+     * value thanks to the @ref G2::getValue(const char*,bool) function.
      *
      * @note Compressed data has the advantage of being almost
      * twice smaller than raw data, but it might take longer to
-     * reconstruct the element in the G2::getValue(const char*,int,bool)
+     * reconstruct the element in the @ref G2::getValue(const char*,bool)
      * function.
      *
      * @param data Pointer to where the data is to be stored.
      * @param compressed Indicates whether the element data
      *   is to be compressed or not.
      * @sa G2::getDataLen(bool)
-     * @sa G2::getValue(const char*,int,bool)
+     * @sa G2::getValue(const char*,bool)
      */
     void getData(char *data, bool compressed = false) const;
     /**
@@ -972,20 +955,37 @@ public:
      */
     static G2 getRand();
     /**
+     * @brief Gets the length of an element's data.
+     *
+     * @note This function always returns the same number
+     * for the same value of the @p compressed parameter.
+     *
+     * @note Compressed data has the advantage of being almost
+     * twice smaller than raw data, but it might take longer to
+     * reconstruct the element in the @ref G2::getValue(const char*,int,bool)
+     * function.
+     *
+     * @param compressed Indicates whether the element data
+     *   is to be compressed or not.
+     * @return Number of bytes needed to encode an element in G2.
+     * @sa G2::getDataLen(bool)
+     * @sa G2::getValue(const char*,bool)
+     */
+    static int getDataLen(bool compressed = false);
+    /**
      * @brief Gets an element value from its data.
      *
-     * @p data and @p len should be respectively what the functions
-     * G2::getData(char*,bool) and G2::getDataLen(bool) give for the element
+     * @p data should hold exactly what the function
+     * @ref G2::getData(char*,bool) gives for the element
      * to be reconstructed, for the same value of @p compressed.
      *
      * @param data Pointer to the data.
-     * @param len Length of the data.
      * @param compressed Whether the data was compressed or not.
      * @return The element value corresponding to that data.
      * @sa G2::getDataLen(bool)
      * @sa G2::getData(char*,bool)
      */
-    static G2 getValue(const char *data, int len, bool compressed = false);
+    static G2 getValue(const char *data, bool compressed = false);
     /**
      * @brief Gets an element value from some data to hash.
      *
@@ -1097,31 +1097,22 @@ public:
      */
     inline bool operator!=(const GT &other) const;
     /**
-     * @brief Gets the length of this element's data.
-     *
-     * @warning This function might not always return the same
-     * number, depending on the value of the element to convert.
-     *
-     * @return Number of bytes needed to encode the element.
-     */
-    int getDataLen() const;
-    /**
      * @brief Retrieves this element's data.
      *
      * The data memory space is to be allocated before calling
      * this function, and thus the parameter @p data should point
-     * to some accessible space containing at least GT::getDataLen()
+     * to some accessible space containing at least @ref GT::getDataLen()
      * available bytes.
      *
      * The data will always contain exactly the number of bytes
-     * returned by the GT::getDataLen() function.
+     * returned by the @ref GT::getDataLen() function.
      *
      * It can then be converted back to the corresponding element
-     * value thanks to the GT::getValue(const char*,int) function.
+     * value thanks to the @ref GT::getValue(const char*) function.
      *
      * @param data Pointer to where the data is to be stored.
      * @sa Fp::getDataLen()
-     * @sa Fp::getValue(const char*,int)
+     * @sa Fp::getValue(const char*)
      */
     void getData(char *data) const;
     /**
@@ -1234,19 +1225,28 @@ public:
      */
     static GT getRand();
     /**
+     * @brief Gets the length of an element's data.
+     *
+     * @note This function always returns the same number.
+     *
+     * @return Number of bytes needed to encode an element in GT.
+     * @sa GT::getDataLen()
+     * @sa Fp::getValue(const char*)
+     */
+    static int getDataLen();
+    /**
      * @brief Gets an element value from its data.
      *
-     * @p data and @p len should be respectively what the functions
-     * GT::getData(char*) and GT::getDataLen() give for the element
+     * @p data should hold exactly what the function
+     * @ref GT::getData(char*) gives for the element
      * to be reconstructed.
      *
      * @param data Pointer to the data.
-     * @param len Length of the data.
      * @return The element value corresponding to that data.
      * @sa GT::getDataLen()
      * @sa GT::getData(char*)
      */
-    static GT getValue(const char *data, int len);
+    static GT getValue(const char *data);
     /**
      * @brief Computes a pairing of two elements.
      * @param a @f$\mathbb{G}_1@f$ member.

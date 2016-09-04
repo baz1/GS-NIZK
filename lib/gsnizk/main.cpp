@@ -87,7 +87,7 @@ void testPairings() {
     for (int i = 0; i < TRANSFER_TESTS; ++i) {
         v1 = Fp::getRand();
         v1.getData(data);
-        v2 = Fp::getValue(data, len);
+        v2 = Fp::getValue(data);
         ASSERT(v1 == v2);
     }
     v1 = Fp::getRand();
@@ -106,7 +106,7 @@ void testPairings() {
     for (int i = 0; i < TRANSFER_TESTS; ++i) {
         g1 = G1::getRand();
         g1.getData(data);
-        g2 = G1::getValue(data, len);
+        g2 = G1::getValue(data);
         ASSERT(g1 == g2);
     }
     len = g1.getDataLen(true);
@@ -116,7 +116,7 @@ void testPairings() {
     for (int i = 0; i < TRANSFER_TESTS; ++i) {
         g1 = G1::getRand();
         g1.getData(data, true);
-        g3 = G1::getValue(data, len, true);
+        g3 = G1::getValue(data, true);
         ASSERT(g1 == g3);
     }
     g1 = G1::getRand();
@@ -149,7 +149,7 @@ void testPairings() {
     for (int i = 0; i < TRANSFER_TESTS; ++i) {
         h1 = G2::getRand();
         h1.getData(data);
-        h2 = G2::getValue(data, len);
+        h2 = G2::getValue(data);
         ASSERT(h1 == h2);
     }
     len = h1.getDataLen(true);
@@ -159,7 +159,7 @@ void testPairings() {
     for (int i = 0; i < TRANSFER_TESTS; ++i) {
         h1 = G2::getRand();
         h1.getData(data, true);
-        h2 = G2::getValue(data, len, true);
+        h2 = G2::getValue(data, true);
         ASSERT(h1 == h2);
     }
     h1 = G2::getRand();
@@ -193,7 +193,7 @@ void testPairings() {
     for (int i = 0; i < TRANSFER_TESTS; ++i) {
         t1 = GT::getRand();
         t1.getData(data);
-        t2 = GT::getValue(data, len);
+        t2 = GT::getValue(data);
         ASSERT(t1 == t2);
     }
     t1 = GT::getRand();

@@ -229,11 +229,11 @@ Fp Fp::operator+(const Fp &other) const {
     const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
     if ((d == zero) || _this.iszero()) return other;
     if ((other.d == zero) || _other.iszero()) return *this;
-    ::Big *_result = new ::Big(_this);
-    *_result += _other;
-    if (*_result >= *pfc->ord)
-        *_result -= *pfc->ord;
-    return Fp(reinterpret_cast<void*>(_result));
+    ::Big *_el = new ::Big(_this);
+    *_el += _other;
+    if (*_el >= *pfc->ord)
+        *_el -= *pfc->ord;
+    return Fp(reinterpret_cast<void*>(_el));
 }
 
 Fp Fp::operator-(const Fp &other) const {
@@ -252,11 +252,11 @@ Fp &Fp::operator+=(const Fp &other) {
     if ((d == zero) || _this.iszero()) return (*this = other);
     if (d->c) {
         --d->c;
-        ::Big *_result = new ::Big(_this);
-        *_result += _other;
-        if (*_result >= *pfc->ord)
-            *_result -= *pfc->ord;
-        d = new SharedData(reinterpret_cast<void*>(_result));
+        ::Big *_el = new ::Big(_this);
+        *_el += _other;
+        if (*_el >= *pfc->ord)
+            *_el -= *pfc->ord;
+        d = new SharedData(reinterpret_cast<void*>(_el));
     } else {
         _this += _other;
         if (_this >= *pfc->ord)
@@ -271,11 +271,11 @@ Fp &Fp::operator-=(const Fp &other) {
     if ((other.d == zero) || _other.iszero()) return *this;
     if (d->c) {
         --d->c;
-        ::Big *_result = new ::Big(_this);
-        if (*_result < _other)
-            *_result += *pfc->ord;
-        *_result -= _other;
-        d = new SharedData(reinterpret_cast<void*>(_result));
+        ::Big *_el = new ::Big(_this);
+        if (*_el < _other)
+            *_el += *pfc->ord;
+        *_el -= _other;
+        d = new SharedData(reinterpret_cast<void*>(_el));
     } else {
         if (_this < _other)
             _this += *pfc->ord;
@@ -345,14 +345,9 @@ bool Fp::operator==(const Fp &other) const {
     return _this == _other;
 }
 
-int Fp::getDataLen() const {
-    const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
-    return _this.len() * MIRACL_BYTES;
-}
-
 void Fp::getData(char *data) const {
     const ::Big &_this = *reinterpret_cast< ::Big* >(d->p);
-    to_binary(_this, _this.len() * MIRACL_BYTES, data, TRUE);
+    to_binary(_this, big_size, data, TRUE);
 }
 
 std::ostream &operator<<(std::ostream &stream, const Fp &el) {
@@ -403,7 +398,7 @@ bool Fp::isNull() const {
 
 bool Fp::isUnit() const {
     if (d == one) return true;
-    return equals_one(*reinterpret_cast< ::Big* >(d->p));
+    return reinterpret_cast< ::Big* >(d->p)->isone();
 }
 
 Fp Fp::getRand() {
@@ -411,23 +406,27 @@ Fp Fp::getRand() {
         new ::Big(strong_rand(pfc->RNG, *pfc->ord))));
 }
 
-Fp Fp::getValue(const char *data, int len) {
+int Fp::getDataLen() {
+    return big_size;
+}
+
+Fp Fp::getValue(const char *data) {
     // Note: Sorry about the following const_cast,
     // const keyword simply missing in from_binary
     return Fp(reinterpret_cast<void*>(
-        new ::Big(from_binary(len, const_cast<char*>(data)))));
+        new ::Big(from_binary(big_size, const_cast<char*>(data)))));
 }
 
 Fp Fp::fromHash(const char *data, int len) {
-    ::Big *result = new ::Big();
-    hashToZZn(data, len, *pfc->ord, *result);
-    return Fp(reinterpret_cast<void*>(result));
+    ::Big *_el = new ::Big();
+    hashToZZn(data, len, *pfc->ord, *_el);
+    return Fp(reinterpret_cast<void*>(_el));
 }
 
 Fp Fp::fromHash(const char *hash) {
-    ::Big *result = new ::Big();
-    hashToZZn(hash, *pfc->ord, *result);
-    return Fp(reinterpret_cast<void*>(result));
+    ::Big *_el = new ::Big();
+    hashToZZn(hash, *pfc->ord, *_el);
+    return Fp(reinterpret_cast<void*>(_el));
 }
 
 void Fp::deref() {
@@ -450,12 +449,12 @@ G1 G1::operator+(const G1 &other) const {
     if (!other.d) return *this;
     const ::G1 &_this = *reinterpret_cast< ::G1* >(d->p);
     const ::G1 &_other = *reinterpret_cast< ::G1* >(other.d->p);
-    ::G1 *result = new ::G1(_this + _other);
-    if (result->g.iszero()) {
-        delete result;
+    ::G1 *_el = new ::G1(_this + _other);
+    if (_el->g.iszero()) {
+        delete _el;
         return G1();
     }
-    return G1(reinterpret_cast<void*>(result));
+    return G1(reinterpret_cast<void*>(_el));
 }
 
 G1 G1::operator-(const G1 &other) const {
@@ -463,12 +462,12 @@ G1 G1::operator-(const G1 &other) const {
     const ::G1 &_other = *reinterpret_cast< ::G1* >(other.d->p);
     if (!d) return G1(reinterpret_cast<void*>(new ::G1(-_other)));
     const ::G1 &_this = *reinterpret_cast< ::G1* >(d->p);
-    ::G1 *result = new ::G1(_this + (-_other));
-    if (result->g.iszero()) {
-        delete result;
+    ::G1 *_el = new ::G1(_this + (-_other));
+    if (_el->g.iszero()) {
+        delete _el;
         return G1();
     }
-    return G1(reinterpret_cast<void*>(result));
+    return G1(reinterpret_cast<void*>(_el));
 }
 
 G1 &G1::operator+=(const G1 &other) {
@@ -479,19 +478,19 @@ G1 &G1::operator+=(const G1 &other) {
         return *this;
     }
     const ::G1 &_this = *reinterpret_cast< ::G1* >(d->p);
-    ::G1 *result = new ::G1(_this + _other);
-    if (result->g.iszero()) {
-        delete result;
+    ::G1 *_el = new ::G1(_this + _other);
+    if (_el->g.iszero()) {
+        delete _el;
         deref();
         d = NULL;
         return *this;
     }
     if (d->c) {
         --d->c;
-        d = new SharedData(reinterpret_cast<void*>(result));
+        d = new SharedData(reinterpret_cast<void*>(_el));
     } else {
         delete reinterpret_cast< ::G1* >(d->p);
-        d->p = reinterpret_cast<void*>(result);
+        d->p = reinterpret_cast<void*>(_el);
     }
     return *this;
 }
@@ -504,19 +503,19 @@ G1 &G1::operator-=(const G1 &other) {
         return *this;
     }
     const ::G1 &_this = *reinterpret_cast< ::G1* >(d->p);
-    ::G1 *result = new ::G1(_this + (-_other));
-    if (result->g.iszero()) {
-        delete result;
+    ::G1 *_el = new ::G1(_this + (-_other));
+    if (_el->g.iszero()) {
+        delete _el;
         deref();
         d = NULL;
         return *this;
     }
     if (d->c) {
         --d->c;
-        d = new SharedData(reinterpret_cast<void*>(result));
+        d = new SharedData(reinterpret_cast<void*>(_el));
     } else {
         delete reinterpret_cast< ::G1* >(d->p);
-        d->p = reinterpret_cast<void*>(result);
+        d->p = reinterpret_cast<void*>(_el);
     }
     return *this;
 }
@@ -533,13 +532,14 @@ G1 &G1::operator*=(const Fp &other) {
     }
     // Note: Since neither this group element nor the scalar are null,
     // the result won't be null either.
-    void *result = reinterpret_cast<void*>(new ::G1(pfc->mult(_this, _other)));
+    void *_el = reinterpret_cast<void*>(
+                new ::G1(pfc->mult(_this, _other)));
     if (d->c) {
         --d->c;
-        d = new SharedData(result);
+        d = new SharedData(_el);
     } else {
         delete reinterpret_cast< ::G1* >(d->p);
-        d->p = result;
+        d->p = _el;
     }
     return *this;
 }
@@ -572,17 +572,17 @@ bool G1::operator==(const G1 &other) const {
     return (_this == _other);
 }
 
-int G1::getDataLen(bool compressed) const {
-    if (!d) return NULL;
-    if (compressed) {
-        return big_size + 1;
-    } else {
-        return big_size << 1;
-    }
-}
-
 void G1::getData(char *data, bool compressed) const {
-    if (!d) return;
+    if (!d) {
+        if (compressed) {
+            *data = (char) (unsigned char) 0xFF;
+        } else {
+            const ::Big &_one = *reinterpret_cast< ::Big* >(Fp::one->p);
+            to_binary(_one, big_size, data, TRUE);
+            to_binary(_one, big_size, data + big_size, TRUE);
+        }
+        return;
+    }
     const ::G1 &_this = *reinterpret_cast< ::G1* >(d->p);
     if (compressed) {
         ::Big x;
@@ -622,13 +622,13 @@ std::ostream &operator<<(std::ostream &stream, const G1 &el) {
 }
 
 std::istream &operator>>(std::istream &stream, G1 &el) {
-    ::G1 *_el = new ::G1();
     char lsb;
     stream.read(&lsb, 1);
     if (lsb == (char) (unsigned char) 0xFF) {
         if (el.d) el.deref();
         return stream;
     }
+    ::G1 *_el = new ::G1();
 #ifdef GSNIZK_IOSTREAM_NOTHREADS
     stream.read(iostream_nothreads_buffer, big_size);
     _el->g.set(from_binary(big_size, iostream_nothreads_buffer), (int) lsb);
@@ -678,58 +678,70 @@ void G1::loadMultPrecomputations(char *data) {
 }
 
 G1 G1::getRand() {
-    ::G1 *el = new ::G1();
-    pfc->random(*el);
+    ::G1 *_el = new ::G1();
+    pfc->random(*_el);
     // Following is very unlikely, but we still want to handle it
-    if (UNLIKELY(el->g.iszero())) {
-        delete el;
+    if (UNLIKELY(_el->g.iszero())) {
+        delete _el;
         return G1();
     }
-    return G1(reinterpret_cast<void*>(el));
+    return G1(reinterpret_cast<void*>(_el));
 }
 
-G1 G1::getValue(const char *data, int len, bool compressed) {
-    if (!len) return G1();
-    ::G1 *el = new ::G1();
+int G1::getDataLen(bool compressed) {
+    if (compressed) {
+        return big_size + 1;
+    } else {
+        return big_size << 1;
+    }
+}
+
+G1 G1::getValue(const char *data, bool compressed) {
     // Note: Sorry about the following const_cast-s,
     // const keyword simply missing in from_binary
+    ::G1 *_el;
     if (compressed) {
         int lsb = (int) *(data++);
-        el->g.set(from_binary(len - 1, const_cast<char*>(data)), lsb);
+        if (lsb == (char) (unsigned char) 0xFF)
+            return G1();
+        _el = new ::G1();
+        _el->g.set(from_binary(big_size, const_cast<char*>(data)), lsb);
     } else {
-        if (len & 1)
-            throw "pairings::G1::getValue: Unexpected data length";
-        len >>= 1;
-        el->g.set(from_binary(len, const_cast<char*>(data)),
-                  from_binary(len, const_cast<char*>(data + len)));
+        _el = new ::G1();
+        _el->g.set(from_binary(big_size, const_cast<char*>(data)),
+                  from_binary(big_size, const_cast<char*>(data + big_size)));
+        if (_el->g.iszero()) {
+            delete _el;
+            return G1();
+        }
     }
-    return G1(reinterpret_cast<void*>(el));
+    return G1(reinterpret_cast<void*>(_el));
 }
 
 G1 G1::fromHash(const char *data, int len) {
-    ::G1 *el = new ::G1();
+    ::G1 *_el = new ::G1();
     ::Big x0;
     hashToZZn(data, len, *pfc->mod, x0);
-    while (!el->g.set(x0, x0)) ++x0;
+    while (!_el->g.set(x0, x0)) ++x0;
     // Following is very unlikely, but we still want to handle it
-    if (UNLIKELY(el->g.iszero())) {
-        delete el;
+    if (UNLIKELY(_el->g.iszero())) {
+        delete _el;
         return G1();
     }
-    return G1(reinterpret_cast<void*>(el));
+    return G1(reinterpret_cast<void*>(_el));
 }
 
 G1 G1::fromHash(const char *hash) {
-    ::G1 *el = new ::G1();
+    ::G1 *_el = new ::G1();
     ::Big x0;
     hashToZZn(hash, *pfc->mod, x0);
-    while (!el->g.set(x0, x0)) ++x0;
+    while (!_el->g.set(x0, x0)) ++x0;
     // Following is very unlikely, but we still want to handle it
-    if (UNLIKELY(el->g.iszero())) {
-        delete el;
+    if (UNLIKELY(_el->g.iszero())) {
+        delete _el;
         return G1();
     }
-    return G1(reinterpret_cast<void*>(el));
+    return G1(reinterpret_cast<void*>(_el));
 }
 
 void G1::deref() {
@@ -771,12 +783,12 @@ G2 G2::operator+(const G2 &other) const {
     if (!other.d) return *this;
     const ::G2 &_this = *reinterpret_cast< ::G2* >(d->p);
     const ::G2 &_other = *reinterpret_cast< ::G2* >(other.d->p);
-    ::G2 *result = addG2(_this, _other);
-    if (result->g.iszero()) {
-        delete result;
+    ::G2 *_el = addG2(_this, _other);
+    if (_el->g.iszero()) {
+        delete _el;
         return G2();
     }
-    return G2(reinterpret_cast<void*>(result));
+    return G2(reinterpret_cast<void*>(_el));
 }
 
 G2 G2::operator-(const G2 &other) const {
@@ -784,13 +796,13 @@ G2 G2::operator-(const G2 &other) const {
     const ::G2 &_other = *reinterpret_cast< ::G2* >(other.d->p);
     if (!d) return G2(reinterpret_cast<void*>(new ::G2(-_other)));
     const ::G2 &_this = *reinterpret_cast< ::G2* >(d->p);
-    ::G2 m_other = -_other;
-    ::G2 *result = addG2(_this, m_other);
-    if (result->g.iszero()) {
-        delete result;
+    ::G2 _m_other = -_other;
+    ::G2 *_el = addG2(_this, _m_other);
+    if (_el->g.iszero()) {
+        delete _el;
         return G2();
     }
-    return G2(reinterpret_cast<void*>(result));
+    return G2(reinterpret_cast<void*>(_el));
 }
 
 G2 &G2::operator+=(const G2 &other) {
@@ -801,19 +813,19 @@ G2 &G2::operator+=(const G2 &other) {
         return *this;
     }
     const ::G2 &_this = *reinterpret_cast< ::G2* >(d->p);
-    ::G2 *result = addG2(_this, _other);
-    if (result->g.iszero()) {
-        delete result;
+    ::G2 *_el = addG2(_this, _other);
+    if (_el->g.iszero()) {
+        delete _el;
         deref();
         d = NULL;
         return *this;
     }
     if (d->c) {
         --d->c;
-        d = new SharedData(reinterpret_cast<void*>(result));
+        d = new SharedData(reinterpret_cast<void*>(_el));
     } else {
         delete reinterpret_cast< ::G2* >(d->p);
-        d->p = reinterpret_cast<void*>(result);
+        d->p = reinterpret_cast<void*>(_el);
     }
     return *this;
 }
@@ -827,19 +839,19 @@ G2 &G2::operator-=(const G2 &other) {
     }
     const ::G2 &_this = *reinterpret_cast< ::G2* >(d->p);
     ::G2 m_other = -_other;
-    ::G2 *result = addG2(_this, m_other);
-    if (result->g.iszero()) {
-        delete result;
+    ::G2 *_el = addG2(_this, m_other);
+    if (_el->g.iszero()) {
+        delete _el;
         deref();
         d = NULL;
         return *this;
     }
     if (d->c) {
         --d->c;
-        d = new SharedData(reinterpret_cast<void*>(result));
+        d = new SharedData(reinterpret_cast<void*>(_el));
     } else {
         delete reinterpret_cast< ::G2* >(d->p);
-        d->p = reinterpret_cast<void*>(result);
+        d->p = reinterpret_cast<void*>(_el);
     }
     return *this;
 }
@@ -856,13 +868,14 @@ G2 &G2::operator*=(const Fp &other) {
     }
     // Note: Since neither this group element nor the scalar are null,
     // the result won't be null either.
-    void *result = reinterpret_cast<void*>(new ::G2(pfc->mult(_this, _other)));
+    void *_el = reinterpret_cast<void*>(
+                new ::G2(pfc->mult(_this, _other)));
     if (d->c) {
         --d->c;
-        d = new SharedData(result);
+        d = new SharedData(_el);
     } else {
         delete reinterpret_cast< ::G2* >(d->p);
-        d->p = result;
+        d->p = _el;
     }
     return *this;
 }
@@ -897,35 +910,36 @@ bool G2::operator==(const G2 &other) const {
     return (const_cast< ::G2&>(_this) == const_cast< ::G2&>(_other));
 }
 
-int G2::getDataLen(bool compressed) const {
-    if (!d) return 0;
-    if (compressed) {
-        return (big_size << 1) + 1;
-    } else {
-        return big_size << 2;
-    }
-}
-
 void G2::getData(char *data, bool compressed) const {
-    if (!d) return;
+    if (!d) {
+        if (compressed) {
+            *data = (char) (unsigned char) 0xFF;
+        } else {
+            ::Big b;
+            to_binary(b, big_size, data, TRUE);
+            to_binary(b, big_size, data += big_size, TRUE);
+            to_binary(b, big_size, data += big_size, TRUE);
+            to_binary(b, big_size, data + big_size, TRUE);
+        }
+        return;
+    }
     const ::G2 &_this = *reinterpret_cast< ::G2* >(d->p);
     ::ZZn2 x, y;
     _this.g.get(x, y);
+    ::Big b1, b2;
     if (compressed) {
-        ::Big b1, b2;
         y.get(b1);
         *data = (char) (b1.get(1) & 1);
         x.get(b1, b2);
         to_binary(b1, big_size, ++data, TRUE);
         to_binary(b2, big_size, data + big_size, TRUE);
     } else {
-        ::Big b1, b2, b3, b4;
         x.get(b1, b2);
-        y.get(b3, b4);
         to_binary(b1, big_size, data, TRUE);
         to_binary(b2, big_size, data += big_size, TRUE);
-        to_binary(b3, big_size, data += big_size, TRUE);
-        to_binary(b4, big_size, data + big_size, TRUE);
+        y.get(b1, b2);
+        to_binary(b1, big_size, data += big_size, TRUE);
+        to_binary(b2, big_size, data + big_size, TRUE);
     }
 }
 
@@ -961,13 +975,13 @@ std::ostream &operator<<(std::ostream &stream, const G2 &el) {
 }
 
 std::istream &operator>>(std::istream &stream, G2 &el) {
-    ::G2 *_el = new ::G2();
     char lsb;
     stream.read(&lsb, 1);
     if (lsb == (char) (unsigned char) 0xFF) {
         if (el.d) el.deref();
         return stream;
     }
+    ::G2 *_el = new ::G2();
     ::Big b1, b2;
 #ifdef GSNIZK_IOSTREAM_NOTHREADS
     stream.read(iostream_nothreads_buffer, big_size);
@@ -1052,51 +1066,60 @@ void G2::loadPairingPrecomputations(char *data) {
 }
 
 G2 G2::getRand() {
-    ::G2 *el = new ::G2();
-    pfc->random(*el);
+    ::G2 *_el = new ::G2();
+    pfc->random(*_el);
     // Following is very unlikely, but we still want to handle it
-    if (UNLIKELY(el->g.iszero())) {
-        delete el;
+    if (UNLIKELY(_el->g.iszero())) {
+        delete _el;
         return G2();
     }
-    return G2(reinterpret_cast<void*>(el));
+    return G2(reinterpret_cast<void*>(_el));
 }
 
-G2 G2::getValue(const char *data, int len, bool compressed) {
-    if (!len) return G2();
-    ::G2 *el = new ::G2();
+int G2::getDataLen(bool compressed) {
+    if (compressed) {
+        return (big_size << 1) + 1;
+    } else {
+        return big_size << 2;
+    }
+}
+
+G2 G2::getValue(const char *data, bool compressed) {
+    ::G2 *_el;
     // Note: Sorry about the following const_cast-s,
     // const keyword simply missing in from_binary
     if (compressed) {
         int lsb = (int) *(data++);
-        if ((--len) & 1)
-            throw "pairings::G2::getValue: Unexpected data length";
-        len >>= 1;
+        if (lsb == (char) (unsigned char) 0xFF)
+            return G2();
+        _el = new ::G2();
         ::Big b1, b2;
-        b1 = from_binary(len, const_cast<char*>(data));
-        b2 = from_binary(len, const_cast<char*>(data + len));
+        b1 = from_binary(big_size, const_cast<char*>(data));
+        b2 = from_binary(big_size, const_cast<char*>(data + big_size));
         ZZn2 x, y;
         x.set(b1, b2);
-        el->g.set(x);
-        el->g.get(x, y);
+        _el->g.set(x);
+        _el->g.get(x, y);
         y.get(b1);
         if ((b1.get(1) & 1) != lsb)
-            *el = -(*el);
+            *_el = -(*_el);
     } else {
-        if (len & 3)
-            throw "pairings::G2::getValue: Unexpected data length";
-        len >>= 2;
-        ::Big b1, b2, b3, b4;
-        b1 = from_binary(len, const_cast<char*>(data));
-        b2 = from_binary(len, const_cast<char*>(data += len));
-        b3 = from_binary(len, const_cast<char*>(data += len));
-        b4 = from_binary(len, const_cast<char*>(data + len));
+        _el = new ::G2();
         ZZn2 x, y;
+        ::Big b1, b2;
+        b1 = from_binary(big_size, const_cast<char*>(data));
+        b2 = from_binary(big_size, const_cast<char*>(data += big_size));
         x.set(b1, b2);
-        y.set(b3, b4);
-        el->g.set(x, y);
+        b1 = from_binary(big_size, const_cast<char*>(data += big_size));
+        b2 = from_binary(big_size, const_cast<char*>(data + big_size));
+        y.set(b1, b2);
+        _el->g.set(x, y);
+        if (_el->g.iszero()) {
+            delete _el;
+            return G2();
+        }
     }
-    return G2(reinterpret_cast<void*>(el));
+    return G2(reinterpret_cast<void*>(_el));
 }
 
 /* Fast multiplication of A by q (for Trace-Zero group members only)
@@ -1149,16 +1172,16 @@ void getG2FromBig(::G2 &el, ::Big &x0) {
 }
 
 G2 G2::fromHash(const char *data, int len) {
-    ::G2 *el = new ::G2();
+    ::G2 *_el = new ::G2();
     ::Big x0;
     hashToZZn(data, len, *pfc->mod, x0);
-    getG2FromBig(*el, x0);
+    getG2FromBig(*_el, x0);
     // Following is very unlikely, but we still want to handle it
-    if (UNLIKELY(el->g.iszero())) {
-        delete el;
+    if (UNLIKELY(_el->g.iszero())) {
+        delete _el;
         return G2();
     }
-    return G2(reinterpret_cast<void*>(el));
+    return G2(reinterpret_cast<void*>(_el));
 }
 
 G2 G2::fromHash(const char *hash) {
@@ -1188,31 +1211,31 @@ GT GT::operator*(const GT &other) const {
     if (!other.d) return *this;
     const ::GT &_this = *reinterpret_cast< ::GT* >(d->p);
     const ::GT &_other = *reinterpret_cast< ::GT* >(other.d->p);
-    ::GT *result = new ::GT(_this * _other);
-    if (result->g.isunity()) {
-        delete result;
+    ::GT *_el = new ::GT(_this * _other);
+    if (_el->g.isunity()) {
+        delete _el;
         return GT();
     }
-    return GT(reinterpret_cast<void*>(result));
+    return GT(reinterpret_cast<void*>(_el));
 }
 
 GT GT::operator/(const GT &other) const {
     if (!other.d) return *this;
     const ::GT &_other = *reinterpret_cast< ::GT* >(other.d->p);
-    ::GT *result;
+    ::GT *_el;
     if (!d) {
-        result = new ::GT();
-        result->g = inverse(_other.g);
-        return GT(reinterpret_cast<void*>(result));
+        _el = new ::GT();
+        _el->g = inverse(_other.g);
+        return GT(reinterpret_cast<void*>(_el));
     }
     const ::GT &_this = *reinterpret_cast< ::GT* >(d->p);
-    result = new ::GT(_this);
-    result->g /= _other.g;
-    if (result->g.isunity()) {
-        delete result;
+    _el = new ::GT(_this);
+    _el->g /= _other.g;
+    if (_el->g.isunity()) {
+        delete _el;
         return GT();
     }
-    return GT(reinterpret_cast<void*>(result));
+    return GT(reinterpret_cast<void*>(_el));
 }
 
 GT &GT::operator*=(const GT &other) {
@@ -1223,19 +1246,19 @@ GT &GT::operator*=(const GT &other) {
         return *this;
     }
     const ::GT &_this = *reinterpret_cast< ::GT* >(d->p);
-    ::GT *result = new ::GT(_this * _other);
-    if (result->g.isunity()) {
-        delete result;
+    ::GT *_el = new ::GT(_this * _other);
+    if (_el->g.isunity()) {
+        delete _el;
         deref();
         d = NULL;
         return *this;
     }
     if (d->c) {
         --d->c;
-        d = new SharedData(reinterpret_cast<void*>(result));
+        d = new SharedData(reinterpret_cast<void*>(_el));
     } else {
         delete reinterpret_cast< ::GT* >(d->p);
-        d->p = reinterpret_cast<void*>(result);
+        d->p = reinterpret_cast<void*>(_el);
     }
     return *this;
 }
@@ -1243,28 +1266,28 @@ GT &GT::operator*=(const GT &other) {
 GT &GT::operator/=(const GT &other) {
     if (!other.d) return *this;
     const ::GT &_other = *reinterpret_cast< ::GT* >(other.d->p);
-    ::GT *result;
+    ::GT *_el;
     if (!d) {
-        result = new ::GT();
-        result->g = inverse(_other.g);
-        d = new SharedData(reinterpret_cast<void*>(result));
+        _el = new ::GT();
+        _el->g = inverse(_other.g);
+        d = new SharedData(reinterpret_cast<void*>(_el));
         return *this;
     }
     const ::GT &_this = *reinterpret_cast< ::GT* >(d->p);
-    result = new ::GT(_this);
-    result->g /= _other.g;
-    if (result->g.isunity()) {
-        delete result;
+    _el = new ::GT(_this);
+    _el->g /= _other.g;
+    if (_el->g.isunity()) {
+        delete _el;
         deref();
         d = NULL;
         return *this;
     }
     if (d->c) {
         --d->c;
-        d = new SharedData(reinterpret_cast<void*>(result));
+        d = new SharedData(reinterpret_cast<void*>(_el));
     } else {
         delete reinterpret_cast< ::GT* >(d->p);
-        d->p = reinterpret_cast<void*>(result);
+        d->p = reinterpret_cast<void*>(_el);
     }
     return *this;
 }
@@ -1281,13 +1304,14 @@ GT &GT::operator^=(const Fp &other) {
     }
     // Note: Since neither this group element nor the scalar are null,
     // the result won't be null either.
-    void *result = reinterpret_cast<void*>(new ::GT(pfc->power(_this, _other)));
+    void *_el = reinterpret_cast<void*>(
+                new ::GT(pfc->power(_this, _other)));
     if (d->c) {
         --d->c;
-        d = new SharedData(result);
+        d = new SharedData(_el);
     } else {
         delete reinterpret_cast< ::GT* >(d->p);
-        d->p = result;
+        d->p = _el;
     }
     return *this;
 }
@@ -1310,13 +1334,21 @@ bool GT::operator==(const GT &other) const {
     return (_this == _other);
 }
 
-int GT::getDataLen() const {
-    if (!d) return 0;
+int GT::getDataLen() {
     return big_size * 12;
 }
 
 void GT::getData(char *data) const {
-    if (!d) return;
+    if (!d) {
+        ::Big b1 = ::Big(1);
+        to_binary(b1, big_size, data, TRUE);
+        b1 = ::Big();
+        for (int i = 11; i-- > 0;) {
+            to_binary(b1, big_size, data, TRUE);
+            data += big_size;
+        }
+        return;
+    }
     const ::GT &_this = *reinterpret_cast< ::GT* >(d->p);
     ::ZZn4 a, b, c;
     ::ZZn2 x, y;
@@ -1345,178 +1377,99 @@ void GT::getData(char *data) const {
     to_binary(b2, big_size, data + big_size, TRUE);
 }
 
-std::ostream &operator<<(std::ostream &stream, const GT &el) {
-    char lsb;
-    if (!el.d) {
-        lsb = (char) (unsigned char) 0xFF;
-        stream.write(&lsb, 1);
-        return stream;
-    }
-    lsb = 0;
-    stream.write(&lsb, 1);
-    const ::GT &_el = *reinterpret_cast< ::GT* >(el.d->p);
-    ::ZZn4 a, b, c;
+void write_zzn4(std::ostream &stream, const ::ZZn4 &v, char *buffer) {
     ::ZZn2 x, y;
     ::Big b1, b2;
+    v.get(x, y);
+    x.get(b1, b2);
+    to_binary(b1, big_size, buffer, TRUE);
+    stream.write(buffer, big_size);
+    to_binary(b2, big_size, buffer, TRUE);
+    stream.write(buffer, big_size);
+    y.get(b1, b2);
+    to_binary(b1, big_size, buffer, TRUE);
+    stream.write(buffer, big_size);
+    to_binary(b2, big_size, buffer, TRUE);
+    stream.write(buffer, big_size);
+}
+
+std::ostream &operator<<(std::ostream &stream, const GT &el) {
+    if (!el.d) {
+        ::Big b1 = ::Big(1);
+#ifdef GSNIZK_IOSTREAM_NOTHREADS
+        to_binary(b1, big_size, iostream_nothreads_buffer, TRUE);
+        stream.write(iostream_nothreads_buffer, big_size);
+        b1 = ::Big();
+        to_binary(b1, big_size, iostream_nothreads_buffer, TRUE);
+        for (int i = 11; i-- > 0;)
+            stream.write(iostream_nothreads_buffer, big_size);
+#else
+        char *iostream_threads_buffer = new char[big_size];
+        to_binary(b1, big_size, iostream_threads_buffer, TRUE);
+        stream.write(iostream_threads_buffer, big_size);
+        b1 = ::Big();
+        to_binary(b1, big_size, iostream_threads_buffer, TRUE);
+        for (int i = 11; i-- > 0;)
+            stream.write(iostream_threads_buffer, big_size);
+        delete[] iostream_threads_buffer;
+#endif
+        return stream;
+    }
+    const ::GT &_el = *reinterpret_cast< ::GT* >(el.d->p);
+    ::ZZn4 a, b, c;
     _el.g.get(a, b, c);
 #ifdef GSNIZK_IOSTREAM_NOTHREADS
-    a.get(x, y);
-    x.get(b1, b2);
-    to_binary(b1, big_size, iostream_nothreads_buffer, TRUE);
-    stream.write(iostream_nothreads_buffer, big_size);
-    to_binary(b2, big_size, iostream_nothreads_buffer, TRUE);
-    stream.write(iostream_nothreads_buffer, big_size);
-    y.get(b1, b2);
-    to_binary(b1, big_size, iostream_nothreads_buffer, TRUE);
-    stream.write(iostream_nothreads_buffer, big_size);
-    to_binary(b2, big_size, iostream_nothreads_buffer, TRUE);
-    stream.write(iostream_nothreads_buffer, big_size);
-    b.get(x, y);
-    x.get(b1, b2);
-    to_binary(b1, big_size, iostream_nothreads_buffer, TRUE);
-    stream.write(iostream_nothreads_buffer, big_size);
-    to_binary(b2, big_size, iostream_nothreads_buffer, TRUE);
-    stream.write(iostream_nothreads_buffer, big_size);
-    y.get(b1, b2);
-    to_binary(b1, big_size, iostream_nothreads_buffer, TRUE);
-    stream.write(iostream_nothreads_buffer, big_size);
-    to_binary(b2, big_size, iostream_nothreads_buffer, TRUE);
-    stream.write(iostream_nothreads_buffer, big_size);
-    c.get(x, y);
-    x.get(b1, b2);
-    to_binary(b1, big_size, iostream_nothreads_buffer, TRUE);
-    stream.write(iostream_nothreads_buffer, big_size);
-    to_binary(b2, big_size, iostream_nothreads_buffer, TRUE);
-    stream.write(iostream_nothreads_buffer, big_size);
-    y.get(b1, b2);
-    to_binary(b1, big_size, iostream_nothreads_buffer, TRUE);
-    stream.write(iostream_nothreads_buffer, big_size);
-    to_binary(b2, big_size, iostream_nothreads_buffer, TRUE);
-    stream.write(iostream_nothreads_buffer, big_size);
+    write_zzn4(stream, a, iostream_nothreads_buffer);
+    write_zzn4(stream, b, iostream_nothreads_buffer);
+    write_zzn4(stream, c, iostream_nothreads_buffer);
 #else
     char *iostream_threads_buffer = new char[big_size];
-    a.get(x, y);
-    x.get(b1, b2);
-    to_binary(b1, big_size, iostream_threads_buffer, TRUE);
-    stream.write(iostream_threads_buffer, big_size);
-    to_binary(b2, big_size, iostream_threads_buffer, TRUE);
-    stream.write(iostream_threads_buffer, big_size);
-    y.get(b1, b2);
-    to_binary(b1, big_size, iostream_threads_buffer, TRUE);
-    stream.write(iostream_threads_buffer, big_size);
-    to_binary(b2, big_size, iostream_threads_buffer, TRUE);
-    stream.write(iostream_threads_buffer, big_size);
-    b.get(x, y);
-    x.get(b1, b2);
-    to_binary(b1, big_size, iostream_threads_buffer, TRUE);
-    stream.write(iostream_threads_buffer, big_size);
-    to_binary(b2, big_size, iostream_threads_buffer, TRUE);
-    stream.write(iostream_threads_buffer, big_size);
-    y.get(b1, b2);
-    to_binary(b1, big_size, iostream_threads_buffer, TRUE);
-    stream.write(iostream_threads_buffer, big_size);
-    to_binary(b2, big_size, iostream_threads_buffer, TRUE);
-    stream.write(iostream_threads_buffer, big_size);
-    c.get(x, y);
-    x.get(b1, b2);
-    to_binary(b1, big_size, iostream_threads_buffer, TRUE);
-    stream.write(iostream_threads_buffer, big_size);
-    to_binary(b2, big_size, iostream_threads_buffer, TRUE);
-    stream.write(iostream_threads_buffer, big_size);
-    y.get(b1, b2);
-    to_binary(b1, big_size, iostream_threads_buffer, TRUE);
-    stream.write(iostream_threads_buffer, big_size);
-    to_binary(b2, big_size, iostream_threads_buffer, TRUE);
-    stream.write(iostream_threads_buffer, big_size);
+    write_zzn4(stream, a, iostream_threads_buffer);
+    write_zzn4(stream, b, iostream_threads_buffer);
+    write_zzn4(stream, c, iostream_threads_buffer);
     delete[] iostream_threads_buffer;
 #endif
     return stream;
 }
 
-std::istream &operator>>(std::istream &stream, GT &el) {
-    ::GT *_el = new ::GT();
-    char lsb;
-    stream.read(&lsb, 1);
-    if (lsb == (char) (unsigned char) 0xFF) {
-        if (el.d) el.deref();
-        return stream;
-    }
-    ::ZZn4 a, b, c;
+void read_zzn4(std::istream &stream, ::ZZn4 &v, char *buffer) {
     ::ZZn2 x, y;
     ::Big b1, b2;
+    stream.read(buffer, big_size);
+    b1 = from_binary(big_size, buffer);
+    stream.read(buffer, big_size);
+    b2 = from_binary(big_size, buffer);
+    x.set(b1, b2);
+    stream.read(buffer, big_size);
+    b1 = from_binary(big_size, buffer);
+    stream.read(buffer, big_size);
+    b2 = from_binary(big_size, buffer);
+    y.set(b1, b2);
+    v.set(x, y);
+}
+
+std::istream &operator>>(std::istream &stream, GT &el) {
+    ::GT *_el = new ::GT();
+    ::ZZn4 a, b, c;
 #ifdef GSNIZK_IOSTREAM_NOTHREADS
-    stream.read(iostream_nothreads_buffer, big_size);
-    b1 = from_binary(big_size, iostream_nothreads_buffer);
-    stream.read(iostream_nothreads_buffer, big_size);
-    b2 = from_binary(big_size, iostream_nothreads_buffer);
-    x.set(b1, b2);
-    stream.read(iostream_nothreads_buffer, big_size);
-    b1 = from_binary(big_size, iostream_nothreads_buffer);
-    stream.read(iostream_nothreads_buffer, big_size);
-    b2 = from_binary(big_size, iostream_nothreads_buffer);
-    y.set(b1, b2);
-    a.set(x, y);
-    stream.read(iostream_nothreads_buffer, big_size);
-    b1 = from_binary(big_size, iostream_nothreads_buffer);
-    stream.read(iostream_nothreads_buffer, big_size);
-    b2 = from_binary(big_size, iostream_nothreads_buffer);
-    x.set(b1, b2);
-    stream.read(iostream_nothreads_buffer, big_size);
-    b1 = from_binary(big_size, iostream_nothreads_buffer);
-    stream.read(iostream_nothreads_buffer, big_size);
-    b2 = from_binary(big_size, iostream_nothreads_buffer);
-    y.set(b1, b2);
-    b.set(x, y);
-    stream.read(iostream_nothreads_buffer, big_size);
-    b1 = from_binary(big_size, iostream_nothreads_buffer);
-    stream.read(iostream_nothreads_buffer, big_size);
-    b2 = from_binary(big_size, iostream_nothreads_buffer);
-    x.set(b1, b2);
-    stream.read(iostream_nothreads_buffer, big_size);
-    b1 = from_binary(big_size, iostream_nothreads_buffer);
-    stream.read(iostream_nothreads_buffer, big_size);
-    b2 = from_binary(big_size, iostream_nothreads_buffer);
-    y.set(b1, b2);
-    c.set(x, y);
+    read_zzn4(stream, a, iostream_nothreads_buffer);
+    read_zzn4(stream, b, iostream_nothreads_buffer);
+    read_zzn4(stream, c, iostream_nothreads_buffer);
 #else
     char *iostream_threads_buffer = new char[big_size];
-    stream.read(iostream_threads_buffer, big_size);
-    b1 = from_binary(big_size, iostream_threads_buffer);
-    stream.read(iostream_threads_buffer, big_size);
-    b2 = from_binary(big_size, iostream_threads_buffer);
-    x.set(b1, b2);
-    stream.read(iostream_threads_buffer, big_size);
-    b1 = from_binary(big_size, iostream_threads_buffer);
-    stream.read(iostream_threads_buffer, big_size);
-    b2 = from_binary(big_size, iostream_threads_buffer);
-    y.set(b1, b2);
-    a.set(x, y);
-    stream.read(iostream_threads_buffer, big_size);
-    b1 = from_binary(big_size, iostream_threads_buffer);
-    stream.read(iostream_threads_buffer, big_size);
-    b2 = from_binary(big_size, iostream_threads_buffer);
-    x.set(b1, b2);
-    stream.read(iostream_threads_buffer, big_size);
-    b1 = from_binary(big_size, iostream_threads_buffer);
-    stream.read(iostream_threads_buffer, big_size);
-    b2 = from_binary(big_size, iostream_threads_buffer);
-    y.set(b1, b2);
-    b.set(x, y);
-    stream.read(iostream_threads_buffer, big_size);
-    b1 = from_binary(big_size, iostream_threads_buffer);
-    stream.read(iostream_threads_buffer, big_size);
-    b2 = from_binary(big_size, iostream_threads_buffer);
-    x.set(b1, b2);
-    stream.read(iostream_threads_buffer, big_size);
-    b1 = from_binary(big_size, iostream_threads_buffer);
-    stream.read(iostream_threads_buffer, big_size);
-    b2 = from_binary(big_size, iostream_threads_buffer);
-    y.set(b1, b2);
-    c.set(x, y);
+    read_zzn4(stream, a, iostream_threads_buffer);
+    read_zzn4(stream, b, iostream_threads_buffer);
+    read_zzn4(stream, c, iostream_threads_buffer);
     delete[] iostream_threads_buffer;
 #endif
     _el->g.set(a, b, c);
-    if (el.d) {
+    if (_el->g.isunity()) {
+        delete _el;
+        if (el.d) {
+            el.deref();
+            el.d = NULL;
+        }
+    } else if (el.d) {
         if (el.d->c) {
             --el.d->c;
             el.d = new SharedData(reinterpret_cast<void*>(_el));
@@ -1558,49 +1511,49 @@ void GT::loadPowerPrecomputations(char *data) {
 GT GT::getRand() {
     ::Big b;
     pfc->random(b);
-    ::GT *el = new ::GT(pfc->power(*rndSeed, b));
+    ::GT *_el = new ::GT(pfc->power(*rndSeed, b));
     // Following is very unlikely, but we still want to handle it
-    if (UNLIKELY(el->g.iszero())) {
-        delete el;
+    if (UNLIKELY(_el->g.iszero())) {
+        delete _el;
         return GT();
     }
-    return GT(reinterpret_cast<void*>(el));
+    return GT(reinterpret_cast<void*>(_el));
 }
 
-GT GT::getValue(const char *data, int len) {
-    if (!len) return GT();
-    ::GT *el = new ::GT();
+GT GT::getValue(const char *data) {
+    ::GT *_el = new ::GT();
     // Note: Sorry about the following const_cast-s,
     // const keyword simply missing in from_binary
-    if (len % 12)
-        throw "pairings::GT::getValue: Unexpected data length";
-    len /= 12;
     ::ZZn4 a, b, c;
     ::ZZn2 x, y;
     ::Big b1, b2;
-    b1 = from_binary(len, const_cast<char*>(data));
-    b2 = from_binary(len, const_cast<char*>(data += len));
+    b1 = from_binary(big_size, const_cast<char*>(data));
+    b2 = from_binary(big_size, const_cast<char*>(data += big_size));
     x.set(b1, b2);
-    b1 = from_binary(len, const_cast<char*>(data += len));
-    b2 = from_binary(len, const_cast<char*>(data += len));
+    b1 = from_binary(big_size, const_cast<char*>(data += big_size));
+    b2 = from_binary(big_size, const_cast<char*>(data += big_size));
     y.set(b1, b2);
     a.set(x, y);
-    b1 = from_binary(len, const_cast<char*>(data += len));
-    b2 = from_binary(len, const_cast<char*>(data += len));
+    b1 = from_binary(big_size, const_cast<char*>(data += big_size));
+    b2 = from_binary(big_size, const_cast<char*>(data += big_size));
     x.set(b1, b2);
-    b1 = from_binary(len, const_cast<char*>(data += len));
-    b2 = from_binary(len, const_cast<char*>(data += len));
+    b1 = from_binary(big_size, const_cast<char*>(data += big_size));
+    b2 = from_binary(big_size, const_cast<char*>(data += big_size));
     y.set(b1, b2);
     b.set(x, y);
-    b1 = from_binary(len, const_cast<char*>(data += len));
-    b2 = from_binary(len, const_cast<char*>(data += len));
+    b1 = from_binary(big_size, const_cast<char*>(data += big_size));
+    b2 = from_binary(big_size, const_cast<char*>(data += big_size));
     x.set(b1, b2);
-    b1 = from_binary(len, const_cast<char*>(data += len));
-    b2 = from_binary(len, const_cast<char*>(data + len));
+    b1 = from_binary(big_size, const_cast<char*>(data += big_size));
+    b2 = from_binary(big_size, const_cast<char*>(data + big_size));
     y.set(b1, b2);
     c.set(x, y);
-    el->g.set(a, b, c);
-    return GT(reinterpret_cast<void*>(el));
+    _el->g.set(a, b, c);
+    if (_el->g.isunity()) {
+        delete _el;
+        return GT();
+    }
+    return GT(reinterpret_cast<void*>(_el));
 }
 
 GT GT::pairing(const G1 &a, const G2 &b) {
@@ -1608,8 +1561,8 @@ GT GT::pairing(const G1 &a, const G2 &b) {
         return GT();
     const ::G1 &_a = *reinterpret_cast< ::G1* >(a.d->p);
     const ::G2 &_b = *reinterpret_cast< ::G2* >(b.d->p);
-    ::GT *el = new ::GT(pfc->pairing(_b, _a));
-    return GT(reinterpret_cast<void*>(el));
+    ::GT *_el = new ::GT(pfc->pairing(_b, _a));
+    return GT(reinterpret_cast<void*>(_el));
 }
 
 GT GT::pairing(const std::vector< std::pair<G1,G2> > &lst) {
@@ -1629,14 +1582,14 @@ GT GT::pairing(const std::vector< std::pair<G1,G2> > &lst) {
         delete[] b;
         return GT();
     }
-    ::GT *el = new ::GT(pfc->multi_pairing(i, b, a));
+    ::GT *_el = new ::GT(pfc->multi_pairing(i, b, a));
     delete[] a;
     delete[] b;
-    if (el->g.isunity()) {
-        delete el;
+    if (_el->g.isunity()) {
+        delete _el;
         return GT();
     }
-    return GT(reinterpret_cast<void*>(el));
+    return GT(reinterpret_cast<void*>(_el));
 }
 
 void GT::deref() {
@@ -1759,31 +1712,31 @@ bool iostream_nothreads() {
 }
 
 Fp::Fp(int i) {
-    element_ptr _result = new element_s;
-    element_init_Zr(_result, p_params);
-    element_set_si(_result, i);
-    d = new SharedData(reinterpret_cast<void*>(_result));
+    element_ptr _el = new element_s;
+    element_init_Zr(_el, p_params);
+    element_set_si(_el, i);
+    d = new SharedData(reinterpret_cast<void*>(_el));
 }
 
 Fp::Fp(unsigned long i) {
-    element_ptr _result = new element_s;
-    element_init_Zr(_result, p_params);
+    element_ptr _el = new element_s;
+    element_init_Zr(_el, p_params);
     mpz_t v;
     mpz_init(v);
     mpz_set_ui(v, i);
-    element_set_mpz(_result, v);
+    element_set_mpz(_el, v);
     mpz_clear(v);
-    d = new SharedData(reinterpret_cast<void*>(_result));
+    d = new SharedData(reinterpret_cast<void*>(_el));
 }
 
 Fp Fp::operator-() const {
     const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
     if ((d == zero) || element_is0(_this))
         return Fp(*this);
-    element_ptr _result = new element_s;
-    element_init_Zr(_result, p_params);
-    element_neg(_result, _this);
-    return Fp(reinterpret_cast<void*>(_result));
+    element_ptr _el = new element_s;
+    element_init_Zr(_el, p_params);
+    element_neg(_el, _this);
+    return Fp(reinterpret_cast<void*>(_el));
 }
 
 Fp Fp::operator+(const Fp &other) const {
@@ -1791,20 +1744,20 @@ Fp Fp::operator+(const Fp &other) const {
     const element_ptr &_other = reinterpret_cast<element_ptr>(other.d->p);
     if ((d == zero) || element_is0(_this)) return other;
     if ((other.d == zero) || element_is0(_other)) return *this;
-    element_ptr _result = new element_s;
-    element_init_Zr(_result, p_params);
-    element_add(_result, _this, _other);
-    return Fp(reinterpret_cast<void*>(_result));
+    element_ptr _el = new element_s;
+    element_init_Zr(_el, p_params);
+    element_add(_el, _this, _other);
+    return Fp(reinterpret_cast<void*>(_el));
 }
 
 Fp Fp::operator-(const Fp &other) const {
     const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
     const element_ptr &_other = reinterpret_cast<element_ptr>(other.d->p);
     if ((other.d == zero) || element_is0(_other)) return *this;
-    element_ptr _result = new element_s;
-    element_init_Zr(_result, p_params);
-    element_sub(_result, _this, _other);
-    return Fp(reinterpret_cast<void*>(_result));
+    element_ptr _el = new element_s;
+    element_init_Zr(_el, p_params);
+    element_sub(_el, _this, _other);
+    return Fp(reinterpret_cast<void*>(_el));
 }
 
 Fp &Fp::operator+=(const Fp &other) {
@@ -1814,10 +1767,10 @@ Fp &Fp::operator+=(const Fp &other) {
     if ((d == zero) || element_is0(_this)) return (*this = other);
     if (d->c) {
         --d->c;
-        element_ptr _result = new element_s;
-        element_init_Zr(_result, p_params);
-        element_add(_result, _this, _other);
-        d = new SharedData(reinterpret_cast<void*>(_result));
+        element_ptr _el = new element_s;
+        element_init_Zr(_el, p_params);
+        element_add(_el, _this, _other);
+        d = new SharedData(reinterpret_cast<void*>(_el));
     } else {
         element_add(_this, _this, _other);
     }
@@ -1830,10 +1783,10 @@ Fp &Fp::operator-=(const Fp &other) {
     if ((other.d == zero) || element_is0(_other)) return *this;
     if (d->c) {
         --d->c;
-        element_ptr _result = new element_s;
-        element_init_Zr(_result, p_params);
-        element_sub(_result, _this, _other);
-        d = new SharedData(reinterpret_cast<void*>(_result));
+        element_ptr _el = new element_s;
+        element_init_Zr(_el, p_params);
+        element_sub(_el, _this, _other);
+        d = new SharedData(reinterpret_cast<void*>(_el));
     } else {
         element_sub(_this, _this, _other);
     }
@@ -1847,10 +1800,10 @@ Fp Fp::operator*(const Fp &other) const {
             element_is1(_other)) return *this;
     if ((d == one) || (other.d == zero) || element_is0(_other) ||
             element_is1(_this)) return other;
-    element_ptr _result = new element_s;
-    element_init_Zr(_result, p_params);
-    element_mul(_result, _this, _other);
-    return Fp(reinterpret_cast<void*>(_result));
+    element_ptr _el = new element_s;
+    element_init_Zr(_el, p_params);
+    element_mul(_el, _this, _other);
+    return Fp(reinterpret_cast<void*>(_el));
 }
 
 Fp Fp::operator/(const Fp &other) const {
@@ -1859,10 +1812,10 @@ Fp Fp::operator/(const Fp &other) const {
     const element_ptr &_other = reinterpret_cast<element_ptr>(other.d->p);
     if ((d == zero) || (other.d == one) || element_is0(_this) ||
             element_is1(_other)) return *this;
-    element_ptr _result = new element_s;
-    element_init_Zr(_result, p_params);
-    element_div(_result, _this, _other);
-    return Fp(reinterpret_cast<void*>(_result));
+    element_ptr _el = new element_s;
+    element_init_Zr(_el, p_params);
+    element_div(_el, _this, _other);
+    return Fp(reinterpret_cast<void*>(_el));
 }
 
 Fp &Fp::operator*=(const Fp &other) {
@@ -1874,10 +1827,10 @@ Fp &Fp::operator*=(const Fp &other) {
             element_is1(_this)) return (*this = other);
     if (d->c) {
         --d->c;
-        element_ptr _result = new element_s;
-        element_init_Zr(_result, p_params);
-        element_mul(_result, _this, _other);
-        d = new SharedData(reinterpret_cast<void*>(_result));
+        element_ptr _el = new element_s;
+        element_init_Zr(_el, p_params);
+        element_mul(_el, _this, _other);
+        d = new SharedData(reinterpret_cast<void*>(_el));
     } else {
         element_mul(_this, _this, _other);
     }
@@ -1892,10 +1845,10 @@ Fp &Fp::operator/=(const Fp &other) {
             element_is1(_other)) return *this;
     if (d->c) {
         --d->c;
-        element_ptr _result = new element_s;
-        element_init_Zr(_result, p_params);
-        element_div(_result, _this, _other);
-        d = new SharedData(reinterpret_cast<void*>(_result));
+        element_ptr _el = new element_s;
+        element_init_Zr(_el, p_params);
+        element_div(_el, _this, _other);
+        d = new SharedData(reinterpret_cast<void*>(_el));
     } else {
         element_div(_this, _this, _other);
     }
@@ -1909,6 +1862,10 @@ bool Fp::operator==(const Fp &other) const {
     return !element_cmp(_this, _other);
 }
 
+int Fp::getDataLen() const {
+    return _this.len() * MIRACL_BYTES;
+}
+
 bool Fp::isNull() const {
     if (d == zero) return true;
     return element_is0(reinterpret_cast<element_ptr>(d->p));
@@ -1920,10 +1877,10 @@ bool Fp::isUnit() const {
 }
 
 Fp Fp::getRand() {
-    element_ptr _result = new element_s;
-    element_init_Zr(_result, p_params);
-    element_random(_result);
-    return Fp(reinterpret_cast<void*>(_result));
+    element_ptr _el = new element_s;
+    element_init_Zr(_el, p_params);
+    element_random(_el);
+    return Fp(reinterpret_cast<void*>(_el));
 }
 
 void Fp::deref() {
