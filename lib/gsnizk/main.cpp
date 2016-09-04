@@ -79,7 +79,6 @@ void testPairings() {
     ASSERT(v1 == v2);
     v1 = Fp::getRand();
     ASSERT(v1 != v2); // Note: Just highly unlikely if the randomness is fine
-#if 0 // Skip the tests for unimplemented features
     len = v1.getDataLen();
     cout << "Len for random Fp: " << len << endl;
     CHECK_DATA_SIZE(len);
@@ -95,6 +94,8 @@ void testPairings() {
     ASSERT(v1 == v3);
     ASSERT(Fp::fromHash("hello", 5) != Fp::fromHash("hi", 2));
     ASSERT(Fp::fromHash("hello", 5) == Fp::fromHash(hash));
+
+#if 0 // Skip the tests for unimplemented features
 
     /* -------------------- Tests for G1 -------------------- */
     G1 g1 = G1::getRand(), g2, g3, g4;

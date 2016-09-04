@@ -18,6 +18,7 @@
 #endif
 
 #ifdef DEBUG
+#include <iostream>
 #define ASSERT(X,Y) if (!(X)) { \
     std::cerr << "Error: Assert of " << #X << " at line " \
     << __LINE__ << " failed in " << __FILE__ << "!" << std::endl \

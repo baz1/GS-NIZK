@@ -110,8 +110,7 @@ static ::GT *rndSeed = NULL;
 void initialize_pairings(int len, const char *data) {
     ASSERT(len >= 0, "Negative length");
     csprng *rnd = new csprng;
-    // Note: Sorry about the following const_cast,
-    // const keyword simply missing in strong_init
+    // Note: const keyword simply missing in strong_init
     strong_init(rnd, len, const_cast<char*>(data), (unsigned int) clock());
     pfc = new PFC(AES_SECURITY, rnd);
     Fp::zero = new SharedData(reinterpret_cast<void*>(new ::Big()));
@@ -411,8 +410,7 @@ int Fp::getDataLen() {
 }
 
 Fp Fp::getValue(const char *data) {
-    // Note: Sorry about the following const_cast,
-    // const keyword simply missing in from_binary
+    // Note: const keyword simply missing in from_binary
     return Fp(reinterpret_cast<void*>(
         new ::Big(from_binary(big_size, const_cast<char*>(data)))));
 }
@@ -697,8 +695,7 @@ int G1::getDataLen(bool compressed) {
 }
 
 G1 G1::getValue(const char *data, bool compressed) {
-    // Note: Sorry about the following const_cast-s,
-    // const keyword simply missing in from_binary
+    // Note: const keyword simply missing in from_binary
     ::G1 *_el;
     if (compressed) {
         int lsb = (int) *(data++);
@@ -762,8 +759,7 @@ G2 G2::operator-() const {
 /* Replacement for "::G2 operator+(const ::G2& x,const ::G2& y)" */
 ::G2 *addG2(const ::G2 &a, const ::G2 &b) {
     ::G2 *result;
-    // Note: Sorry about the following const_cast-s,
-    // const keyword simply missing in ECn2::type
+    // Note: const keyword simply missing in ECn2::type
     if (const_cast< ::ECn2& >(b.g).type() == MR_EPOINT_GENERAL) {
         if ((const_cast< ::ECn2& >(a.g).type() != MR_EPOINT_GENERAL)
                 || (&a == &b)) {
@@ -905,8 +901,7 @@ bool G2::operator==(const G2 &other) const {
     if (!other.d) return false;
     const ::G2 &_this = *reinterpret_cast< ::G2* >(d->p);
     const ::G2 &_other = *reinterpret_cast< ::G2* >(other.d->p);
-    // Note: Sorry about the following const_cast-s,
-    // const keyword simply missing in ::G2::operator==
+    // Note: const keyword simply missing in ::G2::operator==
     return (const_cast< ::G2&>(_this) == const_cast< ::G2&>(_other));
 }
 
@@ -1086,8 +1081,7 @@ int G2::getDataLen(bool compressed) {
 
 G2 G2::getValue(const char *data, bool compressed) {
     ::G2 *_el;
-    // Note: Sorry about the following const_cast-s,
-    // const keyword simply missing in from_binary
+    // Note: const keyword simply missing in from_binary
     if (compressed) {
         int lsb = (int) *(data++);
         if (lsb == (char) (unsigned char) 0xFF)
@@ -1522,8 +1516,7 @@ GT GT::getRand() {
 
 GT GT::getValue(const char *data) {
     ::GT *_el = new ::GT();
-    // Note: Sorry about the following const_cast-s,
-    // const keyword simply missing in from_binary
+    // Note: const keyword simply missing in from_binary
     ::ZZn4 a, b, c;
     ::ZZn2 x, y;
     ::Big b1, b2;
@@ -1862,8 +1855,59 @@ bool Fp::operator==(const Fp &other) const {
     return !element_cmp(_this, _other);
 }
 
-int Fp::getDataLen() const {
-    return _this.len() * MIRACL_BYTES;
+void Fp::getData(char *data) const {
+    element_to_bytes(reinterpret_cast<unsigned char*>(data),
+                     reinterpret_cast<element_ptr>(d->p));
+}
+
+std::ostream &operator<<(std::ostream &stream, const Fp &el) {
+    const element_ptr &_el = reinterpret_cast<element_ptr>(el.d->p);
+    int size = pairing_length_in_bytes_Zr(p_params);
+#ifdef GSNIZK_IOSTREAM_NOTHREADS
+    element_from_bytes(_el, reinterpret_cast<unsigned char*>(
+                           iostream_nothreads_buffer));
+    stream.write(iostream_nothreads_buffer, size);
+#else
+    unsigned char *iostream_threads_buffer = new unsigned char[size];
+    element_from_bytes(_el, iostream_threads_buffer);
+    stream.write(iostream_threads_buffer, size);
+    delete[] iostream_threads_buffer;
+#endif
+    return stream;
+}
+
+std::istream &operator>>(std::istream &stream, Fp &el) {
+    int size = pairing_length_in_bytes_Zr(p_params);
+#ifdef GSNIZK_IOSTREAM_NOTHREADS
+    stream.read(iostream_nothreads_buffer, size);
+    if (el.d->c) {
+        --el.d->c;
+        element_ptr _el = new element_s;
+        element_init_Zr(_el, p_params);
+        element_from_bytes(_el, reinterpret_cast<unsigned char*>(
+                               iostream_nothreads_buffer));
+        el.d = new SharedData(reinterpret_cast<void*>(_el));
+    } else {
+        const element_ptr &_el = reinterpret_cast<element_ptr>(el.d->p);
+        element_from_bytes(_el, reinterpret_cast<unsigned char*>(
+                               iostream_nothreads_buffer));
+    }
+#else
+    unsigned char *iostream_threads_buffer = new unsigned char[size];
+    stream.read(iostream_threads_buffer, size);
+    if (el.d->c) {
+        --el.d->c;
+        element_ptr _el = new element_s;
+        element_init_Zr(_el, p_params);
+        element_from_bytes(_el, iostream_threads_buffer);
+        el.d = new SharedData(reinterpret_cast<void*>(_el));
+    } else {
+        element_ptr &_el = reinterpret_cast<element_ptr>(el.d->p);
+        element_from_bytes(_el, iostream_threads_buffer);
+    }
+    delete[] iostream_threads_buffer;
+#endif
+    return stream;
 }
 
 bool Fp::isNull() const {
@@ -1880,6 +1924,43 @@ Fp Fp::getRand() {
     element_ptr _el = new element_s;
     element_init_Zr(_el, p_params);
     element_random(_el);
+    return Fp(reinterpret_cast<void*>(_el));
+}
+
+int Fp::getDataLen() {
+    return pairing_length_in_bytes_Zr(p_params);
+}
+
+Fp Fp::getValue(const char *data) {
+    element_ptr _el = new element_s;
+    element_init_Zr(_el, p_params);
+    // Note: const keyword simply missing in element_from_bytes
+    element_from_bytes(_el, reinterpret_cast<unsigned char*>(
+                           const_cast<char*>(data)));
+    return Fp(reinterpret_cast<void*>(_el));
+}
+
+Fp Fp::fromHash(const char *data, int len) {
+    char s[HASH_LEN_BYTES];
+#if HASH_LEN_BITS == 256
+    hash_sha256(data, len, s);
+#elif HASH_LEN_BITS == 512
+    hash_sha512(data, len, s);
+#else
+#error Error: Invalid value of HASH_LEN_BITS (pairings)
+#endif
+    element_ptr _el = new element_s;
+    element_init_Zr(_el, p_params);
+    element_init_Zr(_el, p_params);
+    element_from_hash(_el, s, HASH_LEN_BYTES);
+    return Fp(reinterpret_cast<void*>(_el));
+}
+
+Fp Fp::fromHash(const char *hash) {
+    element_ptr _el = new element_s;
+    element_init_Zr(_el, p_params);
+    // Note: const keyword simply missing in element_from_hash
+    element_from_hash(_el, const_cast<char*>(hash), HASH_LEN_BYTES);
     return Fp(reinterpret_cast<void*>(_el));
 }
 
