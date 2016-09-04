@@ -79,7 +79,8 @@ SOURCES     += pairings.cpp \
 #    maps.cpp \
 
 HEADERS     += pairings.h \
-    bigendian.h
+    bigendian.h \
+    bigendian_cfg.h
 #    gsnizk.h \
 #    maps.h \
 
