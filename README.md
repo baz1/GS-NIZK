@@ -1,7 +1,7 @@
 # GS-NIZK
 
-Efficient implementation of the Non-Interactive Zero-Knowledge proofs
-invented by Groth and Sahai [https://eprint.iacr.org/2007/155][1]
+Efficient implementation of the [Non-Interactive Zero-Knowledge proofs
+invented by Groth and Sahai][1]
 
 ## Usage
 
@@ -57,3 +57,4 @@ Once the settings at the beginning of that file have been set,
 you can compile the project with the tool `qmake`
 (which you can directly run in `lib/gsnizk/`).
 
+[1]: https://eprint.iacr.org/2007/155
