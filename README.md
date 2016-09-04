@@ -7,14 +7,20 @@ invented by Groth and Sahai][1]
 
 Even though the source code has been designed to be cross-platform compatible,
 the Makefile script has only been written for a Linux-64 based platform.
+For now, the GS-NIZK project itself is managed with Qt:
+you will find the project file `gsnizk.pro` under `lib/gsnizk/`.
+Once the settings at the beginning of that file have been set,
+you can compile the project with the `Makefile`, as described below
+(be sure to be consistent with your choices).
+It will need the tool `qmake` as well as `g++` to compile the main project.
 
-### Preparing the library for MIRACL
+### Compiling the library for MIRACL
 
 ```
 $ make miracl-build
 ```
 
-### Preparing the library for PBC
+### Compiling the library for PBC
 
 First of all, make sure that the following packages are installed
 (else, run the corresponding installation line)
@@ -28,9 +34,9 @@ Then, you can start compiling the PBC library with:
 $ make pbc-build
 ```
 This compiles the library and creates a static library file.
-If you want to install PBC on your computer, run this additional command:
+If you want to install PBC on your computer, run this instead:
 ```
-# cd pbc/pbc-master/ && make install
+# make pbc-build-install
 ```
 
 ### Creating the documentation
@@ -47,14 +53,6 @@ to do this, as well as the `dot` tool.
 ```
 $ make
 ```
-(see notes for the PBC build)
-
-### What then?
-
-For now, the GS-NIZK project itself is managed with Qt:
-you will find the project file `gsnizk.pro` under `lib/gsnizk/`.
-Once the settings at the beginning of that file have been set,
-you can compile the project with the tool `qmake`
-(which you can directly run in `lib/gsnizk/`).
+(see notes for the PBC build and the documentation)
 
 [1]: https://eprint.iacr.org/2007/155

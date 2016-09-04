@@ -1,12 +1,13 @@
 SHELL=/bin/sh
 
 
-all: miracllib pbclib mainlibprepare doc
+all: miracllib pbclib mainlib doc
 
-miracl-build: miracllib mainlibprepare
+miracl-build: miracllib mainlib
 
-pbc-build: pbclib mainlibprepare
+pbc-build: pbclib mainlib
 
+pbc-build-install: pbclib-install mainlib
 
 miracllib: miracl/miracl.a miracl/mr_bn.a
 
@@ -41,7 +42,18 @@ install_files/pbc.zip:
 	mkdir -p install_files
 	wget "https://github.com/blynn/pbc/archive/master.zip" -O install_files/pbc.zip
 
-mainlibprepare: lib/gsnizk/bigendian_cfg_gen lib/gsnizk/bigendian_cfg.h
+pbclib-install: pbclib
+	cd pbc/pbc-master/ && make install
+
+mainlib: bigendian-optimization lib/gsnizk/gsnizk
+
+lib/gsnizk/gsnizk: lib/gsnizk/Makefile lib/gsnizk/*.h lib/gsnizk/*.cpp
+	cd lib/gsnizk/; make
+
+lib/gsnizk/Makefile: lib/gsnizk/gsnizk.pro lib/gsnizk/*.pri
+	cd lib/gsnizk/; qmake
+
+bigendian-optimization: lib/gsnizk/bigendian_cfg_gen lib/gsnizk/bigendian_cfg.h
 
 lib/gsnizk/bigendian_cfg_gen: lib/gsnizk/bigendian_cfg_gen.cpp
 	cd lib/gsnizk/; g++ -m64 -std=c++11 -o bigendian_cfg_gen bigendian_cfg_gen.cpp
