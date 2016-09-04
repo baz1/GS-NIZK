@@ -2971,7 +2971,7 @@ GT GT::pairing(const std::vector< std::pair<G1,G2> > &lst) {
     element_init_GT(_el, p_params);
     //* Note: If the above does not work, remove this line's first slash
     // to fall back to the external call.
-    p_params->prod_pairings((element_ptr) _el->data, a, b, n, p_params);
+    p_params->prod_pairings((element_ptr) _el->data, a, b, i, p_params);
     /*/
     element_prod_pairing(_el, a, b, i);
     // */

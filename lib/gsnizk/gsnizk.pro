@@ -74,15 +74,15 @@ config_lib {
 
 
 SOURCES     += pairings.cpp \
-    bigendian.cpp
-#    gsnizk.cpp \
-#    maps.cpp \
+    bigendian.cpp \
+    gsnizk.cpp \
+    maps.cpp \
 
 HEADERS     += pairings.h \
     bigendian.h \
-    bigendian_cfg.h
-#    gsnizk.h \
-#    maps.h \
+    bigendian_cfg.h \
+    gsnizk.h \
+    maps.h \
 
 config_miracl {
     include(BN.pri)

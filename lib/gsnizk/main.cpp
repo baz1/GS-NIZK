@@ -2,21 +2,10 @@
 #include <fstream>
 #include <cstdlib>
 
-#ifdef USE_MIRACL
-
 #include "gsnizk.h"
 
 using namespace std;
 using namespace gsnizk;
-
-#else
-
-#include "pairings.h"
-
-using namespace std;
-using namespace pairings;
-
-#endif
 
 static int n_err = 0;
 #define ASSERT(X) if (!(X)) (cerr << "Error: Assert of " << #X << " at line " \
@@ -285,8 +274,6 @@ void testPairings() {
     ASSERT(t2 == t4);
 }
 
-#if 0
-
 void testProof(NIZKProof &proof, ProofData &d, const CRS &crs, CRS *verif = 0) {
     ASSERT(proof.verifySolution(d, crs));
     {
@@ -520,8 +507,6 @@ void testProofs() {
     }
 }
 
-#endif
-
 bool getPairing()
 {
     char *paramData;
@@ -554,7 +539,7 @@ int main() {
 #endif
     testHash();
     testPairings();
-    //testProofs();
+    testProofs();
 
     pairings::terminate_pairings();
     if (n_err) {
