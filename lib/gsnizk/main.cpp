@@ -138,8 +138,6 @@ void testPairings() {
     ASSERT(g2 == (v1 * g1));
     ASSERT(g2 == (v1 * g3));
 
-#if 0 // Skip the tests for unimplemented features
-
     /* -------------------- Tests for G2 -------------------- */
     G2 h1 = G2::getRand(), h2, h3, h4;
     ASSERT(h1 != h2); // Note: Just highly unlikely if the randomness is fine
@@ -181,6 +179,8 @@ void testPairings() {
     h3.loadMultPrecomputations(data2);
     ASSERT(h2 == (v1 * h1));
     ASSERT(h2 == (v1 * h3));
+
+#if 0 // Skip the tests for unimplemented features
 
     /* -------------------- Tests for GT -------------------- */
     GT t1 = GT::getRand(), t2, t3, t4;
