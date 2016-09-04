@@ -54,8 +54,6 @@
 //#define AES_SECURITY 192
 #endif /* Not AES_SECURITY */
 
-#define BUFFER_SIZE 128
-
 #include "pairing_3.h"
 
 #include <cstring>
@@ -1865,13 +1863,13 @@ std::ostream &operator<<(std::ostream &stream, const Fp &el) {
     const element_ptr &_el = reinterpret_cast<element_ptr>(el.d->p);
     int size = pairing_length_in_bytes_Zr(p_params);
 #ifdef GSNIZK_IOSTREAM_NOTHREADS
-    element_from_bytes(_el, reinterpret_cast<unsigned char*>(
-                           iostream_nothreads_buffer));
+    element_to_bytes(reinterpret_cast<unsigned char*>(
+                           iostream_nothreads_buffer), _el);
     stream.write(iostream_nothreads_buffer, size);
 #else
     char *iostream_threads_buffer = new char[size];
-    element_from_bytes(_el, reinterpret_cast<unsigned char*>(
-                           iostream_threads_buffer));
+    element_to_bytes(reinterpret_cast<unsigned char*>(
+                           iostream_threads_buffer), _el);
     stream.write(iostream_threads_buffer, size);
     delete[] iostream_threads_buffer;
 #endif
