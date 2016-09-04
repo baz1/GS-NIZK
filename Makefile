@@ -1,6 +1,6 @@
 SHELL=/bin/sh
 
-all: miracllib pbclib doc
+all: miracllib pbclib mainlib doc
 
 miracllib: miracl/miracl.a
 
@@ -20,8 +20,8 @@ install_files/miracl.zip:
 pbclib: pbc/pbc-master/libpbc.a
 
 pbc/pbc-master/libpbc.a: pbc/pbc-master/setup
-	cd pbc/pbc-master; ./setup && ./configure && make && ar rc libpbc.a libpbc_*.o
-	cd pbc/pbc-master; cp libpbc.a include/ # (sorry for the mess)
+	cd pbc/pbc-master/; ./setup && ./configure && make && ar rc libpbc.a libpbc_*.o
+	cd pbc/pbc-master/; cp libpbc.a include/ # (sorry for the mess)
 
 pbc/pbc-master/setup: install_files/pbc.zip
 	unzip -a "install_files/pbc.zip" -d pbc
@@ -30,6 +30,14 @@ pbc/pbc-master/setup: install_files/pbc.zip
 install_files/pbc.zip:
 	mkdir -p install_files
 	wget "https://github.com/blynn/pbc/archive/master.zip" -O install_files/pbc.zip
+
+mainlib: lib/gsnizk/bigendian_cfg_gen lib/gsnizk/bigendian_cfg.h
+
+lib/gsnizk/bigendian_cfg_gen: lib/gsnizk/bigendian_cfg_gen.cpp
+	cd lib/gsnizk/; g++ -m64 -std=c++11 -o bigendian_cfg_gen bigendian_cfg_gen.cpp
+
+lib/gsnizk/bigendian_cfg.h: lib/gsnizk/bigendian_cfg_gen
+	cd lib/gsnizk/; ./bigendian_cfg_gen
 
 doc: lib/gsnizk/*.h lib/gsnizk/*.dox lib/gsnizk/Doxyfile
 	cd lib/gsnizk/; doxygen Doxyfile
