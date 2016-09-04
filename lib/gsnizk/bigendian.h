@@ -122,6 +122,8 @@ inline uint64_t htonll(const uint64_t hostlong) {
  */
 uint64_t htonll(uint64_t hostlong);
 
+#endif /* End of BIGENDIAN_CFG */
+
 #define ntohll(n) htonll(n)
 
 #ifdef DOXYGEN_COMPILATION

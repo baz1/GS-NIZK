@@ -40,6 +40,8 @@
 //#define HASH_LEN_BITS 512
 #endif
 
+#define NULL_ELEMENT_BYTE_VALUE 2
+
 #define HASH_LEN_BYTES (HASH_LEN_BITS / 8)
 
 #if defined(USE_MIRACL)
@@ -519,7 +521,6 @@ G1 &G1::operator-=(const G1 &other) {
 }
 
 G1 &G1::operator*=(const Fp &other) {
-    const ::G1 &_this = *reinterpret_cast< ::G1* >(d->p);
     const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
     if ((!d) || (other.d == Fp::one) || (_other.isone()))
         return *this;
@@ -528,6 +529,7 @@ G1 &G1::operator*=(const Fp &other) {
         d = NULL;
         return *this;
     }
+    const ::G1 &_this = *reinterpret_cast< ::G1* >(d->p);
     // Note: Since neither this group element nor the scalar are null,
     // the result won't be null either.
     void *_el = reinterpret_cast<void*>(
@@ -543,20 +545,20 @@ G1 &G1::operator*=(const Fp &other) {
 }
 
 G1 G1::operator*(const Fp &other) const {
-    const ::G1 &_this = *reinterpret_cast< ::G1* >(d->p);
     const ::Big &_other = *reinterpret_cast< ::Big* >(other.d->p);
     if ((!d) || (other.d == Fp::one) || _other.isone()) return *this;
     if ((other.d == Fp::zero) || _other.iszero()) return G1();
+    const ::G1 &_this = *reinterpret_cast< ::G1* >(d->p);
     // Note: Since neither this group element nor the scalar are null,
     // the result won't be null either.
     return G1(reinterpret_cast<void*>(new ::G1(pfc->mult(_this, _other))));
 }
 
 G1 operator*(const Fp &m, const G1 &g) {
-    const ::G1 &_g = *reinterpret_cast< ::G1* >(g.d->p);
     const ::Big &_m = *reinterpret_cast< ::Big* >(m.d->p);
     if ((!g.d) || (m.d == Fp::one) || _m.isone()) return g;
     if ((m.d == Fp::zero) || _m.iszero()) return G1();
+    const ::G1 &_g = *reinterpret_cast< ::G1* >(g.d->p);
     // Note: Since neither this group element nor the scalar are null,
     // the result won't be null either.
     return G1(reinterpret_cast<void*>(new ::G1(pfc->mult(_g, _m))));
@@ -573,7 +575,7 @@ bool G1::operator==(const G1 &other) const {
 void G1::getData(char *data, bool compressed) const {
     if (!d) {
         if (compressed) {
-            *data = (char) (unsigned char) 0xFF;
+            *data = NULL_ELEMENT_BYTE_VALUE;
         } else {
             const ::Big &_one = *reinterpret_cast< ::Big* >(Fp::one->p);
             to_binary(_one, big_size, data, TRUE);
@@ -598,20 +600,19 @@ void G1::getData(char *data, bool compressed) const {
 std::ostream &operator<<(std::ostream &stream, const G1 &el) {
     char lsb;
     if (!el.d) {
-        lsb = (char) (unsigned char) 0xFF;
+        lsb = NULL_ELEMENT_BYTE_VALUE;
         stream.write(&lsb, 1);
         return stream;
     }
     const ::G1 &_el = *reinterpret_cast< ::G1* >(el.d->p);
     ::Big x;
     lsb = (char) _el.g.get(x);
-#ifdef GSNIZK_IOSTREAM_NOTHREADS
     stream.write(&lsb, 1);
+#ifdef GSNIZK_IOSTREAM_NOTHREADS
     to_binary(x, big_size, iostream_nothreads_buffer, TRUE);
     stream.write(iostream_nothreads_buffer, big_size);
 #else
     char *iostream_threads_buffer = new char[big_size];
-    stream.write(&lsb, 1);
     to_binary(x, big_size, iostream_threads_buffer, TRUE);
     stream.write(iostream_threads_buffer, big_size);
     delete[] iostream_threads_buffer;
@@ -622,7 +623,7 @@ std::ostream &operator<<(std::ostream &stream, const G1 &el) {
 std::istream &operator>>(std::istream &stream, G1 &el) {
     char lsb;
     stream.read(&lsb, 1);
-    if (lsb == (char) (unsigned char) 0xFF) {
+    if (lsb == NULL_ELEMENT_BYTE_VALUE) {
         if (el.d) el.deref();
         return stream;
     }
@@ -699,7 +700,7 @@ G1 G1::getValue(const char *data, bool compressed) {
     ::G1 *_el;
     if (compressed) {
         int lsb = (int) *(data++);
-        if (lsb == (char) (unsigned char) 0xFF)
+        if (lsb == NULL_ELEMENT_BYTE_VALUE)
             return G1();
         _el = new ::G1();
         _el->g.set(from_binary(big_size, const_cast<char*>(data)), lsb);
@@ -908,7 +909,7 @@ bool G2::operator==(const G2 &other) const {
 void G2::getData(char *data, bool compressed) const {
     if (!d) {
         if (compressed) {
-            *data = (char) (unsigned char) 0xFF;
+            *data = NULL_ELEMENT_BYTE_VALUE;
         } else {
             ::Big b;
             to_binary(b, big_size, data, TRUE);
@@ -941,7 +942,7 @@ void G2::getData(char *data, bool compressed) const {
 std::ostream &operator<<(std::ostream &stream, const G2 &el) {
     char lsb;
     if (!el.d) {
-        lsb = (char) (unsigned char) 0xFF;
+        lsb = NULL_ELEMENT_BYTE_VALUE;
         stream.write(&lsb, 1);
         return stream;
     }
@@ -972,7 +973,7 @@ std::ostream &operator<<(std::ostream &stream, const G2 &el) {
 std::istream &operator>>(std::istream &stream, G2 &el) {
     char lsb;
     stream.read(&lsb, 1);
-    if (lsb == (char) (unsigned char) 0xFF) {
+    if (lsb == NULL_ELEMENT_BYTE_VALUE) {
         if (el.d) el.deref();
         return stream;
     }
@@ -1084,7 +1085,7 @@ G2 G2::getValue(const char *data, bool compressed) {
     // Note: const keyword simply missing in from_binary
     if (compressed) {
         int lsb = (int) *(data++);
-        if (lsb == (char) (unsigned char) 0xFF)
+        if (lsb == NULL_ELEMENT_BYTE_VALUE)
             return G2();
         _el = new ::G2();
         ::Big b1, b2;
@@ -1645,9 +1646,9 @@ void initialize_pairings(int len, const char *data) {
     Fp::one = new SharedData(reinterpret_cast<void*>(el));
 #ifdef GSNIZK_IOSTREAM_NOTHREADS
     int buffer_size = pairing_length_in_bytes_GT(p_params), cmp;
-    cmp = pairing_length_in_bytes_compressed_G2(p_params);
+    cmp = pairing_length_in_bytes_x_only_G2(p_params) + 1;
     if (UNLIKELY(cmp > buffer_size)) buffer_size = cmp;
-    cmp = pairing_length_in_bytes_compressed_G1(p_params);
+    cmp = pairing_length_in_bytes_x_only_G1(p_params) + 1;
     if (UNLIKELY(cmp > buffer_size)) buffer_size = cmp;
     cmp = pairing_length_in_bytes_Zr(p_params);
     if (UNLIKELY(cmp > buffer_size)) buffer_size = cmp;
@@ -1868,8 +1869,9 @@ std::ostream &operator<<(std::ostream &stream, const Fp &el) {
                            iostream_nothreads_buffer));
     stream.write(iostream_nothreads_buffer, size);
 #else
-    unsigned char *iostream_threads_buffer = new unsigned char[size];
-    element_from_bytes(_el, iostream_threads_buffer);
+    char *iostream_threads_buffer = new char[size];
+    element_from_bytes(_el, reinterpret_cast<unsigned char*>(
+                           iostream_threads_buffer));
     stream.write(iostream_threads_buffer, size);
     delete[] iostream_threads_buffer;
 #endif
@@ -1893,17 +1895,19 @@ std::istream &operator>>(std::istream &stream, Fp &el) {
                                iostream_nothreads_buffer));
     }
 #else
-    unsigned char *iostream_threads_buffer = new unsigned char[size];
+    char *iostream_threads_buffer = new char[size];
     stream.read(iostream_threads_buffer, size);
     if (el.d->c) {
         --el.d->c;
         element_ptr _el = new element_s;
         element_init_Zr(_el, p_params);
-        element_from_bytes(_el, iostream_threads_buffer);
+        element_from_bytes(_el, reinterpret_cast<unsigned char*>(
+                               iostream_threads_buffer));
         el.d = new SharedData(reinterpret_cast<void*>(_el));
     } else {
         element_ptr &_el = reinterpret_cast<element_ptr>(el.d->p);
-        element_from_bytes(_el, iostream_threads_buffer);
+        element_from_bytes(_el, reinterpret_cast<unsigned char*>(
+                               iostream_threads_buffer));
     }
     delete[] iostream_threads_buffer;
 #endif
@@ -1940,7 +1944,7 @@ Fp Fp::getValue(const char *data) {
     return Fp(reinterpret_cast<void*>(_el));
 }
 
-Fp Fp::fromHash(const char *data, int len) {
+void element_from_unhashed_data(const char *data, int len, element_ptr v) {
     char s[HASH_LEN_BYTES];
 #if HASH_LEN_BITS == 256
     hash_sha256(data, len, s);
@@ -1949,10 +1953,13 @@ Fp Fp::fromHash(const char *data, int len) {
 #else
 #error Error: Invalid value of HASH_LEN_BITS (pairings)
 #endif
+    element_from_hash(v, s, HASH_LEN_BYTES);
+}
+
+Fp Fp::fromHash(const char *data, int len) {
     element_ptr _el = new element_s;
     element_init_Zr(_el, p_params);
-    element_init_Zr(_el, p_params);
-    element_from_hash(_el, s, HASH_LEN_BYTES);
+    element_from_unhashed_data(data, len, _el);
     return Fp(reinterpret_cast<void*>(_el));
 }
 
@@ -1965,6 +1972,343 @@ Fp Fp::fromHash(const char *hash) {
 }
 
 void Fp::deref() {
+    if (d->c) {
+        --d->c;
+    } else {
+        freeElement(d->p);
+        delete d;
+    }
+}
+
+G1 G1::operator-() const {
+    if (!d) return G1();
+    const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
+    element_ptr _el = new element_s;
+    element_init_G1(_el, p_params);
+    element_neg(_el, _this);
+    return G1(reinterpret_cast<void*>(_el));
+}
+
+G1 G1::operator+(const G1 &other) const {
+    if (!d) return other;
+    if (!other.d) return *this;
+    const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
+    const element_ptr &_other = reinterpret_cast<element_ptr>(other.d->p);
+    element_ptr _el = new element_s;
+    element_init_G1(_el, p_params);
+    element_add(_el, _this, _other);
+    if (element_is0(_el)) {
+        freeElement(_el);
+        return G1();
+    }
+    return G1(reinterpret_cast<void*>(_el));
+}
+
+G1 G1::operator-(const G1 &other) const {
+    if (!other.d) return *this;
+    const element_ptr &_other = reinterpret_cast<element_ptr>(other.d->p);
+    element_ptr _el = new element_s;
+    element_init_G1(_el, p_params);
+    if (!d) {
+        element_neg(_el, _other);
+        return G1(reinterpret_cast<void*>(_el));
+    }
+    const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
+    element_sub(_el, _this, _other);
+    if (element_is0(_el)) {
+        freeElement(_el);
+        return G1();
+    }
+    return G1(reinterpret_cast<void*>(_el));
+}
+
+G1 &G1::operator+=(const G1 &other) {
+    if (!other.d) return *this;
+    const element_ptr &_other = reinterpret_cast<element_ptr>(other.d->p);
+    if (!d) {
+        ++(d = other.d)->c;
+        return *this;
+    }
+    const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
+    element_ptr _el = new element_s;
+    element_init_G1(_el, p_params);
+    element_add(_el, _this, _other);
+    if (element_is0(_el)) {
+        freeElement(_el);
+        deref();
+        d = NULL;
+        return *this;
+    }
+    if (d->c) {
+        --d->c;
+        d = new SharedData(reinterpret_cast<void*>(_el));
+    } else {
+        freeElement(d->p);
+        d->p = reinterpret_cast<void*>(_el);
+    }
+    return *this;
+}
+
+G1 &G1::operator-=(const G1 &other) {
+    if (!other.d) return *this;
+    const element_ptr &_other = reinterpret_cast<element_ptr>(other.d->p);
+    element_ptr _el = new element_s;
+    element_init_G1(_el, p_params);
+    if (!d) {
+        element_neg(_el, _other);
+        d = new SharedData(reinterpret_cast<void*>(_el));
+        return *this;
+    }
+    const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
+    element_sub(_el, _this, _other);
+    if (element_is0(_el)) {
+        freeElement(_el);
+        deref();
+        d = NULL;
+        return *this;
+    }
+    if (d->c) {
+        --d->c;
+        d = new SharedData(reinterpret_cast<void*>(_el));
+    } else {
+        freeElement(d->p);
+        d->p = reinterpret_cast<void*>(_el);
+    }
+    return *this;
+}
+
+G1 &G1::operator*=(const Fp &other) {
+    const element_ptr &_other = reinterpret_cast<element_ptr>(other.d->p);
+    if ((!d) || (other.d == Fp::one) || element_is1(_other))
+        return *this;
+    if ((other.d == Fp::zero) || element_is0(_other)) {
+        deref();
+        d = NULL;
+        return *this;
+    }
+    const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
+    // Note: Since neither this group element nor the scalar are null,
+    // the result won't be null either.
+    element_ptr _el = new element_s;
+    element_init_G1(_el, p_params);
+    element_mul_zn(_el, _this, _other);
+    if (d->c) {
+        --d->c;
+        d = new SharedData(_el);
+    } else {
+        freeElement(d->p);
+        d->p = _el;
+    }
+    return *this;
+}
+
+G1 G1::operator*(const Fp &other) const {
+    const element_ptr &_other = reinterpret_cast<element_ptr>(other.d->p);
+    if ((!d) || (other.d == Fp::one) || element_is1(_other)) return *this;
+    if ((other.d == Fp::zero) || element_is0(_other)) return G1();
+    const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
+    // Note: Since neither this group element nor the scalar are null,
+    // the result won't be null either.
+    element_ptr _el = new element_s;
+    element_init_G1(_el, p_params);
+    element_mul_zn(_el, _this, _other);
+    return G1(reinterpret_cast<void*>(_el));
+}
+
+G1 operator*(const Fp &m, const G1 &g) {
+    const element_ptr &_m = reinterpret_cast<element_ptr>(m.d->p);
+    if ((!g.d) || (m.d == Fp::one) || element_is1(_m)) return g;
+    if ((m.d == Fp::zero) || element_is0(_m)) return G1();
+    const element_ptr &_g = reinterpret_cast<element_ptr>(g.d->p);
+    // Note: Since neither this group element nor the scalar are null,
+    // the result won't be null either.
+    element_ptr _el = new element_s;
+    element_init_G1(_el, p_params);
+    element_mul_zn(_el, _g, _m);
+    return G1(reinterpret_cast<void*>(_el));
+}
+
+bool G1::operator==(const G1 &other) const {
+    if (!d) return !other.d;
+    if (!other.d) return false;
+    const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
+    const element_ptr &_other = reinterpret_cast<element_ptr>(other.d->p);
+    return !element_cmp(_this, _other);
+}
+
+void G1::getData(char *data, bool compressed) const {
+    if (!d) {
+        if (compressed) {
+            *data = NULL_ELEMENT_BYTE_VALUE;
+        } else {
+            element_t zero;
+            element_init_G1(zero, p_params);
+            element_set0(zero);
+            element_to_bytes(reinterpret_cast<unsigned char*>(data), zero);
+            element_clear(zero);
+        }
+        return;
+    }
+    const element_ptr &_this = reinterpret_cast<element_ptr>(d->p);
+    if (compressed) {
+        *data = (element_sign(element_y(_this)) > 0) ? 1 : 0;
+        element_to_bytes_x_only(reinterpret_cast<unsigned char*>(data + 1),
+                                _this);
+    } else {
+        element_to_bytes(reinterpret_cast<unsigned char*>(data), _this);
+    }
+}
+
+std::ostream &operator<<(std::ostream &stream, const G1 &el) {
+    char lsb;
+    if (!el.d) {
+        lsb = NULL_ELEMENT_BYTE_VALUE;
+        stream.write(&lsb, 1);
+        return stream;
+    }
+    const element_ptr &_el = reinterpret_cast<element_ptr>(el.d->p);
+    lsb = (element_sign(element_y(_el)) > 0) ? 1 : 0;
+    stream.write(&lsb, 1);
+    int size = pairing_length_in_bytes_x_only_G1(p_params);
+#ifdef GSNIZK_IOSTREAM_NOTHREADS
+    element_to_bytes_x_only(
+        reinterpret_cast<unsigned char*>(iostream_nothreads_buffer), _el);
+    stream.write(iostream_nothreads_buffer, size);
+#else
+    char *iostream_threads_buffer = new char[size];
+    element_to_bytes_x_only(
+        reinterpret_cast<unsigned char*>(iostream_threads_buffer), _el);
+    stream.write(iostream_threads_buffer, size);
+    delete[] iostream_threads_buffer;
+#endif
+    return stream;
+}
+
+std::istream &operator>>(std::istream &stream, G1 &el) {
+    char lsb;
+    stream.read(&lsb, 1);
+    if (lsb == NULL_ELEMENT_BYTE_VALUE) {
+        if (el.d) el.deref();
+        return stream;
+    }
+    element_ptr _el = new element_s;
+    element_init_G1(_el, p_params);
+    int size = pairing_length_in_bytes_x_only_G1(p_params);
+#ifdef GSNIZK_IOSTREAM_NOTHREADS
+    stream.read(iostream_nothreads_buffer, size);
+    element_from_bytes_x_only(_el, reinterpret_cast<unsigned char*>(
+                                  iostream_nothreads_buffer));
+#else
+    char *iostream_threads_buffer = new char[size];
+    stream.read(iostream_threads_buffer, size);
+    element_from_bytes_x_only(_el, reinterpret_cast<unsigned char*>(
+                                  iostream_threads_buffer));
+    delete[] iostream_threads_buffer;
+#endif
+    if (lsb != ((element_sign(element_y(_el)) > 0) ? 1 : 0))
+        element_neg(_el, _el);
+    if (el.d) {
+        if (el.d->c) {
+            --el.d->c;
+            el.d = new SharedData(reinterpret_cast<void*>(_el));
+        } else {
+            freeElement(el.d->p);
+            el.d->p = reinterpret_cast<void*>(_el);
+        }
+    } else {
+        el.d = new SharedData(reinterpret_cast<void*>(_el));
+    }
+    return stream;
+}
+
+void G1::precomputeForMult() {}
+
+int G1::saveMultPrecomputations(char *&data) {
+    /* Note: A good application should not call this function
+     * if hasPrecomputations() returns false, but we still prefer
+     * returning dummy values than throwing an exception for
+     * ease-of-use reasons. */
+    data = new char[1];
+    *data = 0;
+    return 1;
+}
+
+void G1::loadMultPrecomputations(char *data) {
+    delete[] data;
+}
+
+G1 G1::getRand() {
+    element_ptr _el = new element_s;
+    element_init_G1(_el, p_params);
+    element_random(_el);
+    // Following is very unlikely, but we still want to handle it
+    if (UNLIKELY(element_is0(_el))) {
+        freeElement(_el);
+        return G1();
+    }
+    return G1(reinterpret_cast<void*>(_el));
+}
+
+int G1::getDataLen(bool compressed) {
+    if (compressed) {
+        return pairing_length_in_bytes_x_only_G1(p_params) + 1;
+    } else {
+        return pairing_length_in_bytes_G1(p_params);
+    }
+}
+
+G1 G1::getValue(const char *data, bool compressed) {
+    // Note: const keyword simply missing in element_from_bytes_[...]
+    element_ptr _el;
+    if (compressed) {
+        int lsb = (int) *(data++);
+        if (lsb == NULL_ELEMENT_BYTE_VALUE)
+            return G1();
+        _el = new element_s;
+        element_init_G1(_el, p_params);
+        element_from_bytes_x_only(_el, reinterpret_cast<unsigned char*>(
+                                      const_cast<char*>(data)));
+        if (lsb != ((element_sign(element_y(_el)) > 0) ? 1 : 0))
+            element_neg(_el, _el);
+    } else {
+        _el = new element_s;
+        element_init_G1(_el, p_params);
+        element_from_bytes(_el, reinterpret_cast<unsigned char*>(
+                                      const_cast<char*>(data)));
+        if (element_is0(_el)) {
+            freeElement(_el);
+            return G1();
+        }
+    }
+    return G1(reinterpret_cast<void*>(_el));
+}
+
+G1 G1::fromHash(const char *data, int len) {
+    element_ptr _el = new element_s;
+    element_init_G1(_el, p_params);
+    element_from_unhashed_data(data, len, _el);
+    // Following is very unlikely, but we still want to handle it
+    if (UNLIKELY(element_is0(_el))) {
+        freeElement(_el);
+        return G1();
+    }
+    return G1(reinterpret_cast<void*>(_el));
+}
+
+G1 G1::fromHash(const char *hash) {
+    element_ptr _el = new element_s;
+    element_init_G1(_el, p_params);
+    // Note: const keyword simply missing in element_from_hash
+    element_from_hash(_el, const_cast<char*>(hash), HASH_LEN_BYTES);
+    // Following is very unlikely, but we still want to handle it
+    if (UNLIKELY(element_is0(_el))) {
+        freeElement(_el);
+        return G1();
+    }
+    return G1(reinterpret_cast<void*>(_el));
+}
+
+void G1::deref() {
     if (d->c) {
         --d->c;
     } else {

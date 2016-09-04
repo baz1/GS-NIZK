@@ -95,8 +95,6 @@ void testPairings() {
     ASSERT(Fp::fromHash("hello", 5) != Fp::fromHash("hi", 2));
     ASSERT(Fp::fromHash("hello", 5) == Fp::fromHash(hash));
 
-#if 0 // Skip the tests for unimplemented features
-
     /* -------------------- Tests for G1 -------------------- */
     G1 g1 = G1::getRand(), g2, g3, g4;
     ASSERT(g1 != g2); // Note: Just highly unlikely if the randomness is fine
@@ -139,6 +137,8 @@ void testPairings() {
     ASSERT(g1 == g3);
     ASSERT(g2 == (v1 * g1));
     ASSERT(g2 == (v1 * g3));
+
+#if 0 // Skip the tests for unimplemented features
 
     /* -------------------- Tests for G2 -------------------- */
     G2 h1 = G2::getRand(), h2, h3, h4;
