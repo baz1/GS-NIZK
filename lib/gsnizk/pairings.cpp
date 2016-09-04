@@ -2939,7 +2939,12 @@ GT GT::pairing(const G1 &a, const G2 &b) {
     const element_ptr &_b = reinterpret_cast<element_ptr>(b.d->p);
     element_ptr _el = new element_s;
     element_init_GT(_el, p_params);
-    element_pairing(_el, _a, _b);
+    //* Note: If the above does not work, remove this line's first slash
+    // to fall back to the external call.
+    p_params->map((element_ptr) _el->data, _a, _b, p_params);
+    /*/
+    pairing_apply(_el, _a, _b, p_params);
+    // */
     return GT(reinterpret_cast<void*>(_el));
 }
 
@@ -2964,8 +2969,12 @@ GT GT::pairing(const std::vector< std::pair<G1,G2> > &lst) {
     }
     element_ptr _el = new element_s;
     element_init_GT(_el, p_params);
-    element_prod_pairing(_el, reinterpret_cast<element_t*>(a),
-                         reinterpret_cast<element_t*>(b), i);
+    //* Note: If the above does not work, remove this line's first slash
+    // to fall back to the external call.
+    p_params->prod_pairings((element_ptr) _el->data, a, b, n, p_params);
+    /*/
+    element_prod_pairing(_el, a, b, i);
+    // */
     while (i--) {
         element_clear(a[i]);
         element_clear(b[i]);
