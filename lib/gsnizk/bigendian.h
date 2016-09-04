@@ -30,12 +30,17 @@
 #elif defined(__linux__) && !defined(DOXYGEN_COMPILATION)
 #include <arpa/inet.h>
 #else
-#define BIGENDIAN_CPP_IMPLEMENTATION
 
 typedef union {
     uint16_t u16;
     uint8_t u8[2];
 } U16;
+
+typedef union {
+    uint32_t u32;
+    uint16_t u16[2];
+    uint8_t u8[4];
+} U32;
 
 #if BIGENDIAN_CFG && !defined(DOXYGEN_COMPILATION)
 
@@ -51,25 +56,6 @@ inline uint16_t htons(const uint16_t hostshort) {
 inline uint16_t htons(const uint16_t hostshort) { return hostshort; }
 #endif /* End of BIGENDIAN_INV16 */
 
-#else
-
-/**
- * @brief Converts from host to network byte order.
- * @param hostshort The host 16-bit integer.
- * @return The network 16-bit integer.
- */
-uint16_t htons(uint16_t hostshort);
-
-#endif /* End of BIGENDIAN_CFG */
-
-typedef union {
-    uint32_t u32;
-    uint16_t u16[2];
-    uint8_t u8[4];
-} U32;
-
-#if BIGENDIAN_CFG && !defined(DOXYGEN_COMPILATION)
-
 inline uint32_t htonl(const uint32_t hostlong) {
     U32 result, input;
     input.u32 = hostlong;
@@ -79,6 +65,15 @@ inline uint32_t htonl(const uint32_t hostlong) {
 }
 
 #else
+
+#define BIGENDIAN_CPP_IMPLEMENTATION
+
+/**
+ * @brief Converts from host to network byte order.
+ * @param hostshort The host 16-bit integer.
+ * @return The network 16-bit integer.
+ */
+uint16_t htons(uint16_t hostshort);
 
 /**
  * @brief Converts from host to network byte order.
@@ -127,6 +122,8 @@ inline uint64_t htonll(const uint64_t hostlong) {
 }
 
 #else
+
+#define BIGENDIAN_CPP_IMPLEMENTATION_64
 
 /**
  * @brief Converts from host to network byte order.
