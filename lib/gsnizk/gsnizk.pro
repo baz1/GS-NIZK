@@ -68,8 +68,7 @@ config_lib {
     TEMPLATE     = app
     CONFIG      += console
     CONFIG      -= app_bundle
-    SOURCES     += main.cpp \
-        test.cpp
+    SOURCES     += main.cpp
 }
 
 
@@ -77,12 +76,14 @@ SOURCES     += pairings.cpp \
     bigendian.cpp \
     gsnizk.cpp \
     maps.cpp \
+    tests.cpp
 
 HEADERS     += pairings.h \
     bigendian.h \
     bigendian_cfg.h \
     gsnizk.h \
     maps.h \
+    tests.h
 
 config_miracl {
     include(BN.pri)
