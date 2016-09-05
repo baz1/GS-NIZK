@@ -532,6 +532,11 @@ public:
      */
     inline NIZKProof(CommitType type = CommitType::SelectedEncryption);
     /**
+     * @brief Constructs a deep copy of another NIZKProof object.
+     * @param other The NIZKProof object to copy.
+     */
+    NIZKProof(const NIZKProof &other);
+    /**
      * @brief Contructs a new NIZKProof object from an input stream.
      * @param stream Input stream.
      * @note The created system of equations will be fixed,
@@ -584,6 +589,12 @@ public:
      * @return `true` if the indexes are consistent, `false` otherwise.
      */
     bool endEquations();
+    /**
+     * @brief Performs a deep copy of the NIZKProof object @a other.
+     * @param other NIZKProof object to copy.
+     * @return Reference to the copy.
+     */
+    NIZKProof &operator=(const NIZKProof &other);
     /**
      * @brief Writes this system of equations to an output stream.
      * @warning You need to call the function @ref endEquations()

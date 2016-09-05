@@ -5,6 +5,8 @@
 
 #include "gsnizk.h"
 
+#include <unordered_map>
+
 /* Prioritize Qt's no-debug policy, if existent */
 #if defined(QT_NO_DEBUG) && defined(DEBUG)
 #undef DEBUG
@@ -254,6 +256,226 @@ GTElement GTConst(GT value) {
 GTElement GTBase() {
     GTData *d = new GTData(ELEMENT_BASE);
     return GTElement(std::shared_ptr<GTData>(d));
+}
+
+struct DupTable {
+    std::unordered_map<FpData*,std::shared_ptr<FpData> > dupFp;
+    std::unordered_map<G1Data*,std::shared_ptr<G1Data> > dupG1;
+    std::unordered_map<G2Data*,std::shared_ptr<G2Data> > dupG2;
+    std::unordered_map<GTData*,std::shared_ptr<GTData> > dupGT;
+    inline DupTable() : dupFp(0x400), dupG1(0x400), dupG2(0x400),
+        dupGT(0x400) {}
+};
+
+std::shared_ptr<FpData> createDup(FpData *p, DupTable &dupTable);
+std::shared_ptr<G1Data> createDup(G1Data *p, DupTable &dupTable);
+std::shared_ptr<G2Data> createDup(G2Data *p, DupTable &dupTable);
+std::shared_ptr<GTData> createDup(GTData *p, DupTable &dupTable);
+
+std::shared_ptr<FpData> getDup(const std::shared_ptr<FpData> &p,
+        DupTable &dupTable) {
+    std::unordered_map<FpData*,std::shared_ptr<FpData> >::const_iterator it =
+            dupTable.dupFp.find(p.get());
+    if (it == dupTable.dupFp.end()) {
+        std::shared_ptr<FpData> result = createDup(p.get(), dupTable);
+        dupTable.dupFp.emplace(p.get(), result);
+        return result;
+    } else {
+        return it->second;
+    }
+}
+
+std::shared_ptr<G1Data> getDup(const std::shared_ptr<G1Data> &p,
+        DupTable &dupTable) {
+    std::unordered_map<G1Data*,std::shared_ptr<G1Data> >::const_iterator it =
+            dupTable.dupG1.find(p.get());
+    if (it == dupTable.dupG1.end()) {
+        std::shared_ptr<G1Data> result = createDup(p.get(), dupTable);
+        dupTable.dupG1.emplace(p.get(), result);
+        return result;
+    } else {
+        return it->second;
+    }
+}
+
+std::shared_ptr<G2Data> getDup(const std::shared_ptr<G2Data> &p,
+        DupTable &dupTable) {
+    std::unordered_map<G2Data*,std::shared_ptr<G2Data> >::const_iterator it =
+            dupTable.dupG2.find(p.get());
+    if (it == dupTable.dupG2.end()) {
+        std::shared_ptr<G2Data> result = createDup(p.get(), dupTable);
+        dupTable.dupG2.emplace(p.get(), result);
+        return result;
+    } else {
+        return it->second;
+    }
+}
+
+std::shared_ptr<GTData> getDup(const std::shared_ptr<GTData> &p,
+        DupTable &dupTable) {
+    std::unordered_map<GTData*,std::shared_ptr<GTData> >::const_iterator it =
+            dupTable.dupGT.find(p.get());
+    if (it == dupTable.dupGT.end()) {
+        std::shared_ptr<GTData> result = createDup(p.get(), dupTable);
+        dupTable.dupGT.emplace(p.get(), result);
+        return result;
+    } else {
+        return it->second;
+    }
+}
+
+std::shared_ptr<FpData> createDup(FpData *p, DupTable &dupTable) {
+    FpData *result = new FpData(p->type);
+    switch (p->type) {
+    case ELEMENT_VARIABLE:
+    case ELEMENT_CONST_INDEX:
+        result->index = p->index;
+        break;
+    case ELEMENT_CONST_VALUE:
+        new (&result->el) Fp(p->el);
+        break;
+    case ELEMENT_PAIR:
+    case ELEMENT_SCALAR:
+        new (&result->pair) PairFp(getDup(p->pair.first, dupTable),
+                                   getDup(p->pair.second, dupTable));
+        break;
+    default:
+        break;
+    }
+    return std::shared_ptr<FpData>(result);
+}
+
+std::shared_ptr<G1Data> createDup(G1Data *p, DupTable &dupTable) {
+    G1Data *result = new G1Data(p->type);
+    switch (p->type) {
+    case ELEMENT_VARIABLE:
+    case ELEMENT_CONST_INDEX:
+        result->index = p->index;
+        break;
+    case ELEMENT_CONST_VALUE:
+        new (&result->el) G1(p->el);
+        break;
+    case ELEMENT_PAIR:
+        new (&result->pair) PairG1(getDup(p->pair.first, dupTable),
+                                   getDup(p->pair.second, dupTable));
+        break;
+    case ELEMENT_SCALAR:
+        new (&result->scalar) ScalarG1(getDup(p->scalar.first, dupTable),
+                                       getDup(p->scalar.second, dupTable));
+        break;
+    default:
+        break;
+    }
+    return std::shared_ptr<G1Data>(result);
+}
+
+std::shared_ptr<G2Data> createDup(G2Data *p, DupTable &dupTable) {
+    G2Data *result = new G2Data(p->type);
+    switch (p->type) {
+    case ELEMENT_VARIABLE:
+    case ELEMENT_CONST_INDEX:
+        result->index = p->index;
+        break;
+    case ELEMENT_CONST_VALUE:
+        new (&result->el) G2(p->el);
+        break;
+    case ELEMENT_PAIR:
+        new (&result->pair) PairG2(getDup(p->pair.first, dupTable),
+                                   getDup(p->pair.second, dupTable));
+        break;
+    case ELEMENT_SCALAR:
+        new (&result->scalar) ScalarG2(getDup(p->scalar.first, dupTable),
+                                       getDup(p->scalar.second, dupTable));
+        break;
+    default:
+        break;
+    }
+    return std::shared_ptr<G2Data>(result);
+}
+
+std::shared_ptr<GTData> createDup(GTData *p, DupTable &dupTable) {
+    GTData *result = new GTData(p->type);
+    switch (p->type) {
+    case ELEMENT_VARIABLE:
+    case ELEMENT_CONST_INDEX:
+        result->index = p->index;
+        break;
+    case ELEMENT_CONST_VALUE:
+        new (&result->el) GT(p->el);
+        break;
+    case ELEMENT_PAIR:
+        new (&result->pair) PairGT(getDup(p->pair.first, dupTable),
+                                   getDup(p->pair.second, dupTable));
+        break;
+    case ELEMENT_PAIRING:
+        new (&result->pring) PairingGT(getDup(p->pring.first, dupTable),
+                                       getDup(p->pring.second, dupTable));
+        break;
+    default:
+        break;
+    }
+    return std::shared_ptr<GTData>(result);
+}
+
+NIZKProof::NIZKProof(const NIZKProof &other)
+    : type(other.type), zk(other.zk), fixed(other.fixed),
+    varsFpInB1(other.varsFpInB1), cstsFpInB1(other.cstsFpInB1),
+    sEnc(other.sEnc), tFp(other.tFp), tG1(other.tG1), tG2(other.tG2),
+    tGT(other.tGT) {
+    DupTable dupTable;
+    int size;
+    eqsFp.reserve(size = other.eqsFp.size());
+    for (int i = 0; i < size; ++i)
+        eqsFp.push_back(PairFp(getDup(other.eqsFp[i].first, dupTable),
+                               getDup(other.eqsFp[i].second, dupTable)));
+    eqsG1.reserve(size = other.eqsG1.size());
+    for (int i = 0; i < size; ++i)
+        eqsG1.push_back(PairG1(getDup(other.eqsG1[i].first, dupTable),
+                               getDup(other.eqsG1[i].second, dupTable)));
+    eqsG2.reserve(size = other.eqsG2.size());
+    for (int i = 0; i < size; ++i)
+        eqsG2.push_back(PairG2(getDup(other.eqsG2[i].first, dupTable),
+                               getDup(other.eqsG2[i].second, dupTable)));
+    eqsGT.reserve(size = other.eqsGT.size());
+    for (int i = 0; i < size; ++i)
+        eqsGT.push_back(PairGT(getDup(other.eqsGT[i].first, dupTable),
+                               getDup(other.eqsGT[i].second, dupTable)));
+    varsFp.reserve(size = other.varsFp.size());
+    for (int i = 0; i < size; ++i)
+        varsFp.push_back(getDup(other.varsFp[i], dupTable));
+    cstsFp.reserve(size = other.cstsFp.size());
+    for (int i = 0; i < size; ++i)
+        cstsFp.push_back(getDup(other.cstsFp[i], dupTable));
+    varsG1.reserve(size = other.varsG1.size());
+    for (int i = 0; i < size; ++i)
+        varsG1.push_back(getDup(other.varsG1[i], dupTable));
+    cstsG1.reserve(size = other.cstsG1.size());
+    for (int i = 0; i < size; ++i)
+        cstsG1.push_back(getDup(other.cstsG1[i], dupTable));
+    varsG2.reserve(size = other.varsG2.size());
+    for (int i = 0; i < size; ++i)
+        varsG2.push_back(getDup(other.varsG2[i], dupTable));
+    cstsG2.reserve(size = other.cstsG2.size());
+    for (int i = 0; i < size; ++i)
+        cstsG2.push_back(getDup(other.cstsG2[i], dupTable));
+    cstsGT.reserve(size = other.cstsGT.size());
+    for (int i = 0; i < size; ++i)
+        cstsGT.push_back(getDup(other.cstsGT[i], dupTable));
+    additionalFp.reserve(size = other.additionalFp.size());
+    for (int i = 0; i < size; ++i) {
+        additionalFp.push_back(AdditionalFp(
+            getDup(other.additionalFp[i].formula, dupTable)));
+    }
+    additionalG1.reserve(size = other.additionalG1.size());
+    for (int i = 0; i < size; ++i) {
+        additionalG1.push_back(AdditionalG1(
+            getDup(other.additionalG1[i].formula, dupTable)));
+    }
+    additionalG2.reserve(size = other.additionalG2.size());
+    for (int i = 0; i < size; ++i) {
+        additionalG2.push_back(AdditionalG2(
+            getDup(other.additionalG2[i].formula, dupTable)));
+    }
 }
 
 void NIZKProof::addEquation(const FpElement &leftHandSide,
