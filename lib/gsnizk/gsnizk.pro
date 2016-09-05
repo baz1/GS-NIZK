@@ -76,14 +76,16 @@ SOURCES     += pairings.cpp \
     bigendian.cpp \
     gsnizk.cpp \
     maps.cpp \
-    tests.cpp
+    tests.cpp \
+    benchmark.cpp
 
 HEADERS     += pairings.h \
     bigendian.h \
     bigendian_cfg.h \
     gsnizk.h \
     maps.h \
-    tests.h
+    tests.h \
+    benchmark.h
 
 config_miracl {
     include(BN.pri)

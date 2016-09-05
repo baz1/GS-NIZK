@@ -1,9 +1,11 @@
 #include <iostream>
-#include <fstream>
-#include <cstdlib>
+#include <cstdio>
 
 #include "gsnizk.h"
 #include "tests.h"
+#include "benchmark.h"
+
+using namespace std;
 
 bool getPairing()
 {
@@ -33,9 +35,14 @@ int main() {
 #ifdef USE_MIRACL
     pairings::initialize_pairings(0, 0);
 #else
-    ASSERT(getPairing());
+    if (!getPairing()) {
+        cerr << "Error: Could not read file \"pairing.param\".\n" << endl;
+        return;
+    }
 #endif
-    testLibrary();
+    //testLibrary();
+    benchmarkLibrary();
     pairings::terminate_pairings();
+    cout << "Done." << endl;
     return 0;
 }

@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2016, Remi Bazin <bazin.remi@gmail.com>
+ * See LICENSE for licensing details.
+ */
+
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
@@ -34,7 +39,7 @@ void testHash() {
     cout << "########## HASH TESTS ##########" << endl;
     srand(42);
     char *hash = new char[pairings::getHashLen()], *data = new char[256];
-    ofstream out("hashes");
+    ofstream out("hashes.test");
     for (int i = 0; i < HASH_TESTS; ++i) {
         int len = rand() % 257;
         for (int j = 0; j < len; ++j)
@@ -249,7 +254,7 @@ void testPairings() {
     t1 = GT::getRand();
     t2.clear();
     {
-        ofstream out("test1.test");
+        ofstream out("pairings.test");
         out << v1 << v2;
         out << g1 << g2;
         out << h1 << h2;
@@ -257,7 +262,7 @@ void testPairings() {
         out.close();
     }
     {
-        ifstream in("test1.test");
+        ifstream in("pairings.test");
         in >> v3 >> v4;
         in >> g3 >> g4;
         in >> h3 >> h4;
@@ -278,7 +283,7 @@ void testProof(NIZKProof &proof, ProofData &d, const CRS &crs, CRS *verif = 0) {
     ASSERT(proof.verifySolution(d, crs));
     {
         cout << "* Creating and writing proof..." << endl;
-        ofstream out("test2.test");
+        ofstream out("proof.test");
         proof.writeProof(out, crs, d);
         out.close();
     }
@@ -287,7 +292,7 @@ void testProof(NIZKProof &proof, ProofData &d, const CRS &crs, CRS *verif = 0) {
     d.privG2.clear();
     {
         cout << "* Reading and checking proof..." << endl;
-        ifstream in("test2.test");
+        ifstream in("proof.test");
         if (verif) {
             ASSERT(proof.checkProof(in, *verif, d));
         } else {
@@ -299,13 +304,13 @@ void testProof(NIZKProof &proof, ProofData &d, const CRS &crs, CRS *verif = 0) {
         return;
     {
         cout << "* Creating and writing simulated proof..." << endl;
-        ofstream out("test3.test");
+        ofstream out("proof-sim.test");
         proof.simulateProof(out, crs, d);
         out.close();
     }
     {
         cout << "* Reading and checking simulated proof..." << endl;
-        ifstream in("test3.test");
+        ifstream in("proof-sim.test");
         ASSERT(proof.checkProof(in, crs, d));
         in.close();
     }
@@ -313,6 +318,24 @@ void testProof(NIZKProof &proof, ProofData &d, const CRS &crs, CRS *verif = 0) {
 
 void testProofs() {
     cout << "########## PROOF TESTS ##########" << endl;
+
+    CRS crs(false);
+    CRS crsref(true), crspriv, crspub;
+    crsref.makePublic();
+    {
+        ofstream out("crspriv.test");
+        crspriv = crsref.genPrivate(out);
+        out.close();
+    }
+    {
+        ifstream in("crspriv.test");
+        ASSERT(crsref.checkPrivate(in, crspriv));
+        in.close();
+    }
+    remove("crspriv.test");
+    crspub = crspriv;
+    crspub.makePublic();
+
     {
         cout << "Instantiation 1: discrete log in G1" << endl;
         cout << "* Creating the equation system..." << endl;
@@ -321,7 +344,6 @@ void testProofs() {
         Fp k = Fp::getRand();
         G1 b = k * a;
 
-        CRS crs(false);
         NIZKProof proof;
         proof.addEquation(FpVar(0) * G1Const(0), FpUnit() * G1Const(1));
         ASSERT(proof.endEquations());
@@ -341,16 +363,6 @@ void testProofs() {
         Fp k = Fp::getRand();
         G1 b = k * a;
 
-        CRS crsref(true), crspriv, crspub;
-        crsref.makePublic();
-        {
-            ofstream out("tmp.test");
-            crspriv = crsref.genPrivate(out);
-            out.close();
-        }
-        crspub = crspriv;
-        crspub.makePublic();
-
         NIZKProof proof, proofcp;
         proof.addEquation(FpVar(0) * G1Const(a), FpUnit() * G1Const(b));
         ASSERT(proof.endEquations());
@@ -360,15 +372,16 @@ void testProofs() {
 
         cout << "* Writing and reading back the equation system..." << endl;
         {
-            ofstream out("test4.test");
+            ofstream out("proof-model.test");
             out << proof;
             out.close();
         }
         {
-            ifstream in("test4.test");
+            ifstream in("proof-model.test");
             in >> proofcp;
             in.close();
         }
+        remove("proof-model.test");
 
         testProof(proofcp, d, crspriv, &crspub);
     }
@@ -376,8 +389,6 @@ void testProofs() {
         cout << "Instantiation 3: user tokens" << endl;
         cout << "  (see https://eprint.iacr.org/2016/416)" << endl;
         cout << "* Creating the equation system..." << endl;
-
-        CRS crs(false);
 
         ProofData d;
 
@@ -410,7 +421,7 @@ void testProofs() {
         d.pubG2.push_back(sign);
         G2Element _sign = G2Const(2);
 
-        /* Service Provider ID (in G1 instead of G2 for efficiency) */
+        /* Service Provider ID */
         G1 v_SP = G1::getRand();
         d.pubG1.push_back(v_SP);
         G1Element _v_SP = G1Const(0);
@@ -433,8 +444,6 @@ void testProofs() {
         cout << "Instantiation 4: user tokens (2)" << endl;
         cout << "  (see https://eprint.iacr.org/2016/416)" << endl;
         cout << "* Creating the equation system..." << endl;
-
-        CRS crs(false);
 
         ProofData d;
 
@@ -463,13 +472,12 @@ void testProofs() {
         d.pubG1.push_back(HK);
         G1Element _HK = G1Const(0);
 
-        /* Signature of the one-time public key
-         * (in G1 instead of G2 for efficiency) */
+        /* Signature of the one-time public key */
         G1 sign = sk_C * HK;
         d.pubG1.push_back(sign);
         G1Element _sign = G1Const(1);
 
-        /* Service Provider ID (in G1 instead of G2 for efficiency) */
+        /* Service Provider ID */
         G1 v_SP = G1::getRand();
         d.pubG1.push_back(v_SP);
         G1Element _v_SP = G1Const(2);
@@ -490,7 +498,6 @@ void testProofs() {
     }
     {
         cout << "Instantiation 5: Big equation" << endl;
-        CRS crs(false);
         ProofData d;
 
         Fp k = Fp::getRand(), l = Fp::getRand();
@@ -505,9 +512,11 @@ void testProofs() {
 
         testProof(proof, d, crs);
     }
+    remove("proof.test");
+    remove("proof-sim.test");
 }
 
-int testLibrary() {
+void testLibrary() {
     testHash();
     testPairings();
     testProofs();
