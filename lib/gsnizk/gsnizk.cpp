@@ -15,7 +15,7 @@
 #ifdef DEBUG
 #define ASSERT(X,Y) if (!(X)) { \
     std::cerr << "Error: Assert of " << #X << " at line " \
-    << __LINE__ << " failed in gsnizk.cpp!" << std::endl \
+    << __LINE__ << " failed in " << __FILE__ << "!" << std::endl \
     << Y << std::endl; \
     throw Y; \
     }

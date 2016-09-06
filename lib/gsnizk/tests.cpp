@@ -282,7 +282,7 @@ void testPairings() {
 void testProof(NIZKProof &proof, ProofData &d, const CRS &crs, CRS *verif = 0) {
     ASSERT(proof.verifySolution(d, crs));
     {
-        cout << "* Creating and writing proof..." << endl;
+        cout << " * Creating and writing proof..." << endl;
         ofstream out("proof.test");
         proof.writeProof(out, crs, d);
         out.close();
@@ -291,7 +291,7 @@ void testProof(NIZKProof &proof, ProofData &d, const CRS &crs, CRS *verif = 0) {
     d.privG1.clear();
     d.privG2.clear();
     {
-        cout << "* Reading and checking proof..." << endl;
+        cout << " * Reading and checking proof..." << endl;
         ifstream in("proof.test");
         if (verif) {
             ASSERT(proof.checkProof(in, *verif, d));
@@ -303,13 +303,13 @@ void testProof(NIZKProof &proof, ProofData &d, const CRS &crs, CRS *verif = 0) {
     if (!(proof.isZeroKnowledge() && crs.isSimulationReady()))
         return;
     {
-        cout << "* Creating and writing simulated proof..." << endl;
+        cout << " * Creating and writing simulated proof..." << endl;
         ofstream out("proof-sim.test");
         proof.simulateProof(out, crs, d);
         out.close();
     }
     {
-        cout << "* Reading and checking simulated proof..." << endl;
+        cout << " * Reading and checking simulated proof..." << endl;
         ifstream in("proof-sim.test");
         ASSERT(proof.checkProof(in, crs, d));
         in.close();
@@ -338,7 +338,7 @@ void testProofs() {
 
     {
         cout << "Instantiation 1: discrete log in G1" << endl;
-        cout << "* Creating the equation system..." << endl;
+        cout << " * Creating the equation system..." << endl;
 
         G1 a = G1::getRand();
         Fp k = Fp::getRand();
@@ -357,7 +357,7 @@ void testProofs() {
     }
     {
         cout << "Instantiation 2: discrete log in G1 with private CRS" << endl;
-        cout << "* Creating the equation system..." << endl;
+        cout << " * Creating the equation system..." << endl;
 
         G1 a = G1::getRand();
         Fp k = Fp::getRand();
@@ -388,7 +388,7 @@ void testProofs() {
     {
         cout << "Instantiation 3: user tokens" << endl;
         cout << "  (see https://eprint.iacr.org/2016/416)" << endl;
-        cout << "* Creating the equation system..." << endl;
+        cout << " * Creating the equation system..." << endl;
 
         ProofData d;
 
@@ -443,7 +443,7 @@ void testProofs() {
     {
         cout << "Instantiation 4: user tokens (2)" << endl;
         cout << "  (see https://eprint.iacr.org/2016/416)" << endl;
-        cout << "* Creating the equation system..." << endl;
+        cout << " * Creating the equation system..." << endl;
 
         ProofData d;
 
@@ -511,6 +511,35 @@ void testProofs() {
         ASSERT(proof.endEquations());
 
         testProof(proof, d, crs);
+    }
+    {
+        cout << "Instantiation 6: Extractable proof" << endl;
+        ProofData d;
+
+        CRS crs_extract(true);
+
+        Fp k = Fp::getRand();
+        G1 kg1 = k * crs_extract.getG1Base();
+        G2 kg2 = k * crs_extract.getG2Base();
+
+        G1Element _kg1 = G1Var(0);
+        d.privG1.push_back(kg1);
+
+        NIZKProof proof;
+        proof.addEquation(e(_kg1, G2Base()), e(G1Base(), G2Const(kg2)));
+        ASSERT(proof.endEquations());
+
+        testProof(proof, d, crs_extract);
+
+        cout << " * Extracting private value..." << endl;
+        {
+            ifstream in("proof.test");
+            B1 c_kg1;
+            in >> c_kg1;
+            in.close();
+            G1 recovered_kg1 = c_kg1.extract(crs_extract);
+            ASSERT(recovered_kg1 == kg1);
+        }
     }
     remove("proof.test");
     remove("proof-sim.test");

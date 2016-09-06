@@ -5,9 +5,22 @@
 
 #include "maps.h"
 
+#ifdef DEBUG
+#include <iostream>
+#define ASSERT(X,Y) if (!(X)) { \
+    std::cerr << "Error: Assert of " << #X << " at line " \
+    << __LINE__ << " failed in " << __FILE__ << "!" << std::endl \
+    << Y << std::endl; \
+    throw Y; \
+    }
+#else
+#define ASSERT(X,Y) /* noop */
+#endif
+
 namespace gsnizk {
 
 G1 B1::extract(const CRS &crs) const {
+    ASSERT(crs.type == CRS_TYPE_EXTRACT, "Wrong type of CRS");
     return _2 - (Fp::getUnit() / crs.j1) * _1;
 }
 
@@ -26,6 +39,7 @@ B1 B1::commit(const B1 &el, const Fp &r, const Fp &s, const CRS &crs) {
 }
 
 G2 B2::extract(const CRS &crs) const {
+    ASSERT(crs.type == CRS_TYPE_EXTRACT, "Wrong type of CRS");
     return _2 - (Fp::getUnit() / crs.j2) * _1;
 }
 
@@ -44,18 +58,17 @@ B2 B2::commit(const B2 &el, const Fp &r, const Fp &s, const CRS &crs) {
 }
 
 GT BT::extract(const CRS &crs) const {
+    ASSERT(crs.type == CRS_TYPE_EXTRACT, "Wrong type of CRS");
     Fp p = Fp(-1) / crs.j1;
     return (_22 * (_12 ^ p)) * ((_21 * (_11 ^ p)) ^ (Fp(-1) / crs.j2));
 }
 
 BT BT::pairing(const B1 &a, const B2 &b) {
-    // TODO precompute pairings?
     return BT(GT::pairing(a._1, b._1), GT::pairing(a._1, b._2),
               GT::pairing(a._2, b._1), GT::pairing(a._2, b._2));
 }
 
 BT BT::pairing(const std::vector< std::pair<B1,B2> > &lst) {
-    // TODO precompute pairings?
     if (lst.empty()) return BT();
     std::vector<std::pair<G1, G2> > p11, p12, p21, p22;
     p11.reserve(lst.size());
@@ -128,7 +141,6 @@ std::ostream &operator<<(std::ostream &stream, const CRS &crs) {
 
 std::istream &operator>>(std::istream &stream, CRS &crs) {
     stream >> crs.type;
-    // TODO precomputations?
     if (crs.type == CRS_TYPE_PUBLIC) {
         stream >> crs.v1 >> crs.w1;
         stream >> crs.v2 >> crs.w2;
