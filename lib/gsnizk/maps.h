@@ -29,12 +29,78 @@
 namespace gsnizk {
 
 /**
+ * @brief Initializes pairing-based cryptography.
+ *
+ * This is an inline copy of @ref pairings 's definition.
+ *
+ * @param len Length of the data pointed to by @p data.
+ * @param data With MIRACL: Pointer to some random data used to
+ *   initialize the pseudo-random number generator.
+ *   Data from `/dev/random` or `/dev/urandom` might be used under Linux.
+ *   With PBC: Text data containing the curve parameters
+ *   to build up the pairing groups and primitives.
+ * @sa pairings::initialize_pairings(int,const char*)
+ */
+inline void initialize_pairings(int len, const char *data);
+
+/**
+ * @brief Releases memory used for pairing-based cryptography.
+ *
+ * This is an inline copy of @ref pairings 's definition.
+ *
+ * @sa pairings::terminate_pairings()
+ */
+inline void terminate_pairings();
+
+/**
+ * @brief Gets the length of a hash.
+ *
+ * This is an inline copy of @ref pairings 's definition.
+ *
+ * @return Length of a hash in bytes.
+ * @sa pairings::getHashLen()
+ */
+inline int getHashLen();
+
+/**
+ * @brief Hashes some data.
+ *
+ * This is an inline copy of @ref pairings 's definition.
+ *
+ * @param data Pointer to the data to hash.
+ * @param len Length of the data to hash.
+ * @param hash Pointer to where the hash is to be stored.
+ * @sa pairings::getHash(const char*,int,char*)
+ */
+inline void getHash(const char *data, int len, char *hash);
+
+/**
+ * @brief Checks if the underlying library handles precomputations.
+ *
+ * This is an inline copy of @ref pairings 's definition.
+ *
+ * @return `true` if precomputations are supported, `false` otherwise.
+ * @sa pairings::hasPrecomputations()
+ */
+inline bool hasPrecomputations();
+
+/**
+ * @brief Checks if the iostream implementations supports threads.
+ *
+ * This is an inline copy of @ref pairings 's definition.
+ *
+ * @sa pairings::iostream_nothreads()
+ */
+inline bool iostream_nothreads();
+
+/**
  * @brief The @f$\mathbb{F}_p=\mathbb{Z}/p\mathbb{Z}@f$ class.
  *
  * This is a `typedef` extension of @ref pairings 's definition.
  * @sa pairings::Fp
  */
 typedef pairings::Fp Fp;
+
 /**
  * @brief The @f$\mathbb{G}_1@f$ class.
  *
@@ -42,6 +108,7 @@ typedef pairings::Fp Fp;
  * @sa pairings::G1
  */
 typedef pairings::G1 G1;
+
 /**
  * @brief The @f$\mathbb{G}_2@f$ class.
  *
@@ -49,6 +116,7 @@ typedef pairings::G1 G1;
  * @sa pairings::G2
  */
 typedef pairings::G2 G2;
+
 /**
  * @brief The @f$\mathbb{G}_T@f$ class.
  *
@@ -675,6 +743,30 @@ private:
 };
 
 /* Inline definitions: */
+
+inline void initialize_pairings(int len, const char *data) {
+    pairings::initialize_pairings(len, data);
+}
+
+inline void terminate_pairings() {
+    pairings::terminate_pairings();
+}
+
+inline int getHashLen() {
+    return pairings::getHashLen();
+}
+
+inline void getHash(const char *data, int len, char *hash) {
+    pairings::getHash(data, len, hash);
+}
+
+inline bool hasPrecomputations() {
+    return pairings::hasPrecomputations();
+}
+
+inline bool iostream_nothreads() {
+    return pairings::iostream_nothreads();
+}
 
 inline B1::B1() {}
 

@@ -6,6 +6,7 @@
 #include "benchmark.h"
 
 using namespace std;
+using namespace gsnizk;
 
 bool getPairing()
 {
@@ -26,23 +27,23 @@ bool getPairing()
         delete[] paramData;
         return false;
     }
-    pairings::initialize_pairings(count, paramData);
+    initialize_pairings(count, paramData);
     delete[] paramData;
     return true;
 }
 
 int main() {
 #ifdef USE_MIRACL
-    pairings::initialize_pairings(0, 0);
+    initialize_pairings(0, 0);
 #else
     if (!getPairing()) {
         cerr << "Error: Could not read file \"pairing.param\".\n" << endl;
         return;
     }
 #endif
-    //testLibrary();
+    testLibrary();
     benchmarkLibrary();
-    pairings::terminate_pairings();
+    terminate_pairings();
     cout << "Done." << endl;
     return 0;
 }
