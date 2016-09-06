@@ -122,23 +122,13 @@ CRS CRS::genPrivate(std::ostream &stream) const {
 }
 
 bool CRS::checkPrivate(std::istream &stream, CRS priv) const {
+    if ((v1 != priv.v1) || (v2 != priv.v2))
+        return false;
     G2 c_rho_1, c_rho_2, p3, p4, g2;
     G1 c_sig_1, c_sig_2, p1, p2, g1;
     stream >> c_rho_1 >> c_rho_2;
     stream >> c_sig_1 >> c_sig_2;
     stream >> p1 >> p2 >> p3 >> p4;
-    if (GT::pairing(priv.w1._1,u2._1) != GT::pairing(v1._1, c_rho_1) *
-            GT::pairing(p1, v2._1))
-        return false;
-    if (GT::pairing(priv.w1._1,u2._2) != GT::pairing(v1._1, c_rho_2) *
-            GT::pairing(p1, v2._2))
-        return false;
-    if (GT::pairing(priv.w1._2,u2._1) != GT::pairing(v1._2, c_rho_1) *
-            GT::pairing(p2, v2._1))
-        return false;
-    if (GT::pairing(priv.w1._2,u2._2) != GT::pairing(v1._2, c_rho_2) *
-            GT::pairing(p2, v2._2))
-        return false;
     Fp c1_1 = Fp::getRand(), c1_2 = Fp::getRand();
     Fp c2_1 = Fp::getRand(), c2_2 = Fp::getRand();
     std::vector< std::pair<G1,G2> > pairs;
