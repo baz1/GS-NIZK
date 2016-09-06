@@ -107,21 +107,68 @@ CRS CRS::genPrivate(std::ostream &stream) const {
     if (type != CRS_TYPE_PUBLIC)
         throw "Unexpected use of gsnizk::genPrivate";
     CRS priv;
+    priv.type = CRS_TYPE_PRIVATE;
     priv.v1 = v1;
     priv.i1 = Fp::getRand();
     priv.v2 = v2;
     priv.i2 = Fp::getRand();
-    priv.computeElements();
-    // TODO Write the proof in stream
-    (void) stream;
+    priv.computeElements(false);
+    Fp r_rho = Fp::getRand(), r_sig = Fp::getRand();
+    stream << (priv.i1 * u2 + r_rho * v2);
+    stream << (priv.i2 * u1 + r_sig * v1);
+    stream << (-r_rho) * v1;
+    stream << (-r_sig) * v2;
     return priv;
 }
 
 bool CRS::checkPrivate(std::istream &stream, CRS priv) const {
-    // TODO Check the proof
-    (void) priv;
-    (void) stream;
-    return false;
+    G2 c_rho_1, c_rho_2, p3, p4, g2;
+    G1 c_sig_1, c_sig_2, p1, p2, g1;
+    stream >> c_rho_1 >> c_rho_2;
+    stream >> c_sig_1 >> c_sig_2;
+    stream >> p1 >> p2 >> p3 >> p4;
+    if (GT::pairing(priv.w1._1,u2._1) != GT::pairing(v1._1, c_rho_1) *
+            GT::pairing(p1, v2._1))
+        return false;
+    if (GT::pairing(priv.w1._1,u2._2) != GT::pairing(v1._1, c_rho_2) *
+            GT::pairing(p1, v2._2))
+        return false;
+    if (GT::pairing(priv.w1._2,u2._1) != GT::pairing(v1._2, c_rho_1) *
+            GT::pairing(p2, v2._1))
+        return false;
+    if (GT::pairing(priv.w1._2,u2._2) != GT::pairing(v1._2, c_rho_2) *
+            GT::pairing(p2, v2._2))
+        return false;
+    Fp c1_1 = Fp::getRand(), c1_2 = Fp::getRand();
+    Fp c2_1 = Fp::getRand(), c2_2 = Fp::getRand();
+    std::vector< std::pair<G1,G2> > pairs;
+    pairs.reserve(3);
+    g1 = -(c1_1 * priv.w1._1 + c1_2 * priv.w1._2);
+    g2 = c2_1 * u2._1 + c2_2 * u2._2;
+    pairs.push_back(std::pair<G1,G2>(g1, g2));
+    g1 = c1_1 * v1._1 + c1_2 * v1._2;
+    g2 = c2_1 * c_rho_1 + c2_2 * c_rho_2;
+    pairs.push_back(std::pair<G1,G2>(g1, g2));
+    g1 = c1_1 * p1 + c1_2 * p2;
+    g2 = c2_1 * v2._1 + c2_2 * v2._2;
+    pairs.push_back(std::pair<G1,G2>(g1, g2));
+    if (!GT::pairing(pairs).isUnit())
+        return false;
+    pairs.clear();
+    c1_1 = Fp::getRand(); c1_2 = Fp::getRand();
+    c2_1 = Fp::getRand(); c2_2 = Fp::getRand();
+    g1 = -(c1_1 * u1._1 + c1_2 * u1._2);
+    g2 = c2_1 * priv.w2._1 + c2_2 * priv.w2._2;
+    pairs.push_back(std::pair<G1,G2>(g1, g2));
+    g1 = c1_1 * c_sig_1 + c1_2 * c_sig_2;
+    g2 = c2_1 * v2._1 + c2_2 * v2._2;
+    pairs.push_back(std::pair<G1,G2>(g1, g2));
+    g1 = c1_1 * v1._1 + c1_2 * v1._2;
+    g2 = c2_1 * p3 + c2_2 * p4;
+    pairs.push_back(std::pair<G1,G2>(g1, g2));
+    if (!GT::pairing(pairs).isUnit())
+        return false;
+    return true;
 }
 
 std::ostream &operator<<(std::ostream &stream, const CRS &crs) {
@@ -179,17 +226,21 @@ std::istream &operator>>(std::istream &stream, CRS &crs) {
     return stream;
 }
 
-void CRS::computeElements() {
+void CRS::computeElements(bool precompute_v) {
 #if !defined(USE_PBC)
     /* Precomputations for commitments */
-    v1._2.precomputeForMult();
-    v2._2.precomputeForMult();
+    if (precompute_v) {
+        v1._2.precomputeForMult();
+        v2._2.precomputeForMult();
+    }
 #endif
     if (type == CRS_TYPE_PRIVATE) {
 #if !defined(USE_PBC)
-        /* Precomputations for commitments */
-        v1._1.precomputeForMult();
-        v2._1.precomputeForMult();
+        if (precompute_v) {
+            /* Precomputations for commitments */
+            v1._1.precomputeForMult();
+            v2._1.precomputeForMult();
+        }
 #endif
         w1._1 = i1 * v1._1;
         w1._2 = i1 * v1._2;

@@ -723,7 +723,7 @@ public:
      */
     inline bool isSimulationReady() const;
 private:
-    void computeElements();
+    void computeElements(bool precompute_v = true);
 private:
     /* Notations u, v and w come from the paper by Alex Escala
      * and Jens Groth.
