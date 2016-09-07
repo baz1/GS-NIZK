@@ -21,7 +21,7 @@ static int n_err = 0;
 #define PAIRING_COUNT_MAX 10
 #define HASH_TESTS 10000
 
-#define DATA_SIZE 512
+#define DATA_SIZE 2048
 
 bool checkDataSize(int size, int line) {
     if (size > DATA_SIZE) {

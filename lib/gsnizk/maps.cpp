@@ -223,6 +223,8 @@ void CRS::computeElements(bool precompute_v) {
         v1._2.precomputeForMult();
         v2._2.precomputeForMult();
     }
+#else
+    (void) precompute_v;
 #endif
     if (type == CRS_TYPE_PRIVATE) {
 #if !defined(USE_PBC)

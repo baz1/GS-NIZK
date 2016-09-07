@@ -38,7 +38,7 @@ int main() {
 #else
     if (!getPairing()) {
         cerr << "Error: Could not read file \"pairing.param\".\n" << endl;
-        return;
+        return 0;
     }
 #endif
     testLibrary();
