@@ -651,6 +651,7 @@ public:
      *   variables.
      * @sa NIZKProof::endEquations()
      * @sa NIZKProof::checkProof(std::istream&,const CRS&, const ProofData&)
+     * @sa NIZKProof::verifySolution(const ProofData&,const CRS&)
      */
     void writeProof(std::ostream &stream, const CRS &crs,
                     const ProofData &instantiation) const;

@@ -13,12 +13,10 @@
 
 #include "gsnizk.h"
 
-#define SAMPLES 2
+#define SAMPLES 20
 
 #define HASH_SAMPLE_SIZE        1000000
 #define PAIRING_SAMPLE_SIZE     500
-#define PROOFS_C_SAMPLE_SIZE    10000
-#define PROOFS_SAMPLE_SIZE      5
 
 using namespace std;
 using namespace gsnizk;
@@ -40,7 +38,7 @@ void update_progress(int p) {
 }
 
 #define BEGIN_TASK(TASK_NAME,SAMPLE_SIZE,RANDOMIZATION_STEP) \
-    *b_out << TASK_NAME << "_" << SAMPLE_SIZE << "samples"; \
+    *b_out << TASK_NAME << " " << SAMPLE_SIZE; \
     cout << "0%"; \
     cout.flush(); \
     current = 0; \
@@ -101,7 +99,7 @@ void benchmarkPairings() {
     fp_3 = fp_1 * fp_2;
     END_TASK()
     cout << " * 3/3: ";
-    BEGIN_TASK("Fp-Random-Div", 200000,
+    BEGIN_TASK("Fp-Random-Div", 300000,
                fp_1 = Fp::getRand(); fp_2 = Fp::getRand();)
     fp_3 = fp_1 / fp_2;
     END_TASK()
@@ -118,14 +116,14 @@ void benchmarkPairings() {
     g1_3 = fp_1 * g1_2;
     END_TASK()
     cout << " * 3/5: ";
-    BEGIN_TASK("G1-Random-Scalar-Precomp", 6000,
+    BEGIN_TASK("G1-Random-Scalar-Precomp", 16000,
                fp_1 = Fp::getRand(); g1_2 = G1::getRand();
                g1_2.precomputeForMult();)
     g1_3 = fp_1 * g1_2;
     END_TASK()
     cout << " * 4/5: ";
     data = new char[G1::getDataLen(false)];
-    BEGIN_TASK("G1-IO-Uncompressed", 40000,
+    BEGIN_TASK("G1-IO-Uncompressed", 800000,
                g1_1 = G1::getRand();)
     g1_1.getData(data, false);
     g1_2.getValue(data,  false);
@@ -147,19 +145,19 @@ void benchmarkPairings() {
     g2_3 = g2_1 + g2_2;
     END_TASK()
     cout << " * 2/5: ";
-    BEGIN_TASK("G2-Random-Scalar", 4000,
+    BEGIN_TASK("G2-Random-Scalar", 3000,
                fp_1 = Fp::getRand(); g2_2 = G2::getRand();)
     g2_3 = fp_1 * g2_2;
     END_TASK()
     cout << " * 3/5: ";
-    BEGIN_TASK("G2-Random-Scalar-Precomp", 4000,
+    BEGIN_TASK("G2-Random-Scalar-Precomp", 6000,
                fp_1 = Fp::getRand(); g2_2 = G2::getRand();
                g2_2.precomputeForMult();)
     g2_3 = fp_1 * g2_2;
     END_TASK()
     cout << " * 4/5: ";
     data = new char[G2::getDataLen(false)];
-    BEGIN_TASK("G2-IO-Uncompressed", 20000,
+    BEGIN_TASK("G2-IO-Uncompressed", 300000,
                g2_1 = G2::getRand();)
     g2_1.getData(data, false);
     g2_2.getValue(data,  false);
@@ -186,7 +184,7 @@ void benchmarkPairings() {
     gt_3 = gt_2 ^ fp_1;
     END_TASK()
     cout << " * 3/3: ";
-    BEGIN_TASK("GT-Random-Power-Precomp", 1000,
+    BEGIN_TASK("GT-Random-Power-Precomp", 3000,
                fp_1 = Fp::getRand(); gt_2 = GT::getRand();
                gt_2.precomputeForPower();)
     gt_3 = gt_2 ^ fp_1;
@@ -215,10 +213,10 @@ void benchmarkPairings() {
     END_TASK()
 }
 
-void benchmarkProof(string name, NIZKProof &proof, ProofData &d,
+void benchmarkProof(string name, int smult, NIZKProof &proof, ProofData &d,
                     const CRS &crs, CRS *verif = NULL) {
     cout << name << ":" << endl << " * 1/4: ";
-    BEGIN_TASK((name + "-construction"), 50000,)
+    BEGIN_TASK((name + "-construction"), 50000 * smult,)
     NIZKProof cpy = proof;
     if (!cpy.endEquations()) {
         cerr << "Error: construction failed for " << name << endl;
@@ -227,7 +225,7 @@ void benchmarkProof(string name, NIZKProof &proof, ProofData &d,
     END_TASK()
     proof.endEquations();
     cout << " * 2/4: ";
-    BEGIN_TASK((name + "-verification"), 200,)
+    BEGIN_TASK((name + "-verification"), 200 * smult,)
     if (!proof.verifySolution(d, crs)) {
         cerr << "Error: verification (1) failed for " << name << endl;
         return;
@@ -236,7 +234,7 @@ void benchmarkProof(string name, NIZKProof &proof, ProofData &d,
     {
         cout << " * 3/4: ";
         ofstream out("proof.benchmark");
-        BEGIN_TASK((name + "-creation"), 100,)
+        BEGIN_TASK((name + "-creation"), 100 * smult,)
         proof.writeProof(out, crs, d);
         END_TASK()
         out.close();
@@ -247,7 +245,7 @@ void benchmarkProof(string name, NIZKProof &proof, ProofData &d,
     {
         cout << " * 4/4: ";
         ifstream in("proof.benchmark");
-        BEGIN_TASK((name + "-check"), 5,)
+        BEGIN_TASK((name + "-check"), 5 * smult,)
         if (verif) {
             if (!proof.checkProof(in, *verif, d)) {
                 cerr << "Error: verification (2) failed for " << name << endl;
@@ -272,7 +270,7 @@ void benchmarkProofs() {
     {
         ofstream out("priv-crs.benchmark");
         cout << "Private CRS:" << endl << " * 1/2: ";
-        BEGIN_TASK("Private-CRS-Gen", PROOFS_SAMPLE_SIZE,)
+        BEGIN_TASK("Private-CRS-Gen", 50,)
         crsprivs.push_back(crs.genPrivate(out));
         END_TASK()
         out.close();
@@ -281,11 +279,10 @@ void benchmarkProofs() {
         ifstream in("priv-crs.benchmark");
         cout << " * 2/2: ";
         int i = 0;
-        BEGIN_TASK("Private-CRS-Check", PROOFS_SAMPLE_SIZE,)
+        BEGIN_TASK("Private-CRS-Check", 50,)
         if (!crs.checkPrivate(in, crsprivs[i++])) {
-            // TODO: implement checkPrivate
-            //cerr << "Error: verification of the private CRS failed" << endl;
-            //return;
+            cerr << "Error: verification of the private CRS failed" << endl;
+            return;
         }
         END_TASK()
         in.close();
@@ -308,9 +305,9 @@ void benchmarkProofs() {
         d.pubG1.push_back(a);
         d.pubG1.push_back(b);
 
-        benchmarkProof("DiscreteLog-Pub", proof, d, crs);
+        benchmarkProof("DiscreteLog-Pub", 5, proof, d, crs);
         d.privFp.push_back(k);
-        benchmarkProof("DiscreteLog-Priv", proof, d, crspriv, &crspub);
+        benchmarkProof("DiscreteLog-Priv", 5, proof, d, crspriv, &crspub);
     }
     {
         ProofData d;
@@ -360,7 +357,7 @@ void benchmarkProofs() {
         proof.addEquation(FpUnit() * _sign, _sk_C * _HK);
         proof.addEquation(FpUnit() * _value, _sk_C * _v_SP);
 
-        benchmarkProof("UserTokens", proof, d, crs);
+        benchmarkProof("UserTokens", 1, proof, d, crs);
     }
     {
         ProofData d;
@@ -374,7 +371,7 @@ void benchmarkProofs() {
         proof.addEquation(e(G1Base(), (_k * FpConst(l)) * G2Base()),
                           e(G1Const(v), G2Base()));
 
-        benchmarkProof("Big Equation", proof, d, crs);
+        benchmarkProof("Big Equation", 1, proof, d, crs);
     }
     remove("proof.benchmark");
 }

@@ -921,11 +921,11 @@ int tryPermutation(SAT_NODE *root, std::vector<int> val[4],
     SAT_NODE *rootcp = duplicateNode(root);
     instanciateIndex(rootcp, mi, mj, SAT_NODE_FALSE);
     valcp[mi][mj] = SAT_VALUE_FALSE;
-    int r1 = tryPermutation(rootcp, valcp, cnt);
+    int r1 = tryPermutation(rootcp, valcp, cnt) + 1;
     instanciateIndex(root, mi, mj, SAT_NODE_TRUE);
     val[mi][mj] = SAT_VALUE_TRUE;
     int r2 = tryPermutation(root, val, cnt);
-    if ((r1 < 0) || (r2 <= r1)) return r2;
+    if ((r1 <= 0) || (r2 <= r1)) return r2;
     val[0] = valcp[0];
     val[1] = valcp[1];
     return r1;
