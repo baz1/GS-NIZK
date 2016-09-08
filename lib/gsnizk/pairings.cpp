@@ -119,7 +119,7 @@ void initialize_pairings(int len, const char *data) {
     ::G2 g2;
     pfc->random(g1);
     pfc->random(g2);
-    big_size = pfc->ord->getbig()->len * MIRACL_BYTES;
+    big_size = (get_mip()->nib - 1) * MIRACL_BYTES;
 #ifdef GSNIZK_IOSTREAM_NOTHREADS
     iostream_nothreads_buffer = new char[big_size];
 #endif

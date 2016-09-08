@@ -71,7 +71,7 @@ void benchmarkHashes() {
     cout << "########## HASH BENCHMARK ##########" << endl;
     srand(42);
     char *hash = new char[pairings::getHashLen()], *data = new char[256];
-    BEGIN_TASK("HASHES", HASH_SAMPLE_SIZE,
+    BEGIN_TASK("Hashes", HASH_SAMPLE_SIZE,
                for (int j = 256; j-- > 0;)
                    data[j] = static_cast<char>(rand() & 0xFF);)
     pairings::getHash(data, rand() % 257, hash);
@@ -263,7 +263,7 @@ void benchmarkProof(string name, int smult, NIZKProof &proof, ProofData &d,
 }
 
 void benchmarkProofs() {
-    cout << "########## PROOF TESTS ##########" << endl;
+    cout << "########## PROOF BENCHMARK ##########" << endl;
     CRS crs(true), crspriv, crspub;
     vector<CRS> crsprivs;
     crs.makePublic();
@@ -371,7 +371,7 @@ void benchmarkProofs() {
         proof.addEquation(e(G1Base(), (_k * FpConst(l)) * G2Base()),
                           e(G1Const(v), G2Base()));
 
-        benchmarkProof("Big Equation", 1, proof, d, crs);
+        benchmarkProof("BigEquation", 1, proof, d, crs);
     }
     remove("proof.benchmark");
 }
