@@ -13,7 +13,7 @@
 
 #include "gsnizk.h"
 
-#define SAMPLES 20
+#define SAMPLES 2
 
 #define HASH_SAMPLE_SIZE        1000000
 #define PAIRING_SAMPLE_SIZE     500

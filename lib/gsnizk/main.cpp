@@ -8,10 +8,12 @@
 using namespace std;
 using namespace gsnizk;
 
+#define PBC_PAIRING_FILE "pairing.param"
+
 bool getPairing()
 {
     char *paramData;
-    FILE *paramFile = fopen("pairing.param", "r");
+    FILE *paramFile = fopen(PBC_PAIRING_FILE, "r");
     if (!paramFile)
         return false;
     fseek(paramFile, 0, SEEK_END);
@@ -37,7 +39,8 @@ int main() {
     initialize_pairings(0, 0);
 #else
     if (!getPairing()) {
-        cerr << "Error: Could not read file \"pairing.param\".\n" << endl;
+        cerr << ("Error: Could not read file \"" PBC_PAIRING_FILE
+                 "\".\n") << endl;
         return 0;
     }
 #endif
